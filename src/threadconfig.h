@@ -12,11 +12,16 @@ using namespace std;
 class ThreadConfig{
 public:
     ThreadConfig(int seqCycles, bool paired = false);
-    inline Stats* getLeftReadStats() {return mStats1;}
+    inline Stats* getPreStats1() {return mPreStats1;}
+    inline Stats* getPostStats1() {return mPostStats1;}
+    inline Stats* getPreStats2() {return mPreStats2;}
+    inline Stats* getPostStats2() {return mPostStats2;}
 
 public:
-    Stats* mStats1;
-    Stats* mStats2;
+    Stats* mPreStats1;
+    Stats* mPostStats1;
+    Stats* mPreStats2;
+    Stats* mPostStats2;
 };
 
 #endif

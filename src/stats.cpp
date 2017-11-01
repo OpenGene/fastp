@@ -3,34 +3,41 @@
 Stats::Stats(int guessedCycles, int bufferMargin){
     mReads = 0;
     mCycles = guessedCycles;
+    mBases = 0;
+    mQ20Total = 0;
+    mQ30Total = 0;
+    summarized = false;
 
     // extend the buffer to make sure it's long enough
-    const int bufLen = guessedCycles + bufferMargin;
+    mBufLen = guessedCycles + bufferMargin;
 
     for(int i=0; i<8; i++){
-        mQ30Bases[i] = new long[bufLen];
-        memset(mQ30Bases[i], 0, sizeof(long) * bufLen);
+        mQ20Bases[i] = 0;
+        mQ30Bases[i] = 0;
 
-        mQ20Bases[i] = new long[bufLen];
-        memset(mQ20Bases[i], 0, sizeof(long) * bufLen);
+        mCycleQ30Bases[i] = new long[mBufLen];
+        memset(mCycleQ30Bases[i], 0, sizeof(long) * mBufLen);
 
-        mCycleBaseContents[i] = new long[bufLen];
-        memset(mCycleBaseContents[i], 0, sizeof(long) * bufLen);
+        mCycleQ20Bases[i] = new long[mBufLen];
+        memset(mCycleQ20Bases[i], 0, sizeof(long) * mBufLen);
+
+        mCycleBaseContents[i] = new long[mBufLen];
+        memset(mCycleBaseContents[i], 0, sizeof(long) * mBufLen);
     }
-    mCycleTotalBase = new long[bufLen];
-    memset(mCycleTotalBase, 0, sizeof(long)*bufLen);
+    mCycleTotalBase = new long[mBufLen];
+    memset(mCycleTotalBase, 0, sizeof(long)*mBufLen);
 
-    mCycleTotalQual = new long[bufLen];
-    memset(mCycleTotalQual, 0, sizeof(long)*bufLen);
+    mCycleTotalQual = new long[mBufLen];
+    memset(mCycleTotalQual, 0, sizeof(long)*mBufLen);
 }
 
 Stats::~Stats() {
     for(int i=0; i<8; i++){
-        delete mQ30Bases[i];
-        mQ30Bases[i] = NULL;
+        delete mCycleQ30Bases[i];
+        mCycleQ30Bases[i] = NULL;
 
-        delete mQ20Bases[i];
-        mQ20Bases[i] = NULL;
+        delete mCycleQ20Bases[i];
+        mCycleQ20Bases[i] = NULL;
 
         delete mCycleBaseContents[i];
         mCycleBaseContents[i] = NULL;
@@ -38,6 +45,29 @@ Stats::~Stats() {
 
     delete mCycleTotalBase;
     delete mCycleTotalQual;
+}
+
+void Stats::summarize() {
+
+    // first get the cycle and count total bases
+    for(int c=0; c<mBufLen; c++) {
+        mBases += mCycleTotalBase[c];
+        if (mCycleTotalBase[c] == 0){
+            mCycles = c;
+            break;
+        }
+    }
+
+    // Q20 Q30
+    for(int i=0; i<8; i++) {
+        for(int c=0; c<mCycles; c++) {
+            mQ20Bases[i] += mCycleQ20Bases[i][c];
+            mQ30Bases[i] += mCycleQ30Bases[i][c];
+        }
+        mQ20Total += mQ20Bases[i];
+        mQ30Total += mQ30Bases[i];
+    }
+    summarized = true;
 }
 
 int Stats::statRead(Read* r, char qualifiedQual) {
@@ -56,10 +86,10 @@ int Stats::statRead(Read* r, char qualifiedQual) {
         const char q30 = '?';
 
         if(qual >= q30) {
-            mQ30Bases[b][i]++;
-            mQ20Bases[b][i]++;
+            mCycleQ30Bases[b][i]++;
+            mCycleQ20Bases[b][i]++;
         } else if(qual >= q20) {
-            mQ20Bases[b][i]++;
+            mCycleQ20Bases[b][i]++;
         }
 
         mCycleBaseContents[b][i]++;
@@ -81,7 +111,13 @@ int Stats::getCycles() {
 }
 
 void Stats::print() {
+    if(!summarized) {
+        summarize();
+    }
     cout << "total reads: " << mReads << endl;
+    cout << "total bases: " << mBases << endl;
+    cout << "Q20 bases: " << mQ20Total << "(" << (mQ20Total*100.0)/mBases << "%)" << endl;
+    cout << "Q30 bases: " << mQ30Total << "(" << (mQ30Total*100.0)/mBases << "%)" << endl;
 }
 
 Stats* Stats::merge(vector<Stats*>& list) {
@@ -100,8 +136,8 @@ Stats* Stats::merge(vector<Stats*>& list) {
         // merge per cycle counting for different bases
         for(int i=0; i<8; i++){
             for(int j=0; j<cycles; j++) {
-                s->mQ30Bases[i][j] += list[t]->mQ30Bases[i][j];
-                s->mQ20Bases[i][j] += list[t]->mQ20Bases[i][j];
+                s->mCycleQ30Bases[i][j] += list[t]->mCycleQ30Bases[i][j];
+                s->mCycleQ20Bases[i][j] += list[t]->mCycleQ20Bases[i][j];
                 s->mCycleBaseContents[i][j] += list[t]->mCycleBaseContents[i][j];
             }
         }

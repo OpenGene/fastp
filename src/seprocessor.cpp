@@ -40,7 +40,7 @@ bool SingleEndProcessor::process(){
     // merge stats
     vector<Stats*> statsList;
     for(int t=0; t<mOptions->thread; t++){
-        statsList.push_back(configs[t]->getLeftReadStats());
+        statsList.push_back(configs[t]->getPreStats1());
     }
     Stats* finalStats = Stats::merge(statsList);
     finalStats->print();
@@ -63,7 +63,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     for(int p=0;p<pack->count;p++){
         Read* r1 = pack->data[p];
 
-        int qualNum = config->getLeftReadStats()->statRead(r1);
+        int qualNum = config->getPreStats1()->statRead(r1);
     }
 
     delete pack->data;

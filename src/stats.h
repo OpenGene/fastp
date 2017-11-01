@@ -20,6 +20,7 @@ public:
 
     static Stats* merge(vector<Stats*>& list);
     void print();
+    void summarize();
 
 public:
     long mReads;
@@ -32,14 +33,21 @@ public:
     'G' % 8 = 7
     'N' % 8 = 6
     */
-    long *mQ30Bases[8];
-    long *mQ20Bases[8];
+    long *mCycleQ30Bases[8];
+    long *mCycleQ20Bases[8];
     long *mCycleBaseContents[8];
     long *mCycleTotalBase;
     long *mCycleTotalQual;
 
 private:
     int mCycles;
+    int mBufLen;
+    long mBases;
+    long mQ20Bases[8];
+    long mQ30Bases[8];
+    long mQ20Total;
+    long mQ30Total;
+    bool summarized;
 };
 
 #endif
