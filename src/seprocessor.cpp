@@ -24,7 +24,7 @@ bool SingleEndProcessor::process(){
     int cycle = 151;
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        configs[t] = new ThreadConfig(cycle, false);
+        configs[t] = new ThreadConfig(mOptions, cycle, false);
     }
 
     std::thread** threads = new thread*[mOptions->thread];
