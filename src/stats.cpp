@@ -40,8 +40,48 @@ Stats::~Stats() {
     delete mCycleTotalQual;
 }
 
+int Stats::statRead(Read* r, char qualifiedQual) {
+    int qualified = 0;
+    int len = r->length();
+    const char* seqstr = r->mSeq.mStr.c_str();
+    const char* qualstr = r->mQuality.c_str();
+
+    for(int i=0; i<len; i++) {
+        char base = seqstr[i];
+        char qual = qualstr[i];
+        // get last 3 bits
+        char b = base & 0x07;
+
+        const char q20 = '5';
+        const char q30 = '?';
+
+        if(qual >= q30) {
+            mQ30Bases[b][i]++;
+            mQ20Bases[b][i]++;
+        } else if(qual >= q20) {
+            mQ20Bases[b][i]++;
+        }
+
+        mCycleBaseContents[b][i]++;
+
+        if(qual >= qualifiedQual)
+            qualified ++;
+
+        mCycleTotalBase[i]++;
+        mCycleTotalQual[i]+=qual;
+
+    }
+
+    mReads++;
+    return qualified;
+}
+
 int Stats::getCycles() {
     return mCycles;
+}
+
+void Stats::print() {
+    cout << "total reads: " << mReads << endl;
 }
 
 Stats* Stats::merge(vector<Stats*>& list) {

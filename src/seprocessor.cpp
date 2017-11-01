@@ -20,9 +20,16 @@ bool SingleEndProcessor::process(){
     initPackRepository();
     std::thread producer(std::bind(&SingleEndProcessor::producerTask, this));
 
+    //TODO: get the correct cycles
+    int cycle = 151;
+    ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
+    for(int t=0; t<mOptions->thread; t++){
+        configs[t] = new ThreadConfig(cycle, false);
+    }
+
     std::thread** threads = new thread*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        threads[t] = new std::thread(std::bind(&SingleEndProcessor::consumerTask, this));
+        threads[t] = new std::thread(std::bind(&SingleEndProcessor::consumerTask, this, configs[t]));
     }
 
     producer.join();
@@ -30,27 +37,38 @@ bool SingleEndProcessor::process(){
         threads[t]->join();
     }
 
+    // merge stats
+    vector<Stats*> statsList;
+    for(int t=0; t<mOptions->thread; t++){
+        statsList.push_back(configs[t]->getLeftReadStats());
+    }
+    Stats* finalStats = Stats::merge(statsList);
+    finalStats->print();
+
+    // clean up
     for(int t=0; t<mOptions->thread; t++){
         delete threads[t];
         threads[t] = NULL;
+        delete configs[t];
+        configs[t] = NULL;
     }
+
+    delete threads;
+    delete configs;
 
     return true;
 }
 
-bool SingleEndProcessor::processSingleEnd(ReadPack* pack){
+bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     for(int p=0;p<pack->count;p++){
         Read* r1 = pack->data[p];
+
+        int qualNum = config->getLeftReadStats()->statRead(r1);
     }
 
     delete pack->data;
     delete pack;
 
-    return true;
-}
-
-bool SingleEndProcessor::processRead(Read* r, Read* originalRead, bool reversed) {
-    // do something here
     return true;
 }
 
@@ -85,7 +103,7 @@ void SingleEndProcessor::producePack(ReadPack* pack){
     lock.unlock();
 }
 
-void SingleEndProcessor::consumePack(){
+void SingleEndProcessor::consumePack(ThreadConfig* config){
     ReadPack* data;
     std::unique_lock<std::mutex> lock(mRepo.mtx);
     // read buffer is empty, just wait here.
@@ -101,7 +119,7 @@ void SingleEndProcessor::consumePack(){
     (mRepo.readPos)++;
     lock.unlock();
 
-    processSingleEnd(data);
+    processSingleEnd(data, config);
 
 
     if (mRepo.readPos >= PACK_NUM_LIMIT)
@@ -159,7 +177,7 @@ void SingleEndProcessor::producerTask()
         delete data;
 }
 
-void SingleEndProcessor::consumerTask()
+void SingleEndProcessor::consumerTask(ThreadConfig* config)
 {
     while(true) {
         std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
@@ -168,11 +186,11 @@ void SingleEndProcessor::consumerTask()
             break;
         }
         if(mProduceFinished){
-            consumePack();
+            consumePack(config);
             lock.unlock();
         } else {
             lock.unlock();
-            consumePack();
+            consumePack(config);
         }
     }
 }

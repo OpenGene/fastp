@@ -10,6 +10,7 @@
 #include <mutex>
 #include <thread>
 #include "options.h"
+#include "threadconfig.h"
 
 using namespace std;
 
@@ -40,14 +41,13 @@ public:
     bool process();
 
 private:
-    bool processSingleEnd(ReadPack* pack);
-    bool processRead(Read* r, Read* originalRead, bool reversed);
+    bool processSingleEnd(ReadPack* pack, ThreadConfig* config);
     void initPackRepository();
     void destroyPackRepository();
     void producePack(ReadPack* pack);
-    void consumePack();
+    void consumePack(ThreadConfig* config);
     void producerTask();
-    void consumerTask();
+    void consumerTask(ThreadConfig* config);
 
 private:
     Options* mOptions;

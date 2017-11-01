@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include "read.h"
 
 using namespace std;
 
@@ -14,8 +15,11 @@ public:
     Stats(int guessedCycles, int bufferMargin = 1000);
     ~Stats();
     int getCycles();
+    // by default the qualified qual score is Q20 ('5')
+    int statRead(Read* r, char qualifiedQual = '5');
 
     static Stats* merge(vector<Stats*>& list);
+    void print();
 
 public:
     long mReads;

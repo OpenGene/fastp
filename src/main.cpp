@@ -6,6 +6,7 @@
 #include <sstream>
 #include "util.h"
 #include "options.h"
+#include "processor.h"
 
 string command;
 
@@ -17,7 +18,7 @@ int main(int argc, char* argv[]){
     }
     cmdline::parser cmd;
     cmd.add<string>("in1", 'i', "read1 input file name", true, "");
-    cmd.add<string>("out1", 'o', "read1 output file name", true, "");
+    cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
@@ -44,7 +45,9 @@ int main(int argc, char* argv[]){
         check_file_valid(opt.in2);
 
     time_t t1 = time(NULL);
-    
+
+    Processor p(&opt);
+    p.process();
     
     time_t t2 = time(NULL);
     printf("\n%s\n", command.c_str());
