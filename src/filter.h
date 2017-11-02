@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string>
 #include "options.h"
+#include "read.h"
 
 using namespace std;
 
@@ -13,6 +14,7 @@ public:
     Filter(Options* opt);
     ~Filter();
     bool passFilter(Read* r, int lowQualNum, int nBaseNum);
+    Read* trimAndCutAdapter(Read* r);
 
 private:
     Options* mOptions;

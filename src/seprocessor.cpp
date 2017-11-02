@@ -94,6 +94,7 @@ bool SingleEndProcessor::process(){
 
     cout << "pre filtering stats:"<<endl;
     finalPreStats->print();
+    cout << endl;
     cout << "post filtering stats:"<<endl;
     finalPostStats->print();
 
@@ -104,6 +105,9 @@ bool SingleEndProcessor::process(){
         delete configs[t];
         configs[t] = NULL;
     }
+
+    delete finalPreStats;
+    delete finalPostStats;
 
     delete threads;
     delete configs;
@@ -116,19 +120,31 @@ bool SingleEndProcessor::process(){
 bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     string outstr;
     for(int p=0;p<pack->count;p++){
-        Read* r1 = pack->data[p];
+
+        // original read1
+        Read* or1 = pack->data[p];
 
         int lowQualNum = 0;
         int nBaseNum = 0;
 
-        // stats the read before filtering
-        config->getPreStats1()->statRead(r1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
-        if( mFilter->passFilter(r1, lowQualNum, nBaseNum) ) {
+        // stats the original read before trimming
+        config->getPreStats1()->statRead(or1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
+
+
+        // trim in head and tail, and cut adapters
+        Read* r1 = mFilter->trimAndCutAdapter(or1);
+
+        if( r1 != NULL && mFilter->passFilter(r1, lowQualNum, nBaseNum) ) {
             outstr += r1->toString();
 
             // stats the read after filtering
             config->getPostStats1()->statRead(r1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
         }
+
+        delete or1;
+        // if no trimming applied, r1 should be identical to or1
+        if(r1 != or1 && r1 != NULL)
+            delete r1;
     }
     mOutputMtx.lock();
     if(!mOptions->out1.empty())

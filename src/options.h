@@ -10,12 +10,12 @@ using namespace std;
 class TrimmingOptions {
 public:
     TrimmingOptions() {
-        head = 0;
+        front = 0;
         tail = 0;
     }
 public:
     // trimming first cycles
-    int head;
+    int front;
     // trimming last cycles
     int tail;
 };
@@ -26,7 +26,7 @@ public:
         enabled = true;
         // '0' = Q15
         qualifiedQual = '0';
-        unqualifiedBaseLimit = 60;
+        unqualifiedPercentLimit = 40;
         nBaseLimit = 5;
     }
 public:
@@ -35,7 +35,7 @@ public:
     // if a base's quality phred score < qualifiedPhred, then it's considered as a low_qual_base
     char qualifiedQual;
     // if low_qual_base_num > lowQualLimit, then discard this read
-    int unqualifiedBaseLimit;
+    int unqualifiedPercentLimit;
     // if n_base_number > nBaseLimit, then discard this read
     int nBaseLimit;
 };
@@ -76,6 +76,8 @@ public:
     TrimmingOptions trim;
     // quality filtering options
     QualityFilteringOptions qualfilter;
+    // length filtering options
+    ReadLengthFilteringOptions lengthFilter;
 
 };
 
