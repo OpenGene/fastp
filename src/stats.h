@@ -16,7 +16,7 @@ public:
     ~Stats();
     int getCycles();
     // by default the qualified qual score is Q20 ('5')
-    int statRead(Read* r, char qualifiedQual = '5');
+    void statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual = '5');
 
     static Stats* merge(vector<Stats*>& list);
     void print();

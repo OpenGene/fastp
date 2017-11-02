@@ -23,13 +23,17 @@ public:
 class QualityFilteringOptions {
 public:
     QualityFilteringOptions() {
-        qualifiedPhred = 15;
-        unqualifiedBaseLimit = 5;
-        nBaseLimit = 3;
+        enabled = true;
+        // '0' = Q15
+        qualifiedQual = '0';
+        unqualifiedBaseLimit = 60;
+        nBaseLimit = 5;
     }
 public:
+    // quality filter enabled
+    bool enabled;
     // if a base's quality phred score < qualifiedPhred, then it's considered as a low_qual_base
-    int qualifiedPhred;
+    char qualifiedQual;
     // if low_qual_base_num > lowQualLimit, then discard this read
     int unqualifiedBaseLimit;
     // if n_base_number > nBaseLimit, then discard this read

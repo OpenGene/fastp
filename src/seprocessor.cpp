@@ -10,12 +10,57 @@
 SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOptions = opt;
     mProduceFinished = false;
+    mFilter = new Filter(opt);
+    mOutStream = NULL;
+    mZipFile = NULL;
 }
 
 SingleEndProcessor::~SingleEndProcessor() {
+    delete mFilter;
+}
+
+void SingleEndProcessor::initOutput() {
+    if(mOptions->out1.empty())
+        return;
+    if (FastqReader::isZipFastq(mOptions->out1)){
+        mZipFile = gzopen(mOptions->out1.c_str(), "w");
+        gzsetparams(mZipFile, mOptions->compression, Z_DEFAULT_STRATEGY);
+    }
+    else {
+        mOutStream = new ofstream();
+        mOutStream->open(mOptions->out1.c_str(), ifstream::out);
+    }
+}
+
+void SingleEndProcessor::closeOutput() {
+    if (mZipFile){
+        gzflush(mZipFile, Z_FINISH);
+        gzclose(mZipFile);
+        mZipFile = NULL;
+    }
+    if (mOutStream) {
+        if (mOutStream->is_open()){
+            mOutStream->flush();
+            mOutStream->close();
+        }
+        delete mOutStream;
+    }
+}
+
+void SingleEndProcessor::initConfig(ThreadConfig* config) {
+    if(mOptions->out1.empty())
+        return;
+    if(mOutStream != NULL) {
+        config->initWriter(mOutStream);
+    } else if(mZipFile != NULL) {
+        config->initWriter(mZipFile);
+    }
 }
 
 bool SingleEndProcessor::process(){
+
+    initOutput();
+    cout << "initOutput() done" << endl;
 
     initPackRepository();
     std::thread producer(std::bind(&SingleEndProcessor::producerTask, this));
@@ -25,6 +70,8 @@ bool SingleEndProcessor::process(){
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
         configs[t] = new ThreadConfig(mOptions, cycle, false);
+        initConfig(configs[t]);
+        cout << "initConfig()" << endl;
     }
 
     std::thread** threads = new thread*[mOptions->thread];
@@ -56,15 +103,32 @@ bool SingleEndProcessor::process(){
     delete threads;
     delete configs;
 
+    closeOutput();
+
     return true;
 }
 
 bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
+    string outstr;
     for(int p=0;p<pack->count;p++){
         Read* r1 = pack->data[p];
 
-        int qualNum = config->getPreStats1()->statRead(r1);
+        int lowQualNum = 0;
+        int nBaseNum = 0;
+
+        // stats the read before filtering
+        config->getPreStats1()->statRead(r1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
+        if( mFilter->passFilter(r1, lowQualNum, nBaseNum) ) {
+            outstr += r1->toString();
+
+            // stats the read after filtering
+            // config->getPostStats1()->statRead(r1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
+        }
     }
+    mOutputMtx.lock();
+    if(!mOptions->out1.empty())
+        config->getWriter1()->writeString(outstr);
+    mOutputMtx.unlock();
 
     delete pack->data;
     delete pack;

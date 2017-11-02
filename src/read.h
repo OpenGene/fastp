@@ -26,6 +26,7 @@ public:
     // default is Q20
     int lowQualCount(int qual=20);
     int length();
+    string toString();
 
 public:
     static bool test();

@@ -11,6 +11,7 @@
 #include <thread>
 #include "options.h"
 #include "threadconfig.h"
+#include "filter.h"
 
 using namespace std;
 
@@ -48,12 +49,18 @@ private:
     void consumePack(ThreadConfig* config);
     void producerTask();
     void consumerTask(ThreadConfig* config);
+    void initConfig(ThreadConfig* config);
+    void initOutput();
+    void closeOutput();
 
 private:
     Options* mOptions;
     ReadRepository mRepo;
     bool mProduceFinished;
     std::mutex mOutputMtx;
+    Filter* mFilter;
+    gzFile mZipFile;
+    ofstream* mOutStream;
 };
 
 

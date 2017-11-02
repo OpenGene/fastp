@@ -70,8 +70,9 @@ void Stats::summarize() {
     summarized = true;
 }
 
-int Stats::statRead(Read* r, char qualifiedQual) {
-    int qualified = 0;
+void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual) {
+    lowQualNum = 0;
+    nBaseNum = 0;
     int len = r->length();
     const char* seqstr = r->mSeq.mStr.c_str();
     const char* qualstr = r->mQuality.c_str();
@@ -81,6 +82,9 @@ int Stats::statRead(Read* r, char qualifiedQual) {
         char qual = qualstr[i];
         // get last 3 bits
         char b = base & 0x07;
+
+        if(base == 'N')
+            nBaseNum++;
 
         const char q20 = '5';
         const char q30 = '?';
@@ -94,8 +98,8 @@ int Stats::statRead(Read* r, char qualifiedQual) {
 
         mCycleBaseContents[b][i]++;
 
-        if(qual >= qualifiedQual)
-            qualified ++;
+        if(qual < qualifiedQual)
+            lowQualNum ++;
 
         mCycleTotalBase[i]++;
         mCycleTotalQual[i]+=qual;
@@ -103,7 +107,6 @@ int Stats::statRead(Read* r, char qualifiedQual) {
     }
 
     mReads++;
-    return qualified;
 }
 
 int Stats::getCycles() {

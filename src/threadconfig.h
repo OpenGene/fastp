@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 #include "stats.h"
-#include "fastqwriter.h"
+#include "writer.h"
 #include "options.h"
 
 using namespace std;
@@ -14,20 +14,28 @@ using namespace std;
 class ThreadConfig{
 public:
     ThreadConfig(Options* opt, int seqCycles, bool paired = false);
+    ~ThreadConfig();
     inline Stats* getPreStats1() {return mPreStats1;}
     inline Stats* getPostStats1() {return mPostStats1;}
     inline Stats* getPreStats2() {return mPreStats2;}
     inline Stats* getPostStats2() {return mPostStats2;}
+    inline Writer* getWriter1() {return mWriter1;}
+    inline Writer* getWriter2() {return mWriter2;}
 
-    void initWriter(string filename1, string filename2="");
+    void initWriter(string filename1);
+    void initWriter(string filename1, string filename2);
+    void initWriter(ofstream* stream);
+    void initWriter(ofstream* stream1, ofstream* stream2);
+    void initWriter(gzFile gzfile);
+    void initWriter(gzFile gzfile1, gzFile gzfile2);
 
 private:
     Stats* mPreStats1;
     Stats* mPostStats1;
     Stats* mPreStats2;
     Stats* mPostStats2;
-    FastqWriter* mWriter1;
-    FastqWriter* mWriter2;
+    Writer* mWriter1;
+    Writer* mWriter2;
     Options* mOptions;
 };
 
