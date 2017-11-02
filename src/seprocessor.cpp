@@ -60,7 +60,6 @@ void SingleEndProcessor::initConfig(ThreadConfig* config) {
 bool SingleEndProcessor::process(){
 
     initOutput();
-    cout << "initOutput() done" << endl;
 
     initPackRepository();
     std::thread producer(std::bind(&SingleEndProcessor::producerTask, this));
@@ -71,7 +70,6 @@ bool SingleEndProcessor::process(){
     for(int t=0; t<mOptions->thread; t++){
         configs[t] = new ThreadConfig(mOptions, cycle, false);
         initConfig(configs[t]);
-        cout << "initConfig()" << endl;
     }
 
     std::thread** threads = new thread*[mOptions->thread];
@@ -85,12 +83,19 @@ bool SingleEndProcessor::process(){
     }
 
     // merge stats
-    vector<Stats*> statsList;
+    vector<Stats*> preStats;
+    vector<Stats*> postStats;
     for(int t=0; t<mOptions->thread; t++){
-        statsList.push_back(configs[t]->getPreStats1());
+        preStats.push_back(configs[t]->getPreStats1());
+        postStats.push_back(configs[t]->getPostStats1());
     }
-    Stats* finalStats = Stats::merge(statsList);
-    finalStats->print();
+    Stats* finalPreStats = Stats::merge(preStats);
+    Stats* finalPostStats = Stats::merge(postStats);
+
+    cout << "pre filtering stats:"<<endl;
+    finalPreStats->print();
+    cout << "post filtering stats:"<<endl;
+    finalPostStats->print();
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){
@@ -122,7 +127,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             outstr += r1->toString();
 
             // stats the read after filtering
-            // config->getPostStats1()->statRead(r1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
+            config->getPostStats1()->statRead(r1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
         }
     }
     mOutputMtx.lock();

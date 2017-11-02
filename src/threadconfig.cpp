@@ -3,7 +3,7 @@
 ThreadConfig::ThreadConfig(Options* opt, int seqCycles, bool paired){
     mOptions = opt;
     mPreStats1 = new Stats(seqCycles);
-    mPreStats2 = new Stats(seqCycles);
+    mPostStats1 = new Stats(seqCycles);
     if(paired){
         mPreStats2 = new Stats(seqCycles);
         mPostStats2 = new Stats(seqCycles);
