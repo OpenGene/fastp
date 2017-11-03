@@ -6,7 +6,7 @@ Options::Options(){
     out1 = "";
     out2 = "";
     thread = 1;
-    compression = 3;
+    compression = 2;
 }
 
 void Options::init(){

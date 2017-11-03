@@ -22,6 +22,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
+    cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 2.", false, 2);
 
     // trimming
     cmd.add<int>("trim_front", 'f', "trimming how many bases in front, default is 0", false, 0);
@@ -38,7 +39,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("html", 'h', "the html format report file name", false, "fastp.html");
 
     // run setting
-    cmd.add<int>("thread", 'T', "worker thread number, default is 4", false, 4);
+    cmd.add<int>("thread", 'T', "worker thread number, default is 3", false, 3);
 
     cmd.parse_check(argc, argv);
 
@@ -48,6 +49,7 @@ int main(int argc, char* argv[]){
     opt.in2 = cmd.get<string>("in2");
     opt.out1 = cmd.get<string>("out1");
     opt.out2 = cmd.get<string>("out2");
+    opt.compression = cmd.get<int>("compression");
 
     opt.trim.front = cmd.get<int>("trim_front");
     opt.trim.tail = cmd.get<int>("trim_tail");
