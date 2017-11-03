@@ -35,5 +35,14 @@ static const int PACK_IN_MEM_LIMIT = 100;
 // if read number is more than this, warn it
 static const int WARN_STANDALONE_READ_LIMIT = 10000;
 
+// different filtering results
+static const int FILTER_RESULT_TYPES = 6;
+static const int PASS_FILTER = 0;
+static const int FAIL_QUALITY = 1;
+static const int FAIL_N_BASE = 2;
+static const int FAIL_LENGTH = 3;
+static const int FAIL_OVERLAP = 4;
+static const int FAIL_POLY_X = 5;
+
 
 #endif /* COMMON_H */

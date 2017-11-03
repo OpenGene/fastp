@@ -171,8 +171,10 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         Read* r1 = mFilter->trimAndCutAdapter(or1);
         Read* r2 = mFilter->trimAndCutAdapter(or2);
 
-        if( r1 != NULL && mFilter->passFilter(r1, lowQualNum1, nBaseNum1) 
-            && r2 != NULL && mFilter->passFilter(r2, lowQualNum2, nBaseNum2) ) {
+        int result1 = mFilter->passFilter(r1, lowQualNum1, nBaseNum1);
+        int result2 = mFilter->passFilter(r2, lowQualNum2, nBaseNum2);
+
+        if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
             
             outstr1 += r1->toString();
             outstr2 += r2->toString();

@@ -13,7 +13,7 @@ class Filter{
 public:
     Filter(Options* opt);
     ~Filter();
-    bool passFilter(Read* r, int lowQualNum, int nBaseNum);
+    int passFilter(Read* r, int lowQualNum, int nBaseNum);
     Read* trimAndCutAdapter(Read* r);
 
 private:

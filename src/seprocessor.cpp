@@ -132,8 +132,9 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         // trim in head and tail, and cut adapters
         Read* r1 = mFilter->trimAndCutAdapter(or1);
+        int result = mFilter->passFilter(r1, lowQualNum, nBaseNum);
 
-        if( r1 != NULL && mFilter->passFilter(r1, lowQualNum, nBaseNum) ) {
+        if( r1 != NULL &&  result == PASS_FILTER) {
             outstr += r1->toString();
 
             // stats the read after filtering

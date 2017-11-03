@@ -10,21 +10,21 @@ Filter::Filter(Options* opt){
 Filter::~Filter(){
 }
 
-bool Filter::passFilter(Read* r, int lowQualNum, int nBaseNum) {
+int Filter::passFilter(Read* r, int lowQualNum, int nBaseNum) {
 
     if(mOptions->qualfilter.enabled) {
         if(lowQualNum > (mOptions->qualfilter.unqualifiedPercentLimit * r->length() / 100.0) )
-            return false;
+            return FAIL_QUALITY;
         else if(nBaseNum > mOptions->qualfilter.nBaseLimit )
-            return false;
+            return FAIL_N_BASE;
     }
 
     if(mOptions->lengthFilter.enabled) {
         if(r->length() < mOptions->lengthFilter.requiredLength)
-            return false;
+            return FAIL_LENGTH;
     }
 
-    return true;
+    return PASS_FILTER;
 }
 
 Read* Filter::trimAndCutAdapter(Read* r) {
