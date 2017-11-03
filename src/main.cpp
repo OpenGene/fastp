@@ -34,6 +34,10 @@ int main(int argc, char* argv[]){
     cmd.add<int>("unqualified_percent_limit", 'u', "how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%", false, 40);
     cmd.add<int>("n_base_limit", 'n', "if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5", false, 5);
 
+    // length filter
+    cmd.add<int>("length_required", 'l', "length filtering will be enabled if this argument is specified, reads shorter than length_required will be discarded.", false, 30);
+    
+
     // report
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
     cmd.add<string>("html", 'h', "the html format report file name", false, "fastp.html");
@@ -58,6 +62,9 @@ int main(int argc, char* argv[]){
     opt.qualfilter.qualifiedQual = num2qual(cmd.get<int>("qualified_quality_phred"));
     opt.qualfilter.unqualifiedPercentLimit = cmd.get<int>("unqualified_percent_limit");
     opt.qualfilter.nBaseLimit = cmd.get<int>("n_base_limit");
+
+    opt.lengthFilter.enabled = cmd.exist("length_required");
+    opt.lengthFilter.requiredLength = cmd.get<int>("length_required");
 
     opt.thread = cmd.get<int>("thread");
 

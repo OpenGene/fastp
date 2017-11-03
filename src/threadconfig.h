@@ -8,6 +8,7 @@
 #include "stats.h"
 #include "writer.h"
 #include "options.h"
+#include "filterresult.h"
 
 using namespace std;
 
@@ -21,6 +22,7 @@ public:
     inline Stats* getPostStats2() {return mPostStats2;}
     inline Writer* getWriter1() {return mWriter1;}
     inline Writer* getWriter2() {return mWriter2;}
+    inline FilterResult* getFilterResult() {return mFilterResult;}
 
     void initWriter(string filename1);
     void initWriter(string filename1, string filename2);
@@ -28,6 +30,8 @@ public:
     void initWriter(ofstream* stream1, ofstream* stream2);
     void initWriter(gzFile gzfile);
     void initWriter(gzFile gzfile1, gzFile gzfile2);
+
+    void addFilterResult(int result);
 
 private:
     Stats* mPreStats1;
@@ -37,6 +41,7 @@ private:
     Writer* mWriter1;
     Writer* mWriter2;
     Options* mOptions;
+    FilterResult* mFilterResult;
 };
 
 #endif

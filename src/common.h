@@ -35,14 +35,18 @@ static const int PACK_IN_MEM_LIMIT = 100;
 // if read number is more than this, warn it
 static const int WARN_STANDALONE_READ_LIMIT = 10000;
 
-// different filtering results
-static const int FILTER_RESULT_TYPES = 6;
+// different filtering results, bigger number means worse
+// if r1 and r2 are both failed, then the bigger one of the two results will be recorded
+// we reserve some gaps for future types to be added
 static const int PASS_FILTER = 0;
-static const int FAIL_QUALITY = 1;
-static const int FAIL_N_BASE = 2;
-static const int FAIL_LENGTH = 3;
-static const int FAIL_OVERLAP = 4;
-static const int FAIL_POLY_X = 5;
+static const int FAIL_POLY_X = 4;
+static const int FAIL_OVERLAP = 8;
+static const int FAIL_N_BASE = 12;
+static const int FAIL_LENGTH = 16;
+static const int FAIL_QUALITY = 20;
+
+// how many types in total we support
+static const int FILTER_RESULT_TYPES = 32;
 
 
 #endif /* COMMON_H */

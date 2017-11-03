@@ -101,21 +101,24 @@ bool PairEndProcessor::process(){
         threads[t]->join();
     }
 
-    // merge stats
+    // merge stats and filter results
     vector<Stats*> preStats1;
     vector<Stats*> postStats1;
     vector<Stats*> preStats2;
     vector<Stats*> postStats2;
+    vector<FilterResult*> filterResults;
     for(int t=0; t<mOptions->thread; t++){
         preStats1.push_back(configs[t]->getPreStats1());
         postStats1.push_back(configs[t]->getPostStats1());
         preStats2.push_back(configs[t]->getPreStats2());
         postStats2.push_back(configs[t]->getPostStats2());
+        filterResults.push_back(configs[t]->getFilterResult());
     }
     Stats* finalPreStats1 = Stats::merge(preStats1);
     Stats* finalPostStats1 = Stats::merge(postStats1);
     Stats* finalPreStats2 = Stats::merge(preStats2);
     Stats* finalPostStats2 = Stats::merge(postStats2);
+    FilterResult* finalFilterResult = FilterResult::merge(filterResults);
 
     cout << "pre filtering stats1:"<<endl;
     finalPreStats1->print();
@@ -129,6 +132,10 @@ bool PairEndProcessor::process(){
     cout << "post filtering stats2:"<<endl;
     finalPostStats2->print();
 
+    cout << endl;
+    cout << "filter results:"<<endl;
+    finalFilterResult->print();
+
     // clean up
     for(int t=0; t<mOptions->thread; t++){
         delete threads[t];
@@ -141,6 +148,7 @@ bool PairEndProcessor::process(){
     delete finalPostStats1;
     delete finalPreStats2;
     delete finalPostStats2;
+    delete finalFilterResult;
 
     delete threads;
     delete configs;
@@ -173,6 +181,8 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
         int result1 = mFilter->passFilter(r1, lowQualNum1, nBaseNum1);
         int result2 = mFilter->passFilter(r2, lowQualNum2, nBaseNum2);
+
+        config->addFilterResult(max(result1, result2));
 
         if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
             

@@ -81,21 +81,34 @@ bool SingleEndProcessor::process(){
         threads[t]->join();
     }
 
-    // merge stats
+    // merge stats and read filter results
     vector<Stats*> preStats;
     vector<Stats*> postStats;
+    vector<FilterResult*> filterResults;
     for(int t=0; t<mOptions->thread; t++){
         preStats.push_back(configs[t]->getPreStats1());
         postStats.push_back(configs[t]->getPostStats1());
+        filterResults.push_back(configs[t]->getFilterResult());
     }
     Stats* finalPreStats = Stats::merge(preStats);
     Stats* finalPostStats = Stats::merge(postStats);
+    FilterResult* finalFilterResult = FilterResult::merge(filterResults);
+
+    // read filter results to the first thread's
+    for(int t=1; t<mOptions->thread; t++){
+        preStats.push_back(configs[t]->getPreStats1());
+        postStats.push_back(configs[t]->getPostStats1());
+    }
 
     cout << "pre filtering stats:"<<endl;
     finalPreStats->print();
     cout << endl;
     cout << "post filtering stats:"<<endl;
     finalPostStats->print();
+
+    cout << endl;
+    cout << "filter results:"<<endl;
+    finalFilterResult->print();
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){
@@ -107,6 +120,7 @@ bool SingleEndProcessor::process(){
 
     delete finalPreStats;
     delete finalPostStats;
+    delete finalFilterResult;
 
     delete threads;
     delete configs;
@@ -133,6 +147,8 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         // trim in head and tail, and cut adapters
         Read* r1 = mFilter->trimAndCutAdapter(or1);
         int result = mFilter->passFilter(r1, lowQualNum, nBaseNum);
+
+        config->addFilterResult(result);
 
         if( r1 != NULL &&  result == PASS_FILTER) {
             outstr += r1->toString();

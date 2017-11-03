@@ -14,6 +14,8 @@ ThreadConfig::ThreadConfig(Options* opt, int seqCycles, bool paired){
     }
     mWriter1 = NULL;
     mWriter2 = NULL;
+
+    mFilterResult = new FilterResult(opt, paired);
 }
 
 ThreadConfig::~ThreadConfig() {
@@ -55,4 +57,8 @@ void ThreadConfig::initWriter(gzFile gzfile1, gzFile gzfile2) {
 
     mWriter1 = new Writer(gzfile1);
     mWriter2 = new Writer(gzfile2);
+}
+
+void ThreadConfig::addFilterResult(int result) {
+    mFilterResult->addFilterResult(result);
 }
