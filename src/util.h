@@ -173,4 +173,14 @@ inline void str2lower(string& s){
     transform(s.begin(), s.end(), s.begin(), (int (*)(int))tolower);
 }
 
+inline char num2qual(int num) {
+    if(num > 127 - 33)
+        num = 127 - 33;
+    if(num < 0)
+        num = 0;
+
+    char c = num + 33;
+    return c;
+}
+
 #endif /* UTIL_H */

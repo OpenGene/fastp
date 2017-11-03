@@ -55,7 +55,7 @@ int main(int argc, char* argv[]){
     opt.trim.tail = cmd.get<int>("trim_tail");
 
     opt.qualfilter.enabled = !cmd.exist("disable_quality_filtering");
-    opt.qualfilter.qualifiedQual = cmd.get<int>("qualified_quality_phred");
+    opt.qualfilter.qualifiedQual = num2qual(cmd.get<int>("qualified_quality_phred"));
     opt.qualfilter.unqualifiedPercentLimit = cmd.get<int>("unqualified_percent_limit");
     opt.qualfilter.nBaseLimit = cmd.get<int>("n_base_limit");
 
