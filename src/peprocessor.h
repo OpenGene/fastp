@@ -10,6 +10,8 @@
 #include <mutex>
 #include <thread>
 #include "options.h"
+#include "threadconfig.h"
+#include "filter.h"
 
 
 using namespace std;
@@ -41,20 +43,28 @@ public:
     bool process();
 
 private:
-    bool processPairEnd(ReadPairPack* pack);
+    bool processPairEnd(ReadPairPack* pack, ThreadConfig* config);
     bool processRead(Read* r, ReadPair* originalRead, bool reversed);
     void initPackRepository();
     void destroyPackRepository();
     void producePack(ReadPairPack* pack);
-    void consumePack();
+    void consumePack(ThreadConfig* config);
     void producerTask();
-    void consumerTask();
+    void consumerTask(ThreadConfig* config);
+    void initConfig(ThreadConfig* config);
+    void initOutput();
+    void closeOutput();
 
 private:
     ReadPairRepository mRepo;
     bool mProduceFinished;
     std::mutex mOutputMtx;
     Options* mOptions;
+    Filter* mFilter;
+    gzFile mZipFile1;
+    gzFile mZipFile2;
+    ofstream* mOutStream1;
+    ofstream* mOutStream2;
 };
 
 

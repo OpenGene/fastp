@@ -10,20 +10,90 @@
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
     mProduceFinished = false;
+    mFilter = new Filter(opt);
+    mOutStream1 = NULL;
+    mZipFile1 = NULL;
+    mOutStream2 = NULL;
+    mZipFile2 = NULL;
 }
 
 PairEndProcessor::~PairEndProcessor() {
 }
 
+void PairEndProcessor::initOutput() {
+    if(mOptions->out1.empty() || mOptions->out2.empty())
+        return;
+    if (FastqReader::isZipFastq(mOptions->out1)){
+        mZipFile1 = gzopen(mOptions->out1.c_str(), "w");
+        gzsetparams(mZipFile1, mOptions->compression, Z_DEFAULT_STRATEGY);
+        gzbuffer(mZipFile1, 1024*1024);
+        mZipFile2 = gzopen(mOptions->out2.c_str(), "w");
+        gzsetparams(mZipFile2, mOptions->compression, Z_DEFAULT_STRATEGY);
+        gzbuffer(mZipFile2, 1024*1024);
+    }
+    else {
+        mOutStream1 = new ofstream();
+        mOutStream1->open(mOptions->out1.c_str(), ifstream::out);
+        mOutStream2 = new ofstream();
+        mOutStream2->open(mOptions->out2.c_str(), ifstream::out);
+    }
+}
+
+void PairEndProcessor::closeOutput() {
+    if (mZipFile1){
+        gzflush(mZipFile1, Z_FINISH);
+        gzclose(mZipFile1);
+        mZipFile1 = NULL;
+    }
+    if (mZipFile2){
+        gzflush(mZipFile2, Z_FINISH);
+        gzclose(mZipFile2);
+        mZipFile2 = NULL;
+    }
+    if (mOutStream1) {
+        if (mOutStream1->is_open()){
+            mOutStream1->flush();
+            mOutStream1->close();
+        }
+        delete mOutStream1;
+    }
+    if (mOutStream2) {
+        if (mOutStream2->is_open()){
+            mOutStream2->flush();
+            mOutStream2->close();
+        }
+        delete mOutStream2;
+    }
+}
+
+void PairEndProcessor::initConfig(ThreadConfig* config) {
+    if(mOptions->out1.empty())
+        return;
+    if(mOutStream1 != NULL && mOutStream2 != NULL) {
+        config->initWriter(mOutStream1, mOutStream2);
+    } else if(mZipFile1 != NULL && mZipFile2 != NULL) {
+        config->initWriter(mZipFile1, mZipFile2);
+    }
+}
+
 
 bool PairEndProcessor::process(){
+    initOutput();
 
     initPackRepository();
     std::thread producer(std::bind(&PairEndProcessor::producerTask, this));
 
+    //TODO: get the correct cycles
+    int cycle = 151;
+    ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
+    for(int t=0; t<mOptions->thread; t++){
+        configs[t] = new ThreadConfig(mOptions, cycle, true);
+        initConfig(configs[t]);
+    }
+
     std::thread** threads = new thread*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        threads[t] = new std::thread(std::bind(&PairEndProcessor::consumerTask, this));
+        threads[t] = new std::thread(std::bind(&PairEndProcessor::consumerTask, this, configs[t]));
     }
 
     producer.join();
@@ -31,22 +101,103 @@ bool PairEndProcessor::process(){
         threads[t]->join();
     }
 
+    // merge stats
+    vector<Stats*> preStats1;
+    vector<Stats*> postStats1;
+    vector<Stats*> preStats2;
+    vector<Stats*> postStats2;
+    for(int t=0; t<mOptions->thread; t++){
+        preStats1.push_back(configs[t]->getPreStats1());
+        postStats1.push_back(configs[t]->getPostStats1());
+        preStats2.push_back(configs[t]->getPreStats2());
+        postStats2.push_back(configs[t]->getPostStats2());
+    }
+    Stats* finalPreStats1 = Stats::merge(preStats1);
+    Stats* finalPostStats1 = Stats::merge(postStats1);
+    Stats* finalPreStats2 = Stats::merge(preStats2);
+    Stats* finalPostStats2 = Stats::merge(postStats2);
+
+    cout << "pre filtering stats1:"<<endl;
+    finalPreStats1->print();
+    cout << endl;
+    cout << "post filtering stats1:"<<endl;
+    finalPostStats1->print();
+    cout << endl;
+    cout << "pre filtering stats2:"<<endl;
+    finalPreStats2->print();
+    cout << endl;
+    cout << "post filtering stats2:"<<endl;
+    finalPostStats2->print();
+
+    // clean up
     for(int t=0; t<mOptions->thread; t++){
         delete threads[t];
         threads[t] = NULL;
+        delete configs[t];
+        configs[t] = NULL;
     }
+
+    delete finalPreStats1;
+    delete finalPostStats1;
+    delete finalPreStats2;
+    delete finalPostStats2;
+
+    delete threads;
+    delete configs;
+
+    closeOutput();
 
     return true;
 }
 
-bool PairEndProcessor::processPairEnd(ReadPairPack* pack){
+bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
+    string outstr1;
+    string outstr2;
     for(int p=0;p<pack->count;p++){
         ReadPair* pair = pack->data[p];
-        Read* r1 = pair->mLeft;
-        Read* r2 = pair->mRight;
+        Read* or1 = pair->mLeft;
+        Read* or2 = pair->mRight;
+
+        int lowQualNum1 = 0;
+        int nBaseNum1 = 0;
+        int lowQualNum2 = 0;
+        int nBaseNum2 = 0;
+
+        // stats the original read before trimming
+        config->getPreStats1()->statRead(or1, lowQualNum1, nBaseNum1, mOptions->qualfilter.qualifiedQual);
+        config->getPreStats2()->statRead(or2, lowQualNum2, nBaseNum2, mOptions->qualfilter.qualifiedQual);
+
+        // trim in head and tail, and cut adapters
+        Read* r1 = mFilter->trimAndCutAdapter(or1);
+        Read* r2 = mFilter->trimAndCutAdapter(or2);
+
+        if( r1 != NULL && mFilter->passFilter(r1, lowQualNum1, nBaseNum1) 
+            && r2 != NULL && mFilter->passFilter(r2, lowQualNum2, nBaseNum2) ) {
+            
+            outstr1 += r1->toString();
+            outstr2 += r2->toString();
+
+            // stats the read after filtering
+            config->getPostStats1()->statRead(r1, lowQualNum1, nBaseNum1, mOptions->qualfilter.qualifiedQual);
+            config->getPostStats2()->statRead(r2, lowQualNum2, nBaseNum2, mOptions->qualfilter.qualifiedQual);
+        }
+
 
         delete pair;
+        // if no trimming applied, r1 should be identical to or1
+        if(r1 != or1 && r1 != NULL)
+            delete r1;
+        // if no trimming applied, r1 should be identical to or1
+        if(r2 != or2 && r2 != NULL)
+            delete r2;
     }
+
+    mOutputMtx.lock();
+    if(!mOptions->out1.empty())
+        config->getWriter1()->writeString(outstr1);
+    if(!mOptions->out2.empty())
+        config->getWriter2()->writeString(outstr2);
+    mOutputMtx.unlock();
 
     delete pack->data;
     delete pack;
@@ -90,7 +241,7 @@ void PairEndProcessor::producePack(ReadPairPack* pack){
     lock.unlock();
 }
 
-void PairEndProcessor::consumePack(){
+void PairEndProcessor::consumePack(ThreadConfig* config){
     ReadPairPack* data;
     std::unique_lock<std::mutex> lock(mRepo.mtx);
     // read buffer is empty, just wait here.
@@ -106,7 +257,7 @@ void PairEndProcessor::consumePack(){
     (mRepo.readPos)++;
     lock.unlock();
 
-    processPairEnd(data);
+    processPairEnd(data, config);
 
 
     if (mRepo.readPos >= PACK_NUM_LIMIT)
@@ -164,7 +315,7 @@ void PairEndProcessor::producerTask()
         delete data;
 }
 
-void PairEndProcessor::consumerTask()
+void PairEndProcessor::consumerTask(ThreadConfig* config)
 {
     while(true) {
         std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
@@ -173,11 +324,11 @@ void PairEndProcessor::consumerTask()
             break;
         }
         if(mProduceFinished){
-            consumePack();
+            consumePack(config);
             lock.unlock();
         } else {
             lock.unlock();
-            consumePack();
+            consumePack(config);
         }
     }
 }

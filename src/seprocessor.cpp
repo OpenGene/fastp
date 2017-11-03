@@ -58,7 +58,6 @@ void SingleEndProcessor::initConfig(ThreadConfig* config) {
 }
 
 bool SingleEndProcessor::process(){
-
     initOutput();
 
     initPackRepository();
