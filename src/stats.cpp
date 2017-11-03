@@ -1,4 +1,5 @@
 #include "stats.h"
+#include <memory.h>
 
 Stats::Stats(int guessedCycles, int bufferMargin){
     mReads = 0;
