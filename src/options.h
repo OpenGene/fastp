@@ -58,6 +58,7 @@ public:
     Options();
     void init();
     bool isPaired();
+    bool validate();
 
 public:
     // file name of read1 input

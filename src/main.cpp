@@ -74,9 +74,7 @@ int main(int argc, char* argv[]){
     }
     command = ss.str();
 
-    check_file_valid(opt.in1);
-    if(opt.in2 != "")
-        check_file_valid(opt.in2);
+    opt.validate();
 
     time_t t1 = time(NULL);
 

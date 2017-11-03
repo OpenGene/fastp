@@ -123,11 +123,11 @@ inline bool is_directory(const  string& path)
 
 inline void check_file_valid(const  string& s) {
     if(!file_exists(s)){
-        cout << "ERROR: file '" << s << "' doesn't exist, quit now" << endl;
+        cerr << "ERROR: file '" << s << "' doesn't exist, quit now" << endl;
         exit(-1);
     }
     if(is_directory(s)){
-        cout << "ERROR: '" << s << "' is a folder, not a file, quit now" << endl;
+        cerr << "ERROR: '" << s << "' is a folder, not a file, quit now" << endl;
         exit(-1);
     }
 }
@@ -181,6 +181,11 @@ inline char num2qual(int num) {
 
     char c = num + 33;
     return c;
+}
+
+inline void error_exit(const string& msg) {
+    cerr << "ERROR: " << msg << endl;
+    exit(-1);
 }
 
 #endif /* UTIL_H */
