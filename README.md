@@ -1,12 +1,12 @@
 # fastp
-This tool is designed to provide fast all-in-one preprocessing for FastQ files, with features:
+This tool is designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance. It has following features:
 * low quality reads filtering (too low quality, or too many N)
-* adapter cutting (adapters will be detected automatically)
-* quality control with HTML visualization and JSON reports.
-* possible error correction
+* adapter cutting automatically (works paired-end data)
+* quality control with HTML visualization and JSON reports (HTML/JSON being implemented)
+* possible error correction (being implemented )
 * ...
 
-If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
+This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
 
 # usage
 ```shell
