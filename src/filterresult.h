@@ -19,12 +19,18 @@ public:
     void addFilterResult(int result);
     static FilterResult* merge(vector<FilterResult*>& list);
     void print();
+    // for single end
+    void addAdapterTrimmed(string adapter);
+    // for paired end
+    void addAdapterTrimmed(string adapter1, string adapter2);
 
 public:
     Options* mOptions;
     bool mPaired;
 private:
     long mFilterReadStats[FILTER_RESULT_TYPES];
+    long mTrimmedAdapterRead;
+    long mTrimmedAdapterBases;
 };
 
 #endif

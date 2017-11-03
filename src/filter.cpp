@@ -1,6 +1,7 @@
 #include "processor.h"
 #include "peprocessor.h"
 #include "seprocessor.h"
+#include "overlapanalysis.h"
 
 Filter::Filter(Options* opt){
     mOptions = opt;

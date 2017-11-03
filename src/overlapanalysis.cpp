@@ -7,6 +7,10 @@ OverlapAnalysis::OverlapAnalysis(){
 OverlapAnalysis::~OverlapAnalysis(){
 }
 
+OverlapResult OverlapAnalysis::analyze(Read* r1, Read* r2) {
+    return analyze(r1->mSeq, r2->mSeq);
+}
+
 // ported from the python code of AfterQC
 OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2) {
     Sequence rcr2 = ~r2;

@@ -4,6 +4,8 @@
 FilterResult::FilterResult(Options* opt, bool paired){
     mOptions = opt;
     mPaired = paired;
+    mTrimmedAdapterRead = 0;
+    mTrimmedAdapterBases = 0;
     for(int i=0; i<FILTER_RESULT_TYPES; i++) {
         mFilterReadStats[i] = 0;
     }
@@ -30,8 +32,20 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
         for(int j=0; j<FILTER_RESULT_TYPES; j++) {
             target[j] += current[j];
         }
+        result->mTrimmedAdapterRead += list[i]->mTrimmedAdapterRead;
+        result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
     }
     return result;
+}
+
+void FilterResult::addAdapterTrimmed(string adapter) {
+    mTrimmedAdapterRead++;
+    mTrimmedAdapterBases += adapter.length();
+}
+
+void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
+    mTrimmedAdapterRead++;
+    mTrimmedAdapterBases += adapter1.length() + adapter2.length();
 }
 
 void FilterResult::print() {
@@ -39,4 +53,6 @@ void FilterResult::print() {
     cout << (mPaired?"Read pairs":"Reads") << " failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
     cout << (mPaired?"Read pairs":"Reads") << " failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
     cout << (mPaired?"Read pairs":"Reads") << " failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
+    cout << (mPaired?"Read pairs":"Reads") << " with adapter trimmed: " << mTrimmedAdapterRead << endl;
+    cout << "Bases" << " trimmed for adapters: " << mTrimmedAdapterBases << endl;
 }
