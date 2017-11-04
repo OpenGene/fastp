@@ -167,7 +167,33 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
 }
 
 int Stats::getCycles() {
+    if(!summarized)
+        summarize();
     return mCycles;
+}
+
+int Stats::getReads() {
+    if(!summarized)
+        summarize();
+    return mReads;
+}
+
+int Stats::getBases() {
+    if(!summarized)
+        summarize();
+    return mBases;
+}
+
+int Stats::getQ20() {
+    if(!summarized)
+        summarize();
+    return mQ20Total;
+}
+
+int Stats::getQ30() {
+    if(!summarized)
+        summarize();
+    return mQ30Total;
 }
 
 void Stats::print() {

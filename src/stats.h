@@ -16,6 +16,10 @@ public:
     Stats(int guessedCycles, int bufferMargin = 1000);
     ~Stats();
     int getCycles();
+    int getReads();
+    int getBases();
+    int getQ20();
+    int getQ30();
     // by default the qualified qual score is Q20 ('5')
     void statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual = '5');
 
@@ -25,7 +29,7 @@ public:
     // a port of JSON report
     void reportJson(ofstream& ofs, string padding);
 
-public:
+private:
     long mReads;
     /* 
     why we use 8 here?
@@ -46,7 +50,6 @@ public:
     map<string, double*> mQualityCurves;
     map<string, double*> mContentCurves;
 
-private:
     int mCycles;
     int mBufLen;
     long mBases;
