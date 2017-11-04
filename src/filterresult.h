@@ -8,6 +8,7 @@
 #include <vector>
 #include "common.h"
 #include "options.h"
+#include <fstream>
 
 using namespace std;
 
@@ -23,6 +24,8 @@ public:
     void addAdapterTrimmed(string adapter);
     // for paired end
     void addAdapterTrimmed(string adapter1, string adapter2);
+    // a port of JSON report
+    void reportJson(ofstream& ofs, string padding);
 
 public:
     Options* mOptions;

@@ -84,6 +84,14 @@ void Stats::summarize() {
         mQ30Total += mQ30Bases[i];
     }
 
+    // quality curve for mean qual
+    double* meanQualCurve = new double[mCycles];
+    memset(meanQualCurve, 0, sizeof(double)*mCycles);
+    for(int c=0; c<mCycles; c++) {
+        meanQualCurve[c] = (double)mCycleTotalQual[c] / (double)mCycleTotalBase[c];
+    }
+    mQualityCurves["mean"] = meanQualCurve;
+
     // quality curves and base content curves for different nucleotides
     char alphabets[4] = {'A', 'T', 'C', 'G'};
     for(int i=0; i<4; i++) {
@@ -95,20 +103,15 @@ void Stats::summarize() {
         double* contentCurve = new double[mCycles];
         memset(contentCurve, 0, sizeof(double)*mCycles);
         for(int c=0; c<mCycles; c++) {
-            qualCurve[c] = (double)mCycleBaseQual[b][c] / (double)mCycleBaseContents[b][c];
+            if(mCycleBaseContents[b][c] == 0)
+                qualCurve[c] = meanQualCurve[c];
+            else
+                qualCurve[c] = (double)mCycleBaseQual[b][c] / (double)mCycleBaseContents[b][c];
             contentCurve[c] = (double)mCycleBaseContents[b][c] / (double)mCycleTotalBase[c];
         }
         mQualityCurves[string(1, base)] = qualCurve;
         mContentCurves[string(1, base)] = contentCurve;
     }
-
-    // quality curve for all bases (mean qual)
-    double* meanQualCurve = new double[mCycles];
-    memset(meanQualCurve, 0, sizeof(double)*mCycles);
-    for(int c=0; c<mCycles; c++) {
-        meanQualCurve[c] = (double)mCycleTotalQual[c] / (double)mCycleTotalBase[c];
-    }
-    mQualityCurves["mean"] = meanQualCurve;
 
     // GC content curve
     double* gcContentCurve = new double[mCycles];
@@ -175,20 +178,46 @@ void Stats::print() {
     cout << "total bases: " << mBases << endl;
     cout << "Q20 bases: " << mQ20Total << "(" << (mQ20Total*100.0)/mBases << "%)" << endl;
     cout << "Q30 bases: " << mQ30Total << "(" << (mQ30Total*100.0)/mBases << "%)" << endl;
-    /*
-    // print mean qual
-    cout << "quality: ";
-    double* qualCurve = mQualityCurves["mean"];
-    for(int i=0; i<mCycles; i++)
-        cout << qualCurve[i] << ", ";
-    cout << endl;
-    // print GC content
-    cout << "GC Content: ";
-    double* gcCurve = mContentCurves["gc"];
-    for(int i=0; i<mCycles; i++)
-        cout << gcCurve[i] << ", ";
-    cout << endl;
-    */
+}
+
+void Stats::reportJson(ofstream& ofs, string padding) {
+    ofs << "{" << endl;
+
+    ofs << padding << "\t" << "\"total_reads\": " << mReads << "," << endl;
+    ofs << padding << "\t" << "\"total_bases\": " << mBases << "," << endl;
+    ofs << padding << "\t" << "\"q20_bases\": " << mQ20Total << "," << endl;
+    ofs << padding << "\t" << "\"q30_bases\": " << mQ30Total << "," << endl;
+    ofs << padding << "\t" << "\"total_cycle\": " << mCycles << "," << endl;
+
+    // quality curves
+    string qualNames[5] = {"A", "T", "C", "G", "mean"};
+    ofs << padding << "\t" << "\"quality_curves\": {" << endl;
+    for(int i=0 ;i<5; i++) {
+        string name=qualNames[i];
+        double* curve = mQualityCurves[name];
+        ofs << padding << "\t\t" << "\"" << name << "\":[";
+        for(int c = 0; c<mCycles; c++) {
+            ofs << curve[c] << ",";
+        }
+        ofs << "]," << endl; 
+    }
+    ofs << padding << "\t" << "}," << endl;
+
+    // content curves
+    string contentNames[5] = {"A", "T", "C", "G", "gc"};
+    ofs << padding << "\t" << "\"content_curves\": {" << endl;
+    for(int i=0 ;i<5; i++) {
+        string name=contentNames[i];
+        double* curve = mContentCurves[name];
+        ofs << padding << "\t\t" << "\"" << name << "\":[";
+        for(int c = 0; c<mCycles; c++) {
+            ofs << curve[c] << ",";
+        }
+        ofs << "]," << endl; 
+    }
+    ofs << padding << "\t" << "}," << endl;
+
+    ofs << padding << "}," << endl;
 }
 
 Stats* Stats::merge(vector<Stats*>& list) {
@@ -221,7 +250,8 @@ Stats* Stats::merge(vector<Stats*>& list) {
         }
     }
 
-    return s;
+    s->summarize();
 
+    return s;
 }
 

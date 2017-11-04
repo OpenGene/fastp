@@ -62,4 +62,6 @@ bool Options::validate() {
 
     if(lengthFilter.requiredLength < 0 )
         error_exit("length requirement (--length_required) should be >0, suggest 20 ~ 100");
+
+    return true;
 }

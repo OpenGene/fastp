@@ -7,6 +7,7 @@
 #include <memory.h>
 #include "util.h"
 #include "adaptertrimmer.h"
+#include "jsonreporter.h"
 
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
@@ -136,6 +137,10 @@ bool PairEndProcessor::process(){
     cout << endl;
     cout << "filter results:"<<endl;
     finalFilterResult->print();
+
+    // make JSON report
+    JsonReporter jr(mOptions);
+    jr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){

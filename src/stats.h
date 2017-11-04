@@ -22,6 +22,8 @@ public:
     static Stats* merge(vector<Stats*>& list);
     void print();
     void summarize();
+    // a port of JSON report
+    void reportJson(ofstream& ofs, string padding);
 
 public:
     long mReads;

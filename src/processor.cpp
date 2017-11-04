@@ -18,4 +18,6 @@ bool Processor::process() {
         SingleEndProcessor p(mOptions);
         p.process();
     }
+
+    return true;
 }

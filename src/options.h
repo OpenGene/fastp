@@ -69,6 +69,10 @@ public:
     string out1;
     // file name of read1 output
     string out2;
+    // json file
+    string jsonFile;
+    // html file
+    string htmlFile;
     // compression level
     int compression;
     // worker thread number

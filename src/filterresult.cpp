@@ -56,3 +56,16 @@ void FilterResult::print() {
     cout << (mPaired?"Read pairs":"Reads") << " with adapter trimmed: " << mTrimmedAdapterRead << endl;
     cout << "Bases" << " trimmed for adapters: " << mTrimmedAdapterBases << endl;
 }
+
+void FilterResult::reportJson(ofstream& ofs, string padding) {
+    ofs << "{" << endl;
+
+    ofs << padding << "\t" << "\"passed_filter_reads\": " << mFilterReadStats[PASS_FILTER] << "," << endl;
+    ofs << padding << "\t" << "\"low_quality_reads\": " << mFilterReadStats[FAIL_QUALITY] << "," << endl;
+    ofs << padding << "\t" << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << "," << endl;
+    ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << "," << endl;
+    ofs << padding << "\t" << "\"adapter_trimmed_reads\": " << mTrimmedAdapterRead << "," << endl;
+    ofs << padding << "\t" << "\"adapter_trimmed_bases\": " << mTrimmedAdapterBases << "," << endl;
+
+    ofs << padding << "}," << endl;
+}

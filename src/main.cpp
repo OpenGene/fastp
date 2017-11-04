@@ -68,6 +68,9 @@ int main(int argc, char* argv[]){
 
     opt.thread = cmd.get<int>("thread");
 
+    opt.jsonFile = cmd.get<string>("json");
+    opt.htmlFile = cmd.get<string>("html");
+
     stringstream ss;
     for(int i=0;i<argc;i++){
         ss << argv[i] << " ";
