@@ -213,7 +213,7 @@ void Stats::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "\"total_bases\": " << mBases << "," << endl;
     ofs << padding << "\t" << "\"q20_bases\": " << mQ20Total << "," << endl;
     ofs << padding << "\t" << "\"q30_bases\": " << mQ30Total << "," << endl;
-    ofs << padding << "\t" << "\"total_cycle\": " << mCycles << "," << endl;
+    ofs << padding << "\t" << "\"total_cycles\": " << mCycles << "," << endl;
 
     // quality curves
     string qualNames[5] = {"A", "T", "C", "G", "mean"};
