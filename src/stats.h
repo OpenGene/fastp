@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <map>
 #include "read.h"
 
 using namespace std;
@@ -36,8 +37,12 @@ public:
     long *mCycleQ30Bases[8];
     long *mCycleQ20Bases[8];
     long *mCycleBaseContents[8];
+    long *mCycleBaseQual[8];
     long *mCycleTotalBase;
     long *mCycleTotalQual;
+
+    map<string, double*> mQualityCurves;
+    map<string, double*> mContentCurves;
 
 private:
     int mCycles;

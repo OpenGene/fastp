@@ -24,6 +24,9 @@ Stats::Stats(int guessedCycles, int bufferMargin){
 
         mCycleBaseContents[i] = new long[mBufLen];
         memset(mCycleBaseContents[i], 0, sizeof(long) * mBufLen);
+
+        mCycleBaseQual[i] = new long[mBufLen];
+        memset(mCycleBaseQual[i], 0, sizeof(long) * mBufLen);
     }
     mCycleTotalBase = new long[mBufLen];
     memset(mCycleTotalBase, 0, sizeof(long)*mBufLen);
@@ -42,10 +45,22 @@ Stats::~Stats() {
 
         delete mCycleBaseContents[i];
         mCycleBaseContents[i] = NULL;
+
+        delete mCycleBaseQual[i];
+        mCycleBaseQual[i] = NULL;
     }
 
     delete mCycleTotalBase;
     delete mCycleTotalQual;
+
+    // delete memory of curves
+    map<string, double*>::iterator iter;
+    for(iter = mQualityCurves.begin(); iter != mQualityCurves.end(); iter++) {
+        delete iter->second;
+    }
+    for(iter = mContentCurves.begin(); iter != mContentCurves.end(); iter++) {
+        delete iter->second;
+    }
 }
 
 void Stats::summarize() {
@@ -68,6 +83,43 @@ void Stats::summarize() {
         mQ20Total += mQ20Bases[i];
         mQ30Total += mQ30Bases[i];
     }
+
+    // quality curves and base content curves for different nucleotides
+    char alphabets[4] = {'A', 'T', 'C', 'G'};
+    for(int i=0; i<4; i++) {
+        char base = alphabets[i];
+        // get last 3 bits
+        char b = base & 0x07;
+        double* qualCurve = new double[mCycles];
+        memset(qualCurve, 0, sizeof(double)*mCycles);
+        double* contentCurve = new double[mCycles];
+        memset(contentCurve, 0, sizeof(double)*mCycles);
+        for(int c=0; c<mCycles; c++) {
+            qualCurve[c] = (double)mCycleBaseQual[b][c] / (double)mCycleBaseContents[b][c];
+            contentCurve[c] = (double)mCycleBaseContents[b][c] / (double)mCycleTotalBase[c];
+        }
+        mQualityCurves[string(1, base)] = qualCurve;
+        mContentCurves[string(1, base)] = contentCurve;
+    }
+
+    // quality curve for all bases (mean qual)
+    double* meanQualCurve = new double[mCycles];
+    memset(meanQualCurve, 0, sizeof(double)*mCycles);
+    for(int c=0; c<mCycles; c++) {
+        meanQualCurve[c] = (double)mCycleTotalQual[c] / (double)mCycleTotalBase[c];
+    }
+    mQualityCurves["mean"] = meanQualCurve;
+
+    // GC content curve
+    double* gcContentCurve = new double[mCycles];
+    memset(gcContentCurve, 0, sizeof(double)*mCycles);
+    char gBase = 'G' & 0x07;
+    char cBase = 'C' & 0x07;
+    for(int c=0; c<mCycles; c++) {
+        gcContentCurve[c] = (double)(mCycleBaseContents[gBase][c] + mCycleBaseContents[cBase][c]) / (double)mCycleTotalBase[c];
+    }
+    mContentCurves["gc"] = gcContentCurve;
+
     summarized = true;
 }
 
@@ -98,12 +150,13 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
         }
 
         mCycleBaseContents[b][i]++;
+        mCycleBaseQual[b][i] += (qual-33);
 
         if(qual < qualifiedQual)
             lowQualNum ++;
 
         mCycleTotalBase[i]++;
-        mCycleTotalQual[i]+=qual;
+        mCycleTotalQual[i] += (qual-33);
 
     }
 
@@ -122,6 +175,20 @@ void Stats::print() {
     cout << "total bases: " << mBases << endl;
     cout << "Q20 bases: " << mQ20Total << "(" << (mQ20Total*100.0)/mBases << "%)" << endl;
     cout << "Q30 bases: " << mQ30Total << "(" << (mQ30Total*100.0)/mBases << "%)" << endl;
+    /*
+    // print mean qual
+    cout << "quality: ";
+    double* qualCurve = mQualityCurves["mean"];
+    for(int i=0; i<mCycles; i++)
+        cout << qualCurve[i] << ", ";
+    cout << endl;
+    // print GC content
+    cout << "GC Content: ";
+    double* gcCurve = mContentCurves["gc"];
+    for(int i=0; i<mCycles; i++)
+        cout << gcCurve[i] << ", ";
+    cout << endl;
+    */
 }
 
 Stats* Stats::merge(vector<Stats*>& list) {
@@ -143,6 +210,7 @@ Stats* Stats::merge(vector<Stats*>& list) {
                 s->mCycleQ30Bases[i][j] += list[t]->mCycleQ30Bases[i][j];
                 s->mCycleQ20Bases[i][j] += list[t]->mCycleQ20Bases[i][j];
                 s->mCycleBaseContents[i][j] += list[t]->mCycleBaseContents[i][j];
+                s->mCycleBaseQual[i][j] += list[t]->mCycleBaseQual[i][j];
             }
         }
 
