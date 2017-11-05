@@ -17,7 +17,11 @@ FilterResult::~FilterResult() {
 void FilterResult::addFilterResult(int result) {
     if(result < PASS_FILTER || result >= FILTER_RESULT_TYPES)
         return ;
-    mFilterReadStats[result]++;
+    // for paired end data, both reads are filtered together
+    if(mPaired)
+        mFilterReadStats[result] += 2;
+    else
+        mFilterReadStats[result]++;
 }
 
 FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
@@ -44,7 +48,8 @@ void FilterResult::addAdapterTrimmed(string adapter) {
 }
 
 void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
-    mTrimmedAdapterRead++;
+    // paired
+    mTrimmedAdapterRead += 2;
     mTrimmedAdapterBases += adapter1.length() + adapter2.length();
 }
 
