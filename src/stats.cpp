@@ -223,9 +223,16 @@ void Stats::reportJson(ofstream& ofs, string padding) {
         double* curve = mQualityCurves[name];
         ofs << padding << "\t\t" << "\"" << name << "\":[";
         for(int c = 0; c<mCycles; c++) {
-            ofs << curve[c] << ",";
+            ofs << curve[c];
+            // not the end
+            if(c != mCycles - 1)
+                ofs << ",";
         }
-        ofs << "]," << endl; 
+        ofs << "]";
+        // not the end;
+        if(i != 5-1)
+            ofs << ",";
+        ofs << endl; 
     }
     ofs << padding << "\t" << "}," << endl;
 
@@ -237,11 +244,18 @@ void Stats::reportJson(ofstream& ofs, string padding) {
         double* curve = mContentCurves[name];
         ofs << padding << "\t\t" << "\"" << name << "\":[";
         for(int c = 0; c<mCycles; c++) {
-            ofs << curve[c] << ",";
+            ofs << curve[c];
+            // not the end
+            if(c != mCycles - 1)
+                ofs << ",";
         }
-        ofs << "]," << endl; 
+        ofs << "]";
+        // not the end;
+        if(i != 5-1)
+            ofs << ",";
+        ofs << endl; 
     }
-    ofs << padding << "\t" << "}," << endl;
+    ofs << padding << "\t" << "}" << endl;
 
     ofs << padding << "}," << endl;
 }
