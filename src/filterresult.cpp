@@ -74,3 +74,6 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
 
     ofs << padding << "}," << endl;
 }
+
+void FilterResult::reportHtml(ofstream& ofs) {
+}

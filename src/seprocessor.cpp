@@ -7,6 +7,7 @@
 #include <memory.h>
 #include "util.h"
 #include "jsonreporter.h"
+#include "htmlreporter.h"
 
 SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOptions = opt;
@@ -114,6 +115,10 @@ bool SingleEndProcessor::process(){
     // make JSON report
     JsonReporter jr(mOptions);
     jr.report(finalFilterResult, finalPreStats, finalPostStats);
+
+    // make HTML report
+    HtmlReporter hr(mOptions);
+    hr.report(finalFilterResult, finalPreStats, finalPostStats);
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){

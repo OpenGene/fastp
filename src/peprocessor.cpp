@@ -8,6 +8,7 @@
 #include "util.h"
 #include "adaptertrimmer.h"
 #include "jsonreporter.h"
+#include "htmlreporter.h"
 
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
@@ -141,6 +142,10 @@ bool PairEndProcessor::process(){
     // make JSON report
     JsonReporter jr(mOptions);
     jr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
+
+    // make HTML report
+    HtmlReporter hr(mOptions);
+    hr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){

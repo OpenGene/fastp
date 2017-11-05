@@ -28,6 +28,8 @@ public:
     void summarize();
     // a port of JSON report
     void reportJson(ofstream& ofs, string padding);
+    // a port of HTML report
+    void reportHtml(ofstream& ofs);
 
 private:
     long mReads;

@@ -26,6 +26,8 @@ public:
     void addAdapterTrimmed(string adapter1, string adapter2);
     // a port of JSON report
     void reportJson(ofstream& ofs, string padding);
+    // a port of HTML report
+    void reportHtml(ofstream& ofs);
 
 public:
     Options* mOptions;

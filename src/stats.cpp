@@ -295,3 +295,7 @@ Stats* Stats::merge(vector<Stats*>& list) {
     return s;
 }
 
+void Stats::reportHtml(ofstream& ofs) {
+
+}
+
