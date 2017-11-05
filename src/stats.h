@@ -29,7 +29,13 @@ public:
     // a port of JSON report
     void reportJson(ofstream& ofs, string padding);
     // a port of HTML report
-    void reportHtml(ofstream& ofs);
+    void reportHtml(ofstream& ofs, string filteringType, string readName);
+    void reportHtmlQuality(ofstream& ofs, string filteringType, string readName);
+    void reportHtmlContents(ofstream& ofs, string filteringType, string readName);
+
+private:
+    string list2string(double* list, int size);
+    string list2string(int* list, int size);
 
 private:
     long mReads;

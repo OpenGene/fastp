@@ -1,5 +1,7 @@
 #include "stats.h"
 #include <memory.h>
+#include <sstream>
+#include "util.h"
 
 Stats::Stats(int guessedCycles, int bufferMargin){
     mReads = 0;
@@ -260,6 +262,109 @@ void Stats::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "}," << endl;
 }
 
+string Stats::list2string(double* list, int size) {
+    stringstream ss;
+    for(int i=0; i<size; i++) {
+        ss << list[i];
+        if(i < size-1)
+            ss << ",";
+    }
+    return ss.str();
+}
+
+string Stats::list2string(int* list, int size) {
+    stringstream ss;
+    for(int i=0; i<size; i++) {
+        ss << list[i];
+        if(i < size-1)
+            ss << ",";
+    }
+    return ss.str();
+}
+
+void Stats::reportHtml(ofstream& ofs, string filteringType, string readName) {
+    reportHtmlQuality(ofs, filteringType, readName);
+    reportHtmlContents(ofs, filteringType, readName);
+}
+
+void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readName) {
+
+    // quality
+    string subsection = filteringType + ": " + readName + ": quality";
+    string divName = replace(subsection, " ", "_");
+    string title = "";
+
+    ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
+    ofs << "<div class='figure' id='" + divName + "'></div>\n";
+
+    string alphabets[5] = {"A", "T", "C", "G", "mean"};
+    string colors[5] = {"rgba(255,0,0,0.5)", "rgba(128,0,128,0.5)", "rgba(0,255,0,0.5)", "rgba(0,0,255,0.5)", "rgba(20,20,20,1.0)"};
+    ofs << "\n<script type=\"text/javascript\">" << endl;
+    string json_str = "var data=[";
+
+    int *x = new int[mCycles];
+    for(int i=0; i<mCycles; i++)
+        x[i] = i+1;
+    // four bases
+    for (int b = 0; b<5; b++) {
+        string base = alphabets[b];
+        json_str += "{";
+        json_str += "x:[" + list2string(x, mCycles) + "],";
+        json_str += "y:[" + list2string(mQualityCurves[base], mCycles) + "],";
+        json_str += "name: '" + base + "',";
+        json_str += "mode:'lines',";
+        json_str += "line:{color:'" + colors[b] + "', width:1}\n";
+        json_str += "},";
+    }
+    json_str += "];\n";
+    json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'}, yaxis:{title:'quality'}};\n";
+    json_str += "Plotly.newPlot('" + divName + "', data, layout);\n";
+
+    ofs << json_str;
+    ofs << "</script>" << endl;
+
+    delete x;
+}
+
+void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readName) {
+
+    // content
+    string subsection = filteringType + ": " + readName + ": base contents";
+    string divName = replace(subsection, " ", "_");
+    string title = "";
+
+    ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
+    ofs << "<div class='figure' id='" + divName + "'></div>\n";
+
+    string alphabets[5] = {"A", "T", "C", "G", "gc"};
+    string colors[5] = {"rgba(255,0,0,0.5)", "rgba(128,0,128,0.5)", "rgba(0,255,0,0.5)", "rgba(0,0,255,0.5)", "rgba(20,20,20,1.0)"};
+    ofs << "\n<script type=\"text/javascript\">" << endl;
+    string json_str = "var data=[";
+
+    int *x = new int[mCycles];
+    for(int i=0; i<mCycles; i++)
+        x[i] = i+1;
+    // four bases
+    for (int b = 0; b<5; b++) {
+        string base = alphabets[b];
+        json_str += "{";
+        json_str += "x:[" + list2string(x, mCycles) + "],";
+        json_str += "y:[" + list2string(mContentCurves[base], mCycles) + "],";
+        json_str += "name: '" + base + "',";
+        json_str += "mode:'lines',";
+        json_str += "line:{color:'" + colors[b] + "', width:1}\n";
+        json_str += "},";
+    }
+    json_str += "];\n";
+    json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'}, yaxis:{title:'base content ratios'}};\n";
+    json_str += "Plotly.newPlot('" + divName + "', data, layout);\n";
+
+    ofs << json_str;
+    ofs << "</script>" << endl;
+
+    delete x;
+}
+
 Stats* Stats::merge(vector<Stats*>& list) {
     //get the most long cycles
     int cycles = 0;
@@ -293,9 +398,5 @@ Stats* Stats::merge(vector<Stats*>& list) {
     s->summarize();
 
     return s;
-}
-
-void Stats::reportHtml(ofstream& ofs) {
-
 }
 
