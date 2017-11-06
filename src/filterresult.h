@@ -27,7 +27,7 @@ public:
     // a port of JSON report
     void reportJson(ofstream& ofs, string padding);
     // a port of HTML report
-    void reportHtml(ofstream& ofs);
+    void reportHtml(ofstream& ofs, long totalReads);
 
 public:
     Options* mOptions;

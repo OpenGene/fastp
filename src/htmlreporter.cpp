@@ -69,12 +69,13 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
 
     string sequencingInfo  = mOptions->isPaired()?"paired end":"single end";
     if(mOptions->isPaired()) {
-        sequencingInfo += " (read1: " + to_string(preStats1->getCycles()) + ", read2: " + to_string(preStats2->getCycles()) + ")";
+        sequencingInfo += " (" + to_string(preStats1->getCycles()) + " cycles + " + to_string(preStats2->getCycles()) + " cycles)";
     } else {
-        sequencingInfo += " (read:" + to_string(preStats1->getCycles()) + ")";
+        sequencingInfo += " (" + to_string(preStats1->getCycles()) + " cycles)";
     }
 
-
+    ofs << endl;
+    ofs << "<h1 style='text-align:left;'><a href='https://github.com/OpenGene/fastp' target='_blank' style='color:#663355;text-decoration:none;'>fastp report</a>"<<endl;
     ofs << "<div class='section_div'>\n";
     ofs << "<div class='section_title'><a name='summary'>Summary</a></div>\n";
 
@@ -100,11 +101,12 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     outputRow(ofs, "Q30 bases:", formatNumber(post_q30_bases) + " (" + to_string((double)post_q30_bases * 100.0 / (double)post_total_bases) + "%)");
     ofs << "</table>\n";
 
-    ofs << "</div>\n";
-
     if(result) {
-        result -> reportHtml(ofs);
+        ofs << "<div class='subsection_title'>Filtering result</div>\n";
+        result -> reportHtml(ofs, pre_total_reads);
     }
+
+    ofs << "</div>\n";
 }
 
 void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
@@ -157,8 +159,8 @@ void HtmlReporter::printHeader(ofstream& ofs){
 void HtmlReporter::printCSS(ofstream& ofs){
     ofs << "<style type=\"text/css\">" << endl;
     ofs << "td {border:1px solid #dddddd;padding:5px;font-size:12px;}" << endl;
-    ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:500px}" << endl;
-    ofs << ".col1 {width:150px; font-weight:bold;}" << endl;
+    ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}" << endl;
+    ofs << ".col1 {width:200px; font-weight:bold;}" << endl;
     ofs << "img {padding:30px;}" << endl;
     ofs << "#menu {font-family:Consolas, 'Liberation Mono', Menlo, Courier, monospace;}" << endl;
     ofs << "#menu a {color:#0366d6; font-size:18px;font-weight:600;line-height:28px;text-decoration:none;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'}" << endl;
@@ -169,7 +171,7 @@ void HtmlReporter::printCSS(ofstream& ofs){
     ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}" << endl;
     ofs << ".section_title {color:#ffffff;font-size:20px;padding:5px;text-align:left;background:#663355; margin-top:10px;}" << endl;
     ofs << ".subsection_title {font-size:16px;padding:5px;margin-top:10px;text-align:left;color:#663355}" << endl;
-    ofs << "#container {text-align:center;padding:1px;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << endl;
+    ofs << "#container {text-align:center;padding:3px 3px 3px 10px;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << endl;
     ofs << ".menu_item {text-align:left;padding-top:5px;font-size:18px;}" << endl;
     ofs << ".highlight {text-align:left;padding-top:30px;padding-bottom:30px;font-size:20px;line-height:35px;}" << endl;
     ofs << "#helper {text-align:left;border:1px dotted #fafafa;color:#777777;font-size:12px;}" << endl;

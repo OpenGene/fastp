@@ -123,7 +123,7 @@ void Stats::summarize() {
     for(int c=0; c<mCycles; c++) {
         gcContentCurve[c] = (double)(mCycleBaseContents[gBase][c] + mCycleBaseContents[cBase][c]) / (double)mCycleTotalBase[c];
     }
-    mContentCurves["gc"] = gcContentCurve;
+    mContentCurves["GC"] = gcContentCurve;
 
     summarized = true;
 }
@@ -239,7 +239,7 @@ void Stats::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "}," << endl;
 
     // content curves
-    string contentNames[5] = {"A", "T", "C", "G", "gc"};
+    string contentNames[5] = {"A", "T", "C", "G", "GC"};
     ofs << padding << "\t" << "\"content_curves\": {" << endl;
     for(int i=0 ;i<5; i++) {
         string name=contentNames[i];
@@ -272,7 +272,7 @@ string Stats::list2string(double* list, int size) {
     return ss.str();
 }
 
-string Stats::list2string(int* list, int size) {
+string Stats::list2string(long* list, int size) {
     stringstream ss;
     for(int i=0; i<size; i++) {
         ss << list[i];
@@ -302,7 +302,7 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
     ofs << "\n<script type=\"text/javascript\">" << endl;
     string json_str = "var data=[";
 
-    int *x = new int[mCycles];
+    long *x = new long[mCycles];
     for(int i=0; i<mCycles; i++)
         x[i] = i+1;
     // four bases
@@ -336,12 +336,12 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
     ofs << "<div class='figure' id='" + divName + "'></div>\n";
 
-    string alphabets[5] = {"A", "T", "C", "G", "gc"};
+    string alphabets[5] = {"A", "T", "C", "G", "GC"};
     string colors[5] = {"rgba(255,0,0,0.5)", "rgba(128,0,128,0.5)", "rgba(0,255,0,0.5)", "rgba(0,0,255,0.5)", "rgba(20,20,20,1.0)"};
     ofs << "\n<script type=\"text/javascript\">" << endl;
     string json_str = "var data=[";
 
-    int *x = new int[mCycles];
+    long *x = new long[mCycles];
     for(int i=0; i<mCycles; i++)
         x[i] = i+1;
     // four bases

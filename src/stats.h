@@ -33,9 +33,9 @@ public:
     void reportHtmlQuality(ofstream& ofs, string filteringType, string readName);
     void reportHtmlContents(ofstream& ofs, string filteringType, string readName);
 
-private:
-    string list2string(double* list, int size);
-    string list2string(int* list, int size);
+public:
+    static string list2string(double* list, int size);
+    static string list2string(long* list, int size);
 
 private:
     long mReads;

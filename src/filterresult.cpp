@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include "filterresult.h"
+#include "stats.h"
+#include "htmlreporter.h"
 
 FilterResult::FilterResult(Options* opt, bool paired){
     mOptions = opt;
@@ -75,5 +77,33 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "}," << endl;
 }
 
-void FilterResult::reportHtml(ofstream& ofs) {
+/*void FilterResult::reportHtml(ofstream& ofs, long totalReads) {
+    const int types = 4;
+    const string divName = "filtering_result";
+    string labels[4] = {"good_reads", "low_quality_reads", "too_many_N_reads", "too_short_reads"};
+    long counts[4] = {mFilterReadStats[PASS_FILTER], mFilterReadStats[FAIL_QUALITY], mFilterReadStats[FAIL_N_BASE], mFilterReadStats[FAIL_LENGTH]};
+    
+    string json_str = "var data=[";
+    json_str += "{values:[" + Stats::list2string(counts, types) + "],";
+    json_str += "labels:['good_reads', 'low_quality_reads', 'too_many_N_reads', 'too_short_reads'],";
+    json_str += "textinfo: 'none',";
+    json_str += "type:'pie'}];\n";
+    string title = "Filtering statistics of sampled " + to_string(totalReads) + " reads";
+    json_str += "var layout={title:'" + title + "', width:800, height:400};\n";
+    json_str += "Plotly.newPlot('" + divName + "', data, layout);\n";
+
+    ofs << "<div class='figure' id='" + divName + "'></div>\n";
+    ofs << "\n<script type=\"text/javascript\">" << endl;
+    ofs << json_str;
+    ofs << "</script>" << endl;
+} */
+
+void FilterResult::reportHtml(ofstream& ofs, long totalReads) {
+    double total = (double)totalReads;
+    ofs << "<table class='summary_table'>\n";
+    HtmlReporter::outputRow(ofs, "reads passed filters:", HtmlReporter::formatNumber(mFilterReadStats[PASS_FILTER]) + " (" + to_string(mFilterReadStats[PASS_FILTER] * 100.0 / total) + "%)");
+    HtmlReporter::outputRow(ofs, "reads with low quality:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_QUALITY]) + " (" + to_string(mFilterReadStats[FAIL_QUALITY] * 100.0 / total) + "%)");
+    HtmlReporter::outputRow(ofs, "reads with too many N:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_N_BASE]) + " (" + to_string(mFilterReadStats[FAIL_N_BASE] * 100.0 / total) + "%)");
+    HtmlReporter::outputRow(ofs, "reads too short:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_LENGTH]) + " (" + to_string(mFilterReadStats[FAIL_LENGTH] * 100.0 / total) + "%)");
+    ofs << "</table>\n";
 }

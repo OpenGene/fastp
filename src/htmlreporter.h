@@ -18,11 +18,11 @@ public:
     ~HtmlReporter();
     void report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2 = NULL, Stats* postStats2 = NULL);
 
+    static void outputRow(ofstream& ofs, string key, long value);
+    static void outputRow(ofstream& ofs, string key, string value);
+    static string formatNumber(long number);
 private:
     const string getCurrentSystemTime();
-    void outputRow(ofstream& ofs, string key, long value);
-    void outputRow(ofstream& ofs, string key, string value);
-    string formatNumber(long number);
     void printHeader(ofstream& ofs);
     void printCSS(ofstream& ofs);
     void printJS(ofstream& ofs);
