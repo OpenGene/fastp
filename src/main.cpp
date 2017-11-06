@@ -85,6 +85,9 @@ int main(int argc, char* argv[]){
     p.process();
     
     time_t t2 = time(NULL);
-    printf("\n%s\n", command.c_str());
-    printf("fastp v%s, time used: %ld seconds\n", FASTP_VER, (t2-t1));
+
+    cout << endl << "JSON report: " << opt.jsonFile << endl;
+    cout << "HTML report: " << opt.htmlFile << endl;
+    cout << endl << command << endl;
+    cout << "fastp v" << FASTP_VER << ", time used: " << (t2)-t1 << " seconds" << endl;
 }

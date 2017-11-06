@@ -102,14 +102,14 @@ bool SingleEndProcessor::process(){
         postStats.push_back(configs[t]->getPostStats1());
     }
 
-    cout << "pre filtering stats:"<<endl;
+    cout << "Read1 before filtering:"<<endl;
     finalPreStats->print();
     cout << endl;
-    cout << "post filtering stats:"<<endl;
+    cout << "Read1 after filtering:"<<endl;
     finalPostStats->print();
 
     cout << endl;
-    cout << "filter results:"<<endl;
+    cout << "Filtering result:"<<endl;
     finalFilterResult->print();
 
     // make JSON report

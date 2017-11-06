@@ -40,28 +40,64 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
         }
         result->mTrimmedAdapterRead += list[i]->mTrimmedAdapterRead;
         result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
+
+        // merge adapter stats
+        map<string, long>::iterator iter;
+        for(iter = list[i]->mAdapter1.begin(); iter != list[i]->mAdapter1.end(); iter++) {
+            if(result->mAdapter1.count(iter->first) > 0)
+                result->mAdapter1[iter->first] += iter->second;
+            else
+                result->mAdapter1[iter->first] = iter->second;
+        }
+        for(iter = list[i]->mAdapter2.begin(); iter != list[i]->mAdapter2.end(); iter++) {
+            if(result->mAdapter2.count(iter->first) > 0)
+                result->mAdapter2[iter->first] += iter->second;
+            else
+                result->mAdapter2[iter->first] = iter->second;
+        }
     }
+
+    // sort adapters list by adapter length from short to long
+
     return result;
 }
 
 void FilterResult::addAdapterTrimmed(string adapter) {
+    if(adapter.empty())
+        return;
     mTrimmedAdapterRead++;
     mTrimmedAdapterBases += adapter.length();
+    if(mAdapter1.count(adapter) >0 )
+        mAdapter1[adapter]++;
+    else
+        mAdapter1[adapter] = 1;
 }
 
 void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
     // paired
     mTrimmedAdapterRead += 2;
     mTrimmedAdapterBases += adapter1.length() + adapter2.length();
+    if(!adapter1.empty()){
+        if(mAdapter1.count(adapter1) >0 )
+            mAdapter1[adapter1]++;
+        else
+            mAdapter1[adapter1] = 1;
+    }
+    if(!adapter2.empty()) {
+        if(mAdapter2.count(adapter2) >0 )
+            mAdapter2[adapter2]++;
+        else
+            mAdapter2[adapter2] = 1;
+    }
 }
 
 void FilterResult::print() {
-    cout << (mPaired?"Read pairs":"Reads") << " passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
-    cout << (mPaired?"Read pairs":"Reads") << " failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
-    cout << (mPaired?"Read pairs":"Reads") << " failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
-    cout << (mPaired?"Read pairs":"Reads") << " failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
-    cout << (mPaired?"Read pairs":"Reads") << " with adapter trimmed: " << mTrimmedAdapterRead << endl;
-    cout << "Bases" << " trimmed for adapters: " << mTrimmedAdapterBases << endl;
+    cout <<  "reads passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
+    cout <<  "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
+    cout <<  "reads failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
+    cout <<  "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
+    cout <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
+    cout <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
 }
 
 void FilterResult::reportJson(ofstream& ofs, string padding) {
@@ -70,9 +106,61 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "\"passed_filter_reads\": " << mFilterReadStats[PASS_FILTER] << "," << endl;
     ofs << padding << "\t" << "\"low_quality_reads\": " << mFilterReadStats[FAIL_QUALITY] << "," << endl;
     ofs << padding << "\t" << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << "," << endl;
-    ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << "," << endl;
+    ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << endl;
+
+    ofs << padding << "}," << endl;
+}
+
+void FilterResult::outputAdapters(ofstream& ofs, map<string, long, classcomp>& adapterCounts) {
+    map<string, long>::iterator iter;
+
+    long total = 0;
+    for(iter = adapterCounts.begin(); iter!=adapterCounts.end(); iter++) {
+        total += iter->second;
+    }
+
+    if(total == 0)
+        return ;
+
+    const double reportThreshold = 0.01;
+    const double dTotal = (double)total;
+    bool firstItem = true;
+    long reported = 0;
+    for(iter = adapterCounts.begin(); iter!=adapterCounts.end(); iter++) {
+        if(iter->second /dTotal < reportThreshold )
+            continue;
+
+        if(!firstItem)
+            ofs << ", ";
+        else
+            firstItem = false;
+        ofs << "\"" << iter->first << "\":" << iter->second;
+
+        reported += iter->second;
+    }
+
+    long unreported = total - reported;
+
+    if(unreported > 0) {
+        if(!firstItem)
+            ofs << ", ";
+        ofs << "\"" << "others" << "\":" << unreported;
+    }
+}
+
+void FilterResult::reportAdapterJson(ofstream& ofs, string padding) {
+    ofs << "{" << endl;
+
     ofs << padding << "\t" << "\"adapter_trimmed_reads\": " << mTrimmedAdapterRead << "," << endl;
-    ofs << padding << "\t" << "\"adapter_trimmed_bases\": " << mTrimmedAdapterBases << endl;
+    ofs << padding << "\t" << "\"adapter_trimmed_bases\": " << mTrimmedAdapterBases << "," << endl;
+
+    ofs << padding << "\t" << "\"read1_adapter_counts\": " << "{";
+        outputAdapters(ofs, mAdapter1);
+    ofs << "}," << endl;
+
+    ofs << padding << "\t" << "\"read2_adapter_counts\": " << "{";
+        outputAdapters(ofs, mAdapter2);
+    ofs << "}" << endl;
 
     ofs << padding << "}," << endl;
 }

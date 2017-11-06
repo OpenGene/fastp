@@ -123,20 +123,20 @@ bool PairEndProcessor::process(){
     Stats* finalPostStats2 = Stats::merge(postStats2);
     FilterResult* finalFilterResult = FilterResult::merge(filterResults);
 
-    cout << "pre filtering stats1:"<<endl;
+    cout << "Read1 before filtering:"<<endl;
     finalPreStats1->print();
     cout << endl;
-    cout << "post filtering stats1:"<<endl;
+    cout << "Read1 after filtering:"<<endl;
     finalPostStats1->print();
     cout << endl;
-    cout << "pre filtering stats2:"<<endl;
+    cout << "Read2 before filtering:"<<endl;
     finalPreStats2->print();
     cout << endl;
-    cout << "post filtering stats2:"<<endl;
+    cout << "Read2 aftering filtering:"<<endl;
     finalPostStats2->print();
 
     cout << endl;
-    cout << "filter results:"<<endl;
+    cout << "Filtering result:"<<endl;
     finalFilterResult->print();
 
     // make JSON report

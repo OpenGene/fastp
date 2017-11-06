@@ -74,6 +74,11 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         result -> reportJson(ofs, "\t");
     }
 
+    if(result && mOptions->isPaired()) {
+        ofs << "\t" << "\"adapter_cutting\": " ;
+        result -> reportAdapterJson(ofs, "\t");
+    }
+
     if(preStats1) {
         ofs << "\t" << "\"read1_before_filtering\": " ;
         preStats1 -> reportJson(ofs, "\t");
