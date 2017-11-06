@@ -9,6 +9,11 @@ This tool is designed to provide fast all-in-one preprocessing for FastQ files. 
 
 This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
 
+# examples of report
+`fastp` creates reports in both HTML and JSON format.
+* HTML report: http://opengene.org/fastp/fastp.html
+* JSON report: http://opengene.org/fastp/fastp.json
+
 # usage
 ```shell
 shifus-MacBook-Pro:fastp shifu$ ./fastp 
