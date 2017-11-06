@@ -1,4 +1,5 @@
 #include "htmlreporter.h"
+#include <chrono>
 
 extern string command;
 
