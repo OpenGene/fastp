@@ -7,6 +7,16 @@
 
 using namespace std;
 
+class AdapterOptions {
+public:
+    AdapterOptions() {
+        enabled = true;
+    }
+public:
+    // trimming first cycles
+    bool enabled;
+};
+
 class TrimmingOptions {
 public:
     TrimmingOptions() {
@@ -59,6 +69,7 @@ public:
     void init();
     bool isPaired();
     bool validate();
+    bool adapterCuttingEnabled();
 
 public:
     // file name of read1 input
@@ -83,6 +94,8 @@ public:
     QualityFilteringOptions qualfilter;
     // length filtering options
     ReadLengthFilteringOptions lengthFilter;
+    // adapter options
+    AdapterOptions adapter;
 
 };
 

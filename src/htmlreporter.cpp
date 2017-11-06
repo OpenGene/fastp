@@ -107,6 +107,15 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     }
 
     ofs << "</div>\n";
+
+    if(result && mOptions->adapterCuttingEnabled()) {
+        ofs << "<div class='section_div'>\n";
+        ofs << "<div class='section_title'><a name='summary'>Adapters</a></div>\n";
+
+        result->reportAdapterHtml(ofs);
+
+        ofs << "</div>\n";
+    }
 }
 
 void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
@@ -161,6 +170,7 @@ void HtmlReporter::printCSS(ofstream& ofs){
     ofs << "td {border:1px solid #dddddd;padding:5px;font-size:12px;}" << endl;
     ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}" << endl;
     ofs << ".col1 {width:200px; font-weight:bold;}" << endl;
+    ofs << ".adapter_col {width:500px; font-size:10px;}" << endl;
     ofs << "img {padding:30px;}" << endl;
     ofs << "#menu {font-family:Consolas, 'Liberation Mono', Menlo, Courier, monospace;}" << endl;
     ofs << "#menu a {color:#0366d6; font-size:18px;font-weight:600;line-height:28px;text-decoration:none;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'}" << endl;
@@ -175,7 +185,7 @@ void HtmlReporter::printCSS(ofstream& ofs){
     ofs << ".menu_item {text-align:left;padding-top:5px;font-size:18px;}" << endl;
     ofs << ".highlight {text-align:left;padding-top:30px;padding-bottom:30px;font-size:20px;line-height:35px;}" << endl;
     ofs << "#helper {text-align:left;border:1px dotted #fafafa;color:#777777;font-size:12px;}" << endl;
-    ofs << "#footer {text-align:left;padding-left:10px;padding-top:20px;color:#777777;font-size:10px;}" << endl;
+    ofs << "#footer {text-align:left;padding:15px;color:#ffffff;font-size:10px;background:#663355;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << endl;
     ofs << "</style>" << endl;
 }
 
@@ -197,8 +207,9 @@ const string HtmlReporter::getCurrentSystemTime()
 }
 
 void HtmlReporter::printFooter(ofstream& ofs){
-    ofs << "\n<div id='footer'> ";
+    ofs << "\n</div>" << endl;
+    ofs << "<div id='footer'> ";
     ofs << "<p>"<<command<<"</p>";
     ofs << "fastp " << FASTP_VER << ", at " << getCurrentSystemTime() << " </div>";
-    ofs << "</div></body></html>";
+    ofs << "</body></html>";
 }

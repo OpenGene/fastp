@@ -111,7 +111,7 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "}," << endl;
 }
 
-void FilterResult::outputAdapters(ofstream& ofs, map<string, long, classcomp>& adapterCounts) {
+void FilterResult::outputAdaptersJson(ofstream& ofs, map<string, long, classcomp>& adapterCounts) {
     map<string, long>::iterator iter;
 
     long total = 0;
@@ -155,12 +155,17 @@ void FilterResult::reportAdapterJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "\"adapter_trimmed_bases\": " << mTrimmedAdapterBases << "," << endl;
 
     ofs << padding << "\t" << "\"read1_adapter_counts\": " << "{";
-        outputAdapters(ofs, mAdapter1);
-    ofs << "}," << endl;
+        outputAdaptersJson(ofs, mAdapter1);
+    ofs << "}";
+    if(mOptions->isPaired())
+        ofs << ",";
+    ofs << endl;
 
-    ofs << padding << "\t" << "\"read2_adapter_counts\": " << "{";
-        outputAdapters(ofs, mAdapter2);
-    ofs << "}" << endl;
+    if(mOptions->isPaired()) {
+        ofs << padding << "\t" << "\"read2_adapter_counts\": " << "{";
+            outputAdaptersJson(ofs, mAdapter2);
+        ofs << "}" << endl;
+    }
 
     ofs << padding << "}," << endl;
 }
@@ -194,4 +199,51 @@ void FilterResult::reportHtml(ofstream& ofs, long totalReads) {
     HtmlReporter::outputRow(ofs, "reads with too many N:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_N_BASE]) + " (" + to_string(mFilterReadStats[FAIL_N_BASE] * 100.0 / total) + "%)");
     HtmlReporter::outputRow(ofs, "reads too short:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_LENGTH]) + " (" + to_string(mFilterReadStats[FAIL_LENGTH] * 100.0 / total) + "%)");
     ofs << "</table>\n";
+}
+
+void FilterResult::reportAdapterHtml(ofstream& ofs) {
+    ofs << "<div class='subsection_title'>Adapter or bad ligation of read1</div>\n";
+    ofs << "<table class='summary_table'>\n";
+    outputAdaptersHtml(ofs, mAdapter1);
+    ofs << "</table>\n";
+    if(mOptions->isPaired()) {
+        ofs << "<div class='subsection_title'>Adapter or bad ligation of read2</div>\n";
+        ofs << "<table class='summary_table'>\n";
+        outputAdaptersHtml(ofs, mAdapter2);
+        ofs << "</table>\n";
+    }
+}
+
+
+
+void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts) {
+    map<string, long>::iterator iter;
+
+    long total = 0;
+    for(iter = adapterCounts.begin(); iter!=adapterCounts.end(); iter++) {
+        total += iter->second;
+    }
+
+    if(total == 0)
+        return ;
+
+    ofs << "<tr><td class='adapter_col' style='font-size:14px;color:#ffffff;background:#556699'>" << "Sequence" << "</td><td class='col2' style='font-size:14px;color:#ffffff;background:#556699'>" << "Count" << "</td></tr>\n";
+
+    const double reportThreshold = 0.01;
+    const double dTotal = (double)total;
+    long reported = 0;
+    for(iter = adapterCounts.begin(); iter!=adapterCounts.end(); iter++) {
+        if(iter->second /dTotal < reportThreshold )
+            continue;
+
+        ofs << "<tr><td class='adapter_col'>" << iter->first << "</td><td class='col2'>" << iter->second << "</td></tr>\n";
+
+        reported += iter->second;
+    }
+
+    long unreported = total - reported;
+
+    if(unreported > 0) {
+        ofs << "<tr><td class='adapter_col'>" << "others" << "</td><td class='col2'>" << unreported << "</td></tr>\n";
+    }
 }

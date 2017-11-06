@@ -17,6 +17,10 @@ bool Options::isPaired() {
     return in2.length() > 0;
 }
 
+bool Options::adapterCuttingEnabled() {
+    return adapter.enabled && isPaired();
+}
+
 bool Options::validate() {
     if(in1.empty()) {
         error_exit("read1 input should be specified by --in1");

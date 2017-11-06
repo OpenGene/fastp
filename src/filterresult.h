@@ -36,13 +36,17 @@ public:
     void addAdapterTrimmed(string adapter);
     // for paired end
     void addAdapterTrimmed(string adapter1, string adapter2);
-    // a port of JSON report
+    // a part of JSON report
     void reportJson(ofstream& ofs, string padding);
-    // a port of JSON report
+    // a part of JSON report for adapters
     void reportAdapterJson(ofstream& ofs, string padding);
-    // a port of HTML report
+    // a part of HTML report
     void reportHtml(ofstream& ofs, long totalReads);
-    void outputAdapters(ofstream& ofs, map<string, long, classcomp>& adapterCounts);
+    // a part of HTML report for adapters
+    void reportAdapterHtml(ofstream& ofs);
+    void outputAdaptersJson(ofstream& ofs, map<string, long, classcomp>& adapterCounts);
+    void outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts);
+
 
 public:
     Options* mOptions;
