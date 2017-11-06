@@ -16,10 +16,10 @@ public:
     Stats(int guessedCycles, int bufferMargin = 1000);
     ~Stats();
     int getCycles();
-    int getReads();
-    int getBases();
-    int getQ20();
-    int getQ30();
+    long getReads();
+    long getBases();
+    long getQ20();
+    long getQ30();
     // by default the qualified qual score is Q20 ('5')
     void statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual = '5');
 

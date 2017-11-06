@@ -174,25 +174,25 @@ int Stats::getCycles() {
     return mCycles;
 }
 
-int Stats::getReads() {
+long Stats::getReads() {
     if(!summarized)
         summarize();
     return mReads;
 }
 
-int Stats::getBases() {
+long Stats::getBases() {
     if(!summarized)
         summarize();
     return mBases;
 }
 
-int Stats::getQ20() {
+long Stats::getQ20() {
     if(!summarized)
         summarize();
     return mQ20Total;
 }
 
-int Stats::getQ30() {
+long Stats::getQ30() {
     if(!summarized)
         summarize();
     return mQ30Total;
