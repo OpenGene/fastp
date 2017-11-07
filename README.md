@@ -14,9 +14,35 @@ This tool is being intensively developed, and new features can be implemented so
 * HTML report: http://opengene.org/fastp/fastp.html
 * JSON report: http://opengene.org/fastp/fastp.json
 
+# Get fastp
+## Download
+Get latest
+```shell
+# download by http
+https://github.com/OpenGene/fastp/archive/master.zip
+
+# or clone by git
+git clone https://github.com/OpenGene/fastp.git
+```
+Get the stable releases  
+https://github.com/OpenGene/fastp/releases/latest
+
+## Build
+fastp only depends on `libz`, which is always available on Linux or Mac systems. If your system has no `libz`, install it first.
+```shell
+cd fastp
+make
+```
+
+## Install
+After build is done, run
+```
+sudo make install
+```
+
 # usage
 ```shell
-usage: ./fastp -i <in1> -o <out1> [-I <in1> -O <out2>] [options...]
+usage: fastp -i <in1> -o <out1> [-I <in1> -O <out2>] [options...]
 options:
   -i, --in1                          read1 input file name (string)
   -o, --out1                         read1 output file name (string [=])
