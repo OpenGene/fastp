@@ -20,14 +20,20 @@ public:
 class TrimmingOptions {
 public:
     TrimmingOptions() {
-        front = 0;
-        tail = 0;
+        front1 = 0;
+        tail1 = 0;
+        front2 = 0;
+        tail2 = 0;
     }
 public:
-    // trimming first cycles
-    int front;
-    // trimming last cycles
-    int tail;
+    // trimming first cycles for read1
+    int front1;
+    // trimming last cycles for read1
+    int tail1;
+    // trimming first cycles for read2
+    int front2;
+    // trimming last cycles for read2
+    int tail2;
 };
 
 class QualityFilteringOptions {

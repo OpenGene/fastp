@@ -28,15 +28,15 @@ int Filter::passFilter(Read* r, int lowQualNum, int nBaseNum) {
     return PASS_FILTER;
 }
 
-Read* Filter::trimAndCutAdapter(Read* r) {
+Read* Filter::trimAndCutAdapter(Read* r, int front, int tail) {
     // return the same read for speed if no trimming applied
-    if(mOptions->trim.front == 0 && mOptions->trim.tail == 0)
+    if(front == 0 && tail == 0)
         return r;
 
-    int rlen = r->length() - mOptions->trim.front - mOptions->trim.tail ; 
+    int rlen = r->length() - front - tail ; 
     if (rlen < 0)
         return NULL;
 
-    Read* ret = new Read(r->mName, r->mSeq.mStr.substr(mOptions->trim.front, rlen), r->mStrand, r->mQuality.substr(mOptions->trim.front, rlen));
+    Read* ret = new Read(r->mName, r->mSeq.mStr.substr(front, rlen), r->mStrand, r->mQuality.substr(front, rlen));
     return ret;
 }

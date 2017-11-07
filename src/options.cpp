@@ -49,11 +49,17 @@ bool Options::validate() {
     if(thread < 1 || thread > 16)
         error_exit("thread number (--thread) should be 1 ~ 16, suggest 1 ~ 8");
 
-    if(trim.front < 0 || trim.front > 30)
-        error_exit("trim_front (--trim_front) should be 0 ~ 30, suggest 0 ~ 4");
+    if(trim.front1 < 0 || trim.front1 > 30)
+        error_exit("trim_front1 (--trim_front1) should be 0 ~ 30, suggest 0 ~ 4");
 
-    if(trim.tail < 0 || trim.tail > 30)
-        error_exit("trim_tail (--trim_tail) should be 0 ~ 30, suggest 0 ~ 4");
+    if(trim.tail1 < 0 || trim.tail1 > 30)
+        error_exit("trim_tail1 (--trim_tail1) should be 0 ~ 30, suggest 0 ~ 4");
+
+    if(trim.front2 < 0 || trim.front2 > 30)
+        error_exit("trim_front2 (--trim_front2) should be 0 ~ 30, suggest 0 ~ 4");
+
+    if(trim.tail2 < 0 || trim.tail2 > 30)
+        error_exit("trim_tail2 (--trim_tail2) should be 0 ~ 30, suggest 0 ~ 4");
 
     if(qualfilter.qualifiedQual - 33 < 0 || qualfilter.qualifiedQual - 33 > 50)
         error_exit("qualitified phred (--qualified_quality_phred) should be 0 ~ 50, suggest 10 ~ 20");

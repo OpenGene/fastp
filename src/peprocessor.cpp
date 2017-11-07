@@ -187,8 +187,8 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         config->getPreStats2()->statRead(or2, lowQualNum2, nBaseNum2, mOptions->qualfilter.qualifiedQual);
 
         // trim in head and tail, and cut adapters
-        Read* r1 = mFilter->trimAndCutAdapter(or1);
-        Read* r2 = mFilter->trimAndCutAdapter(or2);
+        Read* r1 = mFilter->trimAndCutAdapter(or1, mOptions->trim.front1, mOptions->trim.tail1);
+        Read* r2 = mFilter->trimAndCutAdapter(or2, mOptions->trim.front2, mOptions->trim.tail2);
 
         AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult());
 

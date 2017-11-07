@@ -155,7 +155,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
 
         // trim in head and tail, and cut adapters
-        Read* r1 = mFilter->trimAndCutAdapter(or1);
+        Read* r1 = mFilter->trimAndCutAdapter(or1, mOptions->trim.front1, mOptions->trim.tail1);
         int result = mFilter->passFilter(r1, lowQualNum, nBaseNum);
 
         config->addFilterResult(result);

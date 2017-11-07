@@ -14,7 +14,7 @@ public:
     Filter(Options* opt);
     ~Filter();
     int passFilter(Read* r, int lowQualNum, int nBaseNum);
-    Read* trimAndCutAdapter(Read* r);
+    Read* trimAndCutAdapter(Read* r, int front, int tail);
 
 private:
     Options* mOptions;
