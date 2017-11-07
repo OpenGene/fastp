@@ -17,7 +17,7 @@ This tool is being intensively developed, and new features can be implemented so
 # usage
 ```shell
 shifus-MacBook-Pro:fastp shifu$ ./fastp 
-usage: ./fastp --in1=string [options] ... 
+usage: ./fastp -i <in1> -o <out1> [-I <in1> -O <out2>] [options...]
 options:
   -i, --in1                          read1 input file name (string)
   -o, --out1                         read1 output file name (string [=])
