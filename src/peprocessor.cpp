@@ -353,6 +353,9 @@ void PairEndProcessor::producerTask()
 void PairEndProcessor::consumerTask(ThreadConfig* config)
 {
     while(true) {
+        if(config->canBeStopped()){
+            break;
+        }
         std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
             lock.unlock();

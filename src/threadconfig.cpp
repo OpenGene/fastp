@@ -20,9 +20,14 @@ ThreadConfig::ThreadConfig(Options* opt, int seqCycles, int threadId, bool paire
     mWriter2 = NULL;
 
     mFilterResult = new FilterResult(opt, paired);
+    mCanBeStopped = false;
 }
 
 ThreadConfig::~ThreadConfig() {
+    cleanup();
+}
+
+void ThreadConfig::cleanup() {
     if(mOptions->split.enabled)
         writeEmptyFilesForSplitting();
     deleteWriter();
@@ -108,6 +113,12 @@ void ThreadConfig::markProcessed(long readNum) {
             mWorkingSplit += mOptions->thread;
             initWriterForSplit();
             mCurrentSplitReads = 0;
+        } else {
+            // this thread can be stoped now since all its tasks are done
+            // only a part of threads have to deal with the remaining reads
+            if(mOptions->split.number % mOptions->thread >0 
+                && mThreadId >= mOptions->split.number % mOptions->thread)
+                mCanBeStopped = true;
         }
     }
 }
@@ -120,4 +131,8 @@ void ThreadConfig::writeEmptyFilesForSplitting() {
             initWriterForSplit();
             mCurrentSplitReads = 0;
     }
+}
+
+bool ThreadConfig::canBeStopped() {
+    return mCanBeStopped;
 }

@@ -38,6 +38,8 @@ public:
     // increase mCurrentSplitReads by readNum, and check it with options->split.size;
     void markProcessed(long readNum);
     void initWriterForSplit();
+    bool canBeStopped();
+    void cleanup();
 
 private:
     void deleteWriter();
@@ -57,6 +59,7 @@ private:
     int mThreadId;
     int mWorkingSplit;
     long mCurrentSplitReads;
+    bool mCanBeStopped;
 };
 
 #endif

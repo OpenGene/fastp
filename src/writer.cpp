@@ -96,8 +96,9 @@ void Writer::close(){
 	else if(mOutStream) {
 		if (mOutStream->is_open()){
 			mOutStream->flush();
-			mOutStream->close();
-			delete mOutStream;
+			//TODO: following two lines will cause crash
+			//mOutStream->close();
+			//delete mOutStream;
 			mOutStream = NULL;
 		}
 	}
