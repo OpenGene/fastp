@@ -26,7 +26,7 @@ PairEndProcessor::~PairEndProcessor() {
 void PairEndProcessor::initOutput() {
     if(mOptions->out1.empty() || mOptions->out2.empty())
         return;
-    if (FastqReader::isZipFastq(mOptions->out1)){
+    if (ends_with(mOptions->out1, ".gz")){
         mZipFile1 = gzopen(mOptions->out1.c_str(), "w");
         gzsetparams(mZipFile1, mOptions->compression, Z_DEFAULT_STRATEGY);
         gzbuffer(mZipFile1, 1024*1024);

@@ -15,7 +15,7 @@ FastqReader::~FastqReader(){
 }
 
 void FastqReader::init(){
-	if (isZipFastq(mFilename)){
+	if (ends_with(mFilename, ".gz")){
 		mZipFile = gzopen(mFilename.c_str(), "r");
 		mZipped = true;
 		Read* r = read();

@@ -24,7 +24,7 @@ SingleEndProcessor::~SingleEndProcessor() {
 void SingleEndProcessor::initOutput() {
     if(mOptions->out1.empty())
         return;
-    if (FastqReader::isZipFastq(mOptions->out1)){
+    if (ends_with(mOptions->out1, ".gz")){
         mZipFile = gzopen(mOptions->out1.c_str(), "w");
         gzsetparams(mZipFile, mOptions->compression, Z_DEFAULT_STRATEGY);
     }

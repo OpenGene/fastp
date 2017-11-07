@@ -37,7 +37,7 @@ string Writer::filename(){
 }
 
 void Writer::init(){
-	if (FastqReader::isZipFastq(mFilename)){
+	if (ends_with(mFilename, ".gz")){
 		mZipFile = gzopen(mFilename.c_str(), "w");
         gzsetparams(mZipFile, mCompression, Z_DEFAULT_STRATEGY);
 		mZipped = true;
