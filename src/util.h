@@ -88,6 +88,32 @@ inline string replace(const string& str, const string& src, const string& dest)
     return ret;
 }
 
+inline string basename(const string& filename){
+    string::size_type pos = filename.find_last_of('/');
+    if (pos == string::npos)
+        return filename;
+    else if(pos == filename.length()-1)
+        return ""; // a bad filename
+    else
+        return filename.substr(pos+1, filename.length() - pos - 1);
+}
+
+inline string dirname(const string& filename){
+    string::size_type pos = filename.find_last_of('/');
+    if (pos == string::npos) {
+        return "./";
+    } else
+        return filename.substr(0, pos+1);
+}
+
+inline string joinpath(const string& dirname, const string& basename){
+    if(dirname[dirname.length()-1] == '/'){
+        return dirname + basename;
+    } else {
+        return dirname + "/" + basename;
+    }
+}
+
 //Check if a string is a file or directory
 inline bool file_exists(const  string& s)
 {

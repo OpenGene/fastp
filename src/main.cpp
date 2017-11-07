@@ -40,13 +40,16 @@ int main(int argc, char* argv[]){
     // length filtering
     cmd.add<int>("length_required", 'l', "length filtering will be enabled if this argument is specified, reads shorter than length_required will be discarded.", false, 30);
     
-
     // reporting
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
     cmd.add<string>("html", 'h', "the html format report file name", false, "fastp.html");
 
     // threading
     cmd.add<int>("thread", 'w', "worker thread number, default is 3", false, 3);
+
+    // split the output
+    cmd.add<int>("split", 's', "if this option is specified, the output will be split to multiple (--split) files (i.e. 0001.out.fq, 0002.out.fq...). ", false, 0);
+    cmd.add<int>("split_prefix_digits", 'd', "the digits for the slice number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding", false, 4);
 
     cmd.parse_check(argc, argv);
 
@@ -89,6 +92,13 @@ int main(int argc, char* argv[]){
     opt.jsonFile = cmd.get<string>("json");
     opt.htmlFile = cmd.get<string>("html");
 
+    // splitting
+    opt.split.enabled = cmd.exist("split");
+    if(opt.split.enabled) {
+        opt.split.number = cmd.get<int>("split");
+        opt.split.digits = cmd.get<int>("split_prefix_digits");
+    }
+
     stringstream ss;
     for(int i=0;i<argc;i++){
         ss << argv[i] << " ";
@@ -98,6 +108,20 @@ int main(int argc, char* argv[]){
     opt.validate();
 
     time_t t1 = time(NULL);
+
+    // using evaluator to guess how many reads in total
+    if(opt.split.enabled) {
+        long readNum;
+        Evaluator eva(&opt);
+        eva.evaluate(readNum);
+        // one record per file at least
+        // We reduce it by half of PACI_SIZE due to we are processing data by pack 
+        opt.split.size = readNum / opt.split.number - PACK_SIZE/2;
+        if(opt.split.size <= 0) {
+            opt.split.size = 1;
+            cerr << "WARNING: the input file has less reads than the number of files to split" << endl;
+        }
+    }
 
     Processor p(&opt);
     p.process();

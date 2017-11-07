@@ -52,15 +52,21 @@ void SingleEndProcessor::closeOutput() {
 void SingleEndProcessor::initConfig(ThreadConfig* config) {
     if(mOptions->out1.empty())
         return;
-    if(mOutStream != NULL) {
-        config->initWriter(mOutStream);
-    } else if(mZipFile != NULL) {
-        config->initWriter(mZipFile);
+
+    if(!mOptions->split.enabled) {
+        if(mOutStream != NULL) {
+            config->initWriter(mOutStream);
+        } else if(mZipFile != NULL) {
+            config->initWriter(mZipFile);
+        }
+    } else {
+        config->initWriterForSplit();
     }
 }
 
 bool SingleEndProcessor::process(){
-    initOutput();
+    if(!mOptions->split.enabled)
+        initOutput();
 
     initPackRepository();
     std::thread producer(std::bind(&SingleEndProcessor::producerTask, this));
@@ -69,7 +75,7 @@ bool SingleEndProcessor::process(){
     int cycle = 151;
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        configs[t] = new ThreadConfig(mOptions, cycle, false);
+        configs[t] = new ThreadConfig(mOptions, cycle, t, false);
         initConfig(configs[t]);
     }
 
@@ -135,7 +141,8 @@ bool SingleEndProcessor::process(){
     delete threads;
     delete configs;
 
-    closeOutput();
+    if(!mOptions->split.enabled)
+        closeOutput();
 
     return true;
 }
@@ -172,13 +179,18 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         if(r1 != or1 && r1 != NULL)
             delete r1;
     }
-    mOutputMtx.lock();
+    // if splitting output, then no lock is need since different threads write different files
+    if(!mOptions->split.enabled)
+        mOutputMtx.lock();
     if(!mOptions->out1.empty())
         config->getWriter1()->writeString(outstr);
-    mOutputMtx.unlock();
+    if(!mOptions->split.enabled)
+        mOutputMtx.unlock();
 
     delete pack->data;
     delete pack;
+
+    config->markProcessed(pack->count);
 
     return true;
 }

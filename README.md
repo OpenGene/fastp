@@ -35,5 +35,7 @@ options:
   -j, --json                         the json format report file name (string [=fastp.json])
   -h, --html                         the html format report file name (string [=fastp.html])
   -w, --thread                       worker thread number, default is 3 (int [=3])
+  -s, --split                        if this option is specified, the output will be split to multiple (--split) files (i.e. 0001.out.fq, 0002.out.fq...).  (int [=0])
+  -d, --split_prefix_digits          the digits for the slice number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding (int [=4])
   -?, --help                         print this message
 ```

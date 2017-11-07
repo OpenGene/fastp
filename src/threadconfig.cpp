@@ -1,7 +1,11 @@
 #include "threadconfig.h"
+#include "util.h"
 
-ThreadConfig::ThreadConfig(Options* opt, int seqCycles, bool paired){
+ThreadConfig::ThreadConfig(Options* opt, int seqCycles, int threadId, bool paired){
     mOptions = opt;
+    mThreadId = threadId;
+    mWorkingSplit = threadId;
+    mCurrentSplitReads = 0;
     mPreStats1 = new Stats(seqCycles);
     mPostStats1 = new Stats(seqCycles);
     if(paired){
@@ -19,6 +23,12 @@ ThreadConfig::ThreadConfig(Options* opt, int seqCycles, bool paired){
 }
 
 ThreadConfig::~ThreadConfig() {
+    if(mOptions->split.enabled)
+        writeEmptyFilesForSplitting();
+    deleteWriter();
+}
+
+void ThreadConfig::deleteWriter() {
     if(mWriter1 != NULL) {
         delete mWriter1;
         mWriter1 = NULL;
@@ -30,35 +40,84 @@ ThreadConfig::~ThreadConfig() {
 }
 
 void ThreadConfig::initWriter(string filename1) {
+    deleteWriter();
     mWriter1 = new Writer(filename1, mOptions->compression);
 }
 
 void ThreadConfig::initWriter(string filename1, string filename2) {
+    deleteWriter();
     mWriter1 = new Writer(filename1, mOptions->compression);
     mWriter2 = new Writer(filename2, mOptions->compression);
 }
 
 void ThreadConfig::initWriter(ofstream* stream) {
+    deleteWriter();
     mWriter1 = new Writer(stream);
 }
 
 void ThreadConfig::initWriter(ofstream* stream1, ofstream* stream2) {
-
+    deleteWriter();
     mWriter1 = new Writer(stream1);
     mWriter2 = new Writer(stream2);
 }
 
 void ThreadConfig::initWriter(gzFile gzfile) {
-
+    deleteWriter();
     mWriter1 = new Writer(gzfile);
 }
 
 void ThreadConfig::initWriter(gzFile gzfile1, gzFile gzfile2) {
-
+    deleteWriter();
     mWriter1 = new Writer(gzfile1);
     mWriter2 = new Writer(gzfile2);
 }
 
 void ThreadConfig::addFilterResult(int result) {
     mFilterResult->addFilterResult(result);
+}
+
+void ThreadConfig::initWriterForSplit() {
+    if(mOptions->out1.empty())
+        return ;
+
+    // use 1-based naming
+    string num = to_string(mWorkingSplit + 1);
+    // padding for digits like 0001
+    if(mOptions->split.digits > 0){
+        while(num.size() < mOptions->split.digits)
+            num = "0" + num;
+    }
+
+    string filename1 = joinpath(dirname(mOptions->out1), num + "." + basename(mOptions->out1));
+    if(!mOptions->isPaired()) {
+        initWriter(filename1);
+    } else {
+        string filename2 = joinpath(dirname(mOptions->out2), num + "." + basename(mOptions->out2));
+        initWriter(filename1, filename2);
+    }
+}
+
+void ThreadConfig::markProcessed(long readNum) {
+    mCurrentSplitReads += readNum;
+    if(!mOptions->split.enabled)
+        return ;
+    // if splitting is enabled, check whether current file is full
+    if(mCurrentSplitReads >= mOptions->split.size) {
+        // totally we cannot exceed split.number
+        if(mWorkingSplit + mOptions->thread < mOptions->split.number ){
+            mWorkingSplit += mOptions->thread;
+            initWriterForSplit();
+            mCurrentSplitReads = 0;
+        }
+    }
+}
+
+// if a task of writting N files is assigned to this thread, but the input file doesn't have so many reads to input
+// write some empty files so it will not break following pipelines
+void ThreadConfig::writeEmptyFilesForSplitting() {
+    while(mWorkingSplit + mOptions->thread < mOptions->split.number) {
+        mWorkingSplit += mOptions->thread;
+            initWriterForSplit();
+            mCurrentSplitReads = 0;
+    }
 }

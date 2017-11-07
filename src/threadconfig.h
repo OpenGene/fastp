@@ -14,7 +14,7 @@ using namespace std;
 
 class ThreadConfig{
 public:
-    ThreadConfig(Options* opt, int seqCycles, bool paired = false);
+    ThreadConfig(Options* opt, int seqCycles, int threadId, bool paired = false);
     ~ThreadConfig();
     inline Stats* getPreStats1() {return mPreStats1;}
     inline Stats* getPostStats1() {return mPostStats1;}
@@ -33,6 +33,16 @@ public:
 
     void addFilterResult(int result);
 
+    int getThreadId() {return mThreadId;}
+    // for splitting output
+    // increase mCurrentSplitReads by readNum, and check it with options->split.size;
+    void markProcessed(long readNum);
+    void initWriterForSplit();
+
+private:
+    void deleteWriter();
+    void writeEmptyFilesForSplitting();
+
 private:
     Stats* mPreStats1;
     Stats* mPostStats1;
@@ -42,6 +52,11 @@ private:
     Writer* mWriter2;
     Options* mOptions;
     FilterResult* mFilterResult;
+
+    // for spliting output
+    int mThreadId;
+    int mWorkingSplit;
+    long mCurrentSplitReads;
 };
 
 #endif

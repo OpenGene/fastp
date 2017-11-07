@@ -12,7 +12,7 @@ Evaluator::~Evaluator(){
 void Evaluator::evaluate(long& readNum) {
     FastqReader reader(mOptions->in1);
 
-    const long READ_LIMIT = 10000;
+    const long READ_LIMIT = 100000;
     long records = 0;
     long bytes = 0;
 

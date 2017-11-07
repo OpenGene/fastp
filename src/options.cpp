@@ -73,5 +73,19 @@ bool Options::validate() {
     if(lengthFilter.requiredLength < 0 )
         error_exit("length requirement (--length_required) should be >0, suggest 20 ~ 100");
 
+    if(split.enabled ) {
+        if(split.number < 2 || split.number > 1000)
+            error_exit("you have enabled splitting output to multiple files, the number of files (--split) should be 2 ~ 1000.");
+        if(split.digits < 0 || split.digits > 10)
+            error_exit("you have enabled splitting output to multiple files, the digits number of file name prefix (--split_prefix_digits) should be 0 ~ 10.");
+        if(split.number % thread != 0) {
+            cerr << "you have enabled splitting output to multiple files, but the number of files (--split) should be a multiple of threads (--thread)." << endl;
+            cerr << "current thread number setting is: " << thread << ", you can change the thread number by (--thread)" << endl;
+            cerr << "or set the number of files (--split) to be a multiple of " << thread << ", for example: " << thread << ", " << thread*2 << ", " << thread*3 << "... " << endl;
+            cerr << endl;
+            exit(-1);
+        }
+    }
+
     return true;
 }

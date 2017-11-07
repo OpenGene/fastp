@@ -72,16 +72,21 @@ void PairEndProcessor::closeOutput() {
 void PairEndProcessor::initConfig(ThreadConfig* config) {
     if(mOptions->out1.empty())
         return;
-    if(mOutStream1 != NULL && mOutStream2 != NULL) {
-        config->initWriter(mOutStream1, mOutStream2);
-    } else if(mZipFile1 != NULL && mZipFile2 != NULL) {
-        config->initWriter(mZipFile1, mZipFile2);
+    if(!mOptions->split.enabled) {
+        if(mOutStream1 != NULL && mOutStream2 != NULL) {
+            config->initWriter(mOutStream1, mOutStream2);
+        } else if(mZipFile1 != NULL && mZipFile2 != NULL) {
+            config->initWriter(mZipFile1, mZipFile2);
+        }
+    } else {
+        config->initWriterForSplit();
     }
 }
 
 
 bool PairEndProcessor::process(){
-    initOutput();
+    if(!mOptions->split.enabled)
+        initOutput();
 
     initPackRepository();
     std::thread producer(std::bind(&PairEndProcessor::producerTask, this));
@@ -90,7 +95,7 @@ bool PairEndProcessor::process(){
     int cycle = 151;
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        configs[t] = new ThreadConfig(mOptions, cycle, true);
+        configs[t] = new ThreadConfig(mOptions, cycle, t, true);
         initConfig(configs[t]);
     }
 
@@ -164,7 +169,8 @@ bool PairEndProcessor::process(){
     delete threads;
     delete configs;
 
-    closeOutput();
+    if(!mOptions->split.enabled)
+        closeOutput();
 
     return true;
 }
@@ -216,16 +222,20 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         if(r2 != or2 && r2 != NULL)
             delete r2;
     }
-
-    mOutputMtx.lock();
+    // if splitting output, then no lock is need since different threads write different files
+    if(!mOptions->split.enabled)
+        mOutputMtx.lock();
     if(!mOptions->out1.empty())
         config->getWriter1()->writeString(outstr1);
     if(!mOptions->out2.empty())
         config->getWriter2()->writeString(outstr2);
-    mOutputMtx.unlock();
+    if(!mOptions->split.enabled)
+        mOutputMtx.unlock();
 
     delete pack->data;
     delete pack;
+
+    config->markProcessed(pack->count);
 
     return true;
 }

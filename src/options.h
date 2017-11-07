@@ -7,13 +7,30 @@
 
 using namespace std;
 
+class SplitOptions {
+public:
+    SplitOptions() {
+        enabled = false;
+        number = 0;
+        size = 0;
+        digits = 4;
+    }
+public:
+    bool enabled;
+    // number of files
+    int number;
+    // how many reads per file
+    int size;
+    // digits number of file name prefix, for example 0001 means 4 digits
+    int digits;
+};
+
 class AdapterOptions {
 public:
     AdapterOptions() {
         enabled = true;
     }
 public:
-    // trimming first cycles
     bool enabled;
 };
 
@@ -102,6 +119,8 @@ public:
     ReadLengthFilteringOptions lengthFilter;
     // adapter options
     AdapterOptions adapter;
+    // multiple file splitting options
+    SplitOptions split;
 
 };
 
