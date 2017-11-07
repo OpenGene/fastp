@@ -32,6 +32,19 @@ void FastqReader::init(){
 	}
 }
 
+void FastqReader::getBytes(size_t& bytesRead, size_t& bytesTotal) {
+	if(mZipped) {
+		bytesRead = gzoffset(mZipFile);
+	} else {
+		bytesRead = mFile.tellg();
+	}
+
+	// use another ifstream to not affect current reader
+	ifstream is(mFilename);
+	is.seekg (0, is.end);
+	bytesTotal = is.tellg();
+}
+
 bool FastqReader::getLine(char* line, int maxLine){
 	bool status = true;
 	if(mZipped)

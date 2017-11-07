@@ -15,6 +15,8 @@ public:
 	~FastqReader();
 	bool isZipped();
 
+	void getBytes(size_t& bytesRead, size_t& bytesTotal);
+
 	//this function is not thread-safe
 	//do not call read() of a same FastqReader object from different threads concurrently
 	Read* read();

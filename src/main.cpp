@@ -7,6 +7,7 @@
 #include "util.h"
 #include "options.h"
 #include "processor.h"
+#include "evaluator.h"
 
 string command;
 
@@ -107,4 +108,6 @@ int main(int argc, char* argv[]){
     cout << "HTML report: " << opt.htmlFile << endl;
     cout << endl << command << endl;
     cout << "fastp v" << FASTP_VER << ", time used: " << (t2)-t1 << " seconds" << endl;
+
+    return 0;
 }
