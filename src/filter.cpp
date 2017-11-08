@@ -41,8 +41,9 @@ Read* Filter::trimAndCutAdapter(Read* r, int front, int tail) {
     if(front == 0){
         r->resize(rlen);
         return r;
+    } else {
+        r->mSeq.mStr = r->mSeq.mStr.substr(front, rlen);
+        r->mQuality = r->mQuality.substr(front, rlen);
+        return r;
     }
-
-    //Read* ret = new Read(r->mName, r->mSeq.mStr.substr(front, rlen), r->mStrand, r->mQuality.substr(front, rlen));
-    //return ret;
 }
