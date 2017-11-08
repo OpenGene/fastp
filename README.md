@@ -54,6 +54,10 @@ options:
   -t, --trim_tail1                   trimming how many bases in tail for read1, default is 0 (int [=0])
   -F, --trim_front2                  trimming how many bases in front for read2. If it's not specified, it will follow read1's settings (int [=0])
   -T, --trim_tail2                   trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings (int [=0])
+  -5, --cut_by_quality5              enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)
+  -3, --cut_by_quality3              enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)
+  -W, --cut_window_size              the size of the sliding window for sliding window trimming, default is 4 (int [=4])
+  -M, --cut_mean_quality             the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20 (int [=20])
   -Q, --disable_quality_filtering    quality filtering is enabled by default. If this option is enabled, quality filtering is disabled
   -q, --qualified_quality_phred      the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. (int [=15])
   -u, --unqualified_percent_limit    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40% (int [=40])
@@ -64,5 +68,5 @@ options:
   -w, --thread                       worker thread number, default is 3 (int [=3])
   -s, --split                        if this option is specified, the output will be split to multiple (--split) files (i.e. 0001.out.fq, 0002.out.fq...).  (int [=0])
   -d, --split_prefix_digits          the digits for the slice number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding (int [=4])
-  -?, --help                         print this message                       print this message
+  -?, --help                         print this message
 ```
