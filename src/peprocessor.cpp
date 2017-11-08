@@ -192,11 +192,13 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         config->getPreStats1()->statRead(or1, lowQualNum1, nBaseNum1, mOptions->qualfilter.qualifiedQual);
         config->getPreStats2()->statRead(or2, lowQualNum2, nBaseNum2, mOptions->qualfilter.qualifiedQual);
 
-        // trim in head and tail, and cut adapters
-        Read* r1 = mFilter->trimAndCutAdapter(or1, mOptions->trim.front1, mOptions->trim.tail1);
-        Read* r2 = mFilter->trimAndCutAdapter(or2, mOptions->trim.front2, mOptions->trim.tail2);
+        // trim in head and tail, and apply quality cut in sliding window
+        Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
+        Read* r2 = mFilter->trimAndCut(or2, mOptions->trim.front2, mOptions->trim.tail2);
 
-        AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult());
+        if(r1 != NULL && r2!=NULL){
+            AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult());
+        }
 
         int result1 = mFilter->passFilter(r1, lowQualNum1, nBaseNum1);
         int result2 = mFilter->passFilter(r2, lowQualNum2, nBaseNum2);

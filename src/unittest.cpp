@@ -3,6 +3,7 @@
 #include "fastqreader.h"
 #include "read.h"
 #include "overlapanalysis.h"
+#include "filter.h"
 #include <time.h>
 
 UnitTest::UnitTest(){
@@ -15,6 +16,7 @@ void UnitTest::run(){
     passed &= report(FastqReader::test(), "FastqReader::test");
     passed &= report(Read::test(), "Read::test");
     passed &= report(OverlapAnalysis::test(), "OverlapAnalysis::test");
+    passed &= report(Filter::test(), "Filter::test");
     printf("\n==========================\n");
     printf("%s\n\n", passed?"ALL PASSED":"FAILED");
 }

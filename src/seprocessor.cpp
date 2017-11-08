@@ -161,8 +161,8 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         config->getPreStats1()->statRead(or1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
 
 
-        // trim in head and tail, and cut adapters
-        Read* r1 = mFilter->trimAndCutAdapter(or1, mOptions->trim.front1, mOptions->trim.tail1);
+        // trim in head and tail, and apply quality cut in sliding window
+        Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
         int result = mFilter->passFilter(r1, lowQualNum, nBaseNum);
 
         config->addFilterResult(result);

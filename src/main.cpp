@@ -32,6 +32,12 @@ int main(int argc, char* argv[]){
     cmd.add<int>("trim_front2", 'F', "trimming how many bases in front for read2. If it's not specified, it will follow read1's settings", false, 0);
     cmd.add<int>("trim_tail2", 'T', "trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings", false, 0);
 
+    // sliding window cutting for each reads
+    cmd.add("cut_by_quality5", '5', "enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)");
+    cmd.add("cut_by_quality3", '3', "enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)");
+    cmd.add<int>("cut_window_size", 'W', "the size of the sliding window for sliding window trimming, default is 4", false, 4);
+    cmd.add<int>("cut_mean_quality", 'M', "the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20", false, 20);
+
     // quality filtering
     cmd.add("disable_quality_filtering", 'Q', "quality filtering is enabled by default. If this option is enabled, quality filtering is disabled");
     cmd.add<int>("qualified_quality_phred", 'q', "the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified.", false, 15);
@@ -76,6 +82,12 @@ int main(int argc, char* argv[]){
         opt.trim.tail2 = cmd.get<int>("trim_tail2");
     else
         opt.trim.tail2 = opt.trim.tail1;
+
+    // sliding window cutting by quality
+    opt.qualityCut.enabled5 = cmd.exist("cut_by_quality5");
+    opt.qualityCut.enabled3 = cmd.exist("cut_by_quality3");
+    opt.qualityCut.windowSize = cmd.get<int>("cut_window_size");
+    opt.qualityCut.quality = cmd.get<int>("cut_mean_quality");
 
     // quality filtering
     opt.qualfilter.enabled = !cmd.exist("disable_quality_filtering");

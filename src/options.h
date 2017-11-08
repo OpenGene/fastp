@@ -7,6 +7,25 @@
 
 using namespace std;
 
+class QualityCutOptions {
+public:
+    QualityCutOptions() {
+        enabled5 = false;
+        enabled3 = false;
+        windowSize = 4;
+        quality = 20;
+    }
+public:
+    // enable 5' cutting by quality
+    bool enabled5;
+    // enable 3' cutting by quality
+    bool enabled3;
+    // the sliding window size for cutting by quality
+    int windowSize;
+    // the mean quality requirement for cutting by quality
+    int quality;
+};
+
 class SplitOptions {
 public:
     SplitOptions() {
@@ -123,6 +142,8 @@ public:
     AdapterOptions adapter;
     // multiple file splitting options
     SplitOptions split;
+    // options for quality cutting
+    QualityCutOptions qualityCut;
 
 };
 
