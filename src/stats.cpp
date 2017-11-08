@@ -95,8 +95,8 @@ void Stats::summarize() {
     mQualityCurves["mean"] = meanQualCurve;
 
     // quality curves and base content curves for different nucleotides
-    char alphabets[4] = {'A', 'T', 'C', 'G'};
-    for(int i=0; i<4; i++) {
+    char alphabets[5] = {'A', 'T', 'C', 'G', 'N'};
+    for(int i=0; i<5; i++) {
         char base = alphabets[i];
         // get last 3 bits
         char b = base & 0x07;
@@ -239,9 +239,9 @@ void Stats::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "}," << endl;
 
     // content curves
-    string contentNames[5] = {"A", "T", "C", "G", "GC"};
+    string contentNames[6] = {"A", "T", "C", "G", "N", "GC"};
     ofs << padding << "\t" << "\"content_curves\": {" << endl;
-    for(int i=0 ;i<5; i++) {
+    for(int i=0 ;i<6; i++) {
         string name=contentNames[i];
         double* curve = mContentCurves[name];
         ofs << padding << "\t\t" << "\"" << name << "\":[";
@@ -253,7 +253,7 @@ void Stats::reportJson(ofstream& ofs, string padding) {
         }
         ofs << "]";
         // not the end;
-        if(i != 5-1)
+        if(i != 6-1)
             ofs << ",";
         ofs << endl; 
     }
@@ -298,7 +298,7 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
     ofs << "<div class='figure' id='" + divName + "'></div>\n";
 
     string alphabets[5] = {"A", "T", "C", "G", "mean"};
-    string colors[5] = {"rgba(255,0,0,0.5)", "rgba(128,0,128,0.5)", "rgba(0,255,0,0.5)", "rgba(0,0,255,0.5)", "rgba(20,20,20,1.0)"};
+    string colors[5] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)", "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)", "rgba(20,20,20,1.0)"};
     ofs << "\n<script type=\"text/javascript\">" << endl;
     string json_str = "var data=[";
 
@@ -336,8 +336,8 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
     ofs << "<div class='figure' id='" + divName + "'></div>\n";
 
-    string alphabets[5] = {"A", "T", "C", "G", "GC"};
-    string colors[5] = {"rgba(255,0,0,0.5)", "rgba(128,0,128,0.5)", "rgba(0,255,0,0.5)", "rgba(0,0,255,0.5)", "rgba(20,20,20,1.0)"};
+    string alphabets[6] = {"A", "T", "C", "G", "N", "GC"};
+    string colors[6] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)", "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)", "rgba(255, 0, 0, 1.0)", "rgba(20,20,20,1.0)"};
     ofs << "\n<script type=\"text/javascript\">" << endl;
     string json_str = "var data=[";
 
@@ -345,7 +345,7 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     for(int i=0; i<mCycles; i++)
         x[i] = i+1;
     // four bases
-    for (int b = 0; b<5; b++) {
+    for (int b = 0; b<6; b++) {
         string base = alphabets[b];
         json_str += "{";
         json_str += "x:[" + list2string(x, mCycles) + "],";
