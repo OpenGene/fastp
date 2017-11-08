@@ -13,8 +13,8 @@ using namespace std;
 
 class Read{
 public:
-	Read(string name, string seq, string strand, string quality);
-    Read(string name, Sequence seq, string strand, string quality);
+	Read(string name, string seq, string strand, string quality, bool phred64=false);
+    Read(string name, Sequence seq, string strand, string quality, bool phred64=false);
 	Read(string name, string seq, string strand);
     Read(string name, Sequence seq, string strand);
     Read(Read &r);
@@ -28,6 +28,7 @@ public:
     int length();
     string toString();
     void resize(int len);
+    void convertPhred64To33();
 
 public:
     static bool test();

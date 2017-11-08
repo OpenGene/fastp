@@ -34,6 +34,13 @@ string HtmlReporter::formatNumber(long number) {
         return to_string(num) + " " + unit[order];
 }
 
+string HtmlReporter::getPercents(long numerator, long denominator) {
+    if(denominator == 0)
+        return "0.0";
+    else
+        return to_string((double)numerator * 100.0 / (double)denominator);
+}
+
 void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
     long pre_total_reads = preStats1->getReads();
     if(preStats2)
@@ -89,16 +96,16 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     ofs << "<table class='summary_table'>\n";
     outputRow(ofs, "total reads:", formatNumber(pre_total_reads));
     outputRow(ofs, "total bases:", formatNumber(pre_total_bases));
-    outputRow(ofs, "Q20 bases:", formatNumber(pre_q20_bases) + " (" + to_string((double)pre_q20_bases * 100.0 / (double)pre_total_bases) + "%)");
-    outputRow(ofs, "Q30 bases:", formatNumber(pre_q30_bases) + " (" + to_string((double)pre_q30_bases * 100.0 / (double)pre_total_bases) + "%)");
+    outputRow(ofs, "Q20 bases:", formatNumber(pre_q20_bases) + " (" + getPercents(pre_q20_bases,pre_total_bases) + "%)");
+    outputRow(ofs, "Q30 bases:", formatNumber(pre_q30_bases) + " (" + getPercents(pre_q30_bases, pre_total_bases) + "%)");
     ofs << "</table>\n";
 
     ofs << "<div class='subsection_title'>After filtering</div>\n";
     ofs << "<table class='summary_table'>\n";
     outputRow(ofs, "total reads:", formatNumber(post_total_reads));
     outputRow(ofs, "total bases:", formatNumber(post_total_bases));
-    outputRow(ofs, "Q20 bases:", formatNumber(post_q20_bases) + " (" + to_string((double)post_q20_bases * 100.0 / (double)post_total_bases) + "%)");
-    outputRow(ofs, "Q30 bases:", formatNumber(post_q30_bases) + " (" + to_string((double)post_q30_bases * 100.0 / (double)post_total_bases) + "%)");
+    outputRow(ofs, "Q20 bases:", formatNumber(post_q20_bases) + " (" + getPercents(post_q20_bases, post_total_bases) + "%)");
+    outputRow(ofs, "Q30 bases:", formatNumber(post_q30_bases) + " (" + getPercents(post_q30_bases, post_total_bases) + "%)");
     ofs << "</table>\n";
 
     if(result) {

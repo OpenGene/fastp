@@ -109,6 +109,8 @@ public:
     string htmlFile;
     // compression level
     int compression;
+    // the input file is using phred64 quality scoring
+    bool phred64;
     // worker thread number
     int thread;
     // trimming options

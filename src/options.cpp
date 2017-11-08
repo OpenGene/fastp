@@ -8,6 +8,7 @@ Options::Options(){
     out2 = "";
     thread = 1;
     compression = 2;
+    phred64 = false;
 }
 
 void Options::init() {

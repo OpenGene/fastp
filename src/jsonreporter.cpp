@@ -54,8 +54,8 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "\t\t\t" << "\"total_bases\":" << pre_total_bases << "," << endl; 
     ofs << "\t\t\t" << "\"q20_bases\":" << pre_q20_bases << "," << endl; 
     ofs << "\t\t\t" << "\"q30_bases\":" << pre_q30_bases << "," << endl; 
-    ofs << "\t\t\t" << "\"q20_rate\":" << (double)pre_q20_bases / (double)pre_total_bases << "," << endl; 
-    ofs << "\t\t\t" << "\"q30_rate\":" << (double)pre_q30_bases / (double)pre_total_bases  << endl; 
+    ofs << "\t\t\t" << "\"q20_rate\":" << (pre_total_bases == 0?0.0:(double)pre_q20_bases / (double)pre_total_bases) << "," << endl; 
+    ofs << "\t\t\t" << "\"q30_rate\":" << (pre_total_bases == 0?0.0:(double)pre_q30_bases / (double)pre_total_bases)  << endl; 
     ofs << "\t\t" << "}," << endl;
 
     ofs << "\t\t" << "\"after_filtering\": {" << endl;
@@ -63,8 +63,8 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "\t\t\t" << "\"total_bases\":" << post_total_bases << "," << endl; 
     ofs << "\t\t\t" << "\"q20_bases\":" << post_q20_bases << "," << endl; 
     ofs << "\t\t\t" << "\"q30_bases\":" << post_q30_bases << "," << endl; 
-    ofs << "\t\t\t" << "\"q20_rate\":" << (double)post_q20_bases / (double)post_total_bases << "," << endl; 
-    ofs << "\t\t\t" << "\"q30_rate\":" << (double)post_q30_bases / (double)post_total_bases << endl; 
+    ofs << "\t\t\t" << "\"q20_rate\":" << (post_total_bases == 0?0.0:(double)post_q20_bases / (double)post_total_bases) << "," << endl; 
+    ofs << "\t\t\t" << "\"q30_rate\":" << (post_total_bases == 0?0.0:(double)post_q30_bases / (double)post_total_bases) << endl; 
     ofs << "\t\t" << "}" << endl;
 
     ofs << "\t" << "}," << endl;

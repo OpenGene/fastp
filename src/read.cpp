@@ -2,12 +2,14 @@
 #include <sstream>
 #include "util.h"
 
-Read::Read(string name, string seq, string strand, string quality){
+Read::Read(string name, string seq, string strand, string quality, bool phred64){
 	mName = name;
 	mSeq = Sequence(seq);
 	mStrand = strand;
 	mQuality = quality;
 	mHasQuality = true;
+	if(phred64)
+		convertPhred64To33();
 }
 
 Read::Read(string name, string seq, string strand){
@@ -17,12 +19,14 @@ Read::Read(string name, string seq, string strand){
 	mHasQuality = false;
 }
 
-Read::Read(string name, Sequence seq, string strand, string quality){
+Read::Read(string name, Sequence seq, string strand, string quality, bool phred64){
 	mName = name;
 	mSeq = seq;
 	mStrand = strand;
 	mQuality = quality;
 	mHasQuality = true;
+	if(phred64)
+		convertPhred64To33();
 }
 
 Read::Read(string name, Sequence seq, string strand){
@@ -30,6 +34,12 @@ Read::Read(string name, Sequence seq, string strand){
 	mSeq = seq;
 	mStrand = strand;
 	mHasQuality = false;
+}
+
+void Read::convertPhred64To33(){
+	for(int i=0; i<mQuality.length(); i++) {
+		mQuality[i] = max(33, mQuality[i] - (64-33));
+	}
 }
 
 Read::Read(Read &r) {

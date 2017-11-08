@@ -11,7 +11,7 @@
 
 class FastqReader{
 public:
-	FastqReader(string filename, bool hasQuality = true);
+	FastqReader(string filename, bool hasQuality = true, bool phred64=false);
 	~FastqReader();
 	bool isZipped();
 
@@ -37,13 +37,14 @@ private:
 	ifstream mFile;
 	bool mZipped;
 	bool mHasQuality;
+	bool mPhred64;
 
 };
 
 class FastqReaderPair{
 public:
 	FastqReaderPair(FastqReader* left, FastqReader* right);
-	FastqReaderPair(string leftName, string rightName);
+	FastqReaderPair(string leftName, string rightName, bool hasQuality = true, bool phred64 = false);
 	~FastqReaderPair();
 	ReadPair* read();
 public:

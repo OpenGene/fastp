@@ -2,10 +2,11 @@
 #include "util.h"
 #include <string.h>
 
-FastqReader::FastqReader(string filename, bool hasQuality){
+FastqReader::FastqReader(string filename, bool hasQuality, bool phred64){
 	mFilename = filename;
 	mZipFile = NULL;
 	mZipped = false;
+	mPhred64 = phred64;
 	mHasQuality = hasQuality;
 	init();
 }
@@ -87,7 +88,7 @@ Read* FastqReader::read(){
 	if (mHasQuality){
 		if (!getLine(line, maxLine))return NULL;
 		string quality(line);
-		Read* read = new Read(name, sequence, strand, quality);
+		Read* read = new Read(name, sequence, strand, quality, mPhred64);
 		return read;
 	}
 	else {
@@ -166,9 +167,9 @@ FastqReaderPair::FastqReaderPair(FastqReader* left, FastqReader* right){
 	mRight = right;
 }
 
-FastqReaderPair::FastqReaderPair(string leftName, string rightName){
-	mLeft = new FastqReader(leftName);
-	mRight = new FastqReader(rightName);
+FastqReaderPair::FastqReaderPair(string leftName, string rightName, bool hasQuality, bool phred64){
+	mLeft = new FastqReader(leftName, hasQuality, phred64);
+	mRight = new FastqReader(rightName, hasQuality, phred64);
 }
 
 FastqReaderPair::~FastqReaderPair(){

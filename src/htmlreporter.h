@@ -21,6 +21,7 @@ public:
     static void outputRow(ofstream& ofs, string key, long value);
     static void outputRow(ofstream& ofs, string key, string value);
     static string formatNumber(long number);
+    static string getPercents(long numerator, long denominator);
 private:
     const string getCurrentSystemTime();
     void printHeader(ofstream& ofs);
