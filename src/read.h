@@ -27,6 +27,7 @@ public:
     int lowQualCount(int qual=20);
     int length();
     string toString();
+    void resize(int len);
 
 public:
     static bool test();

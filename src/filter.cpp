@@ -33,10 +33,16 @@ Read* Filter::trimAndCutAdapter(Read* r, int front, int tail) {
     if(front == 0 && tail == 0)
         return r;
 
+
     int rlen = r->length() - front - tail ; 
     if (rlen < 0)
         return NULL;
 
-    Read* ret = new Read(r->mName, r->mSeq.mStr.substr(front, rlen), r->mStrand, r->mQuality.substr(front, rlen));
-    return ret;
+    if(front == 0){
+        r->resize(rlen);
+        return r;
+    }
+
+    //Read* ret = new Read(r->mName, r->mSeq.mStr.substr(front, rlen), r->mStrand, r->mQuality.substr(front, rlen));
+    //return ret;
 }

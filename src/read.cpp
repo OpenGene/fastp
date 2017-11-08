@@ -64,6 +64,13 @@ Read* Read::reverseComplement(){
 	return new Read(mName, seq, strand, qual);
 }
 
+void Read::resize(int len) {
+	if(len > length() || len<0)
+		return ;
+	mSeq.mStr.resize(len);
+	mQuality.resize(len);
+}
+
 string Read::lastIndex(){
 	int len = mName.length();
 	if(len<5)
