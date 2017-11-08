@@ -304,6 +304,8 @@ void PairEndProcessor::consumePack(ThreadConfig* config){
 void PairEndProcessor::producerTask()
 {
     int slept = 0;
+    long readNum = 0;
+    bool splitSizeReEvaluated = false;
     ReadPair** data = new ReadPair*[PACK_SIZE];
     memset(data, 0, sizeof(ReadPair*)*PACK_SIZE);
     FastqReaderPair reader(mOptions->in1, mOptions->in2);
@@ -337,6 +339,17 @@ void PairEndProcessor::producerTask()
                 //cout<<"sleep"<<endl;
                 slept++;
                 usleep(1000);
+            }
+            readNum += PACK_SIZE;
+            // re-evaluate split size
+            if(mOptions->split.enabled && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
+                size_t bytesRead;
+                size_t bytesTotal;
+                reader.mLeft->getBytes(bytesRead, bytesTotal);
+                mOptions->split.size *=  (double)bytesTotal / ((double)bytesRead * (double) mOptions->split.number);
+                if(mOptions->split.size <= 0)
+                    mOptions->split.size = 1;
+                splitSizeReEvaluated = true;
             }
         }
     }

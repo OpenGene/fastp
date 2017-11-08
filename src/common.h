@@ -32,7 +32,7 @@ static const int PACK_SIZE = 1000;
 // if one pack is produced, but not consumed, it will be kept in the memory
 // this number limit the number of in memory packs
 // if the number of in memory packs is full, the producer thread should sleep
-static const int PACK_IN_MEM_LIMIT = 100;
+static const int PACK_IN_MEM_LIMIT = 500;
 
 // if read number is more than this, warn it
 static const int WARN_STANDALONE_READ_LIMIT = 10000;

@@ -254,12 +254,14 @@ void SingleEndProcessor::consumePack(ThreadConfig* config){
 void SingleEndProcessor::producerTask()
 {
     int slept = 0;
+    long readNum = 0;
+    bool splitSizeReEvaluated = false;
     Read** data = new Read*[PACK_SIZE];
     memset(data, 0, sizeof(Read*)*PACK_SIZE);
-    FastqReader reader1(mOptions->in1);
+    FastqReader reader(mOptions->in1);
     int count=0;
     while(true){
-        Read* read = reader1.read();
+        Read* read = reader.read();
         if(!read){
             // the last pack
             ReadPack* pack = new ReadPack;
@@ -286,7 +288,18 @@ void SingleEndProcessor::producerTask()
             while(mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT){
                 //cout<<"sleep"<<endl;
                 slept++;
-                usleep(1000);
+                usleep(100);
+            }
+            readNum += PACK_SIZE;
+            // re-evaluate split size
+            if(mOptions->split.enabled && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
+                size_t bytesRead;
+                size_t bytesTotal;
+                reader.getBytes(bytesRead, bytesTotal);
+                mOptions->split.size *=  (double)bytesTotal / ((double)bytesRead * (double) mOptions->split.number);
+                if(mOptions->split.size <= 0)
+                    mOptions->split.size = 1;
+                splitSizeReEvaluated = true;
             }
         }
     }
