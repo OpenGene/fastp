@@ -49,7 +49,8 @@ int main(int argc, char* argv[]){
     cmd.add<int>("n_base_limit", 'n', "if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5", false, 5);
 
     // length filtering
-    cmd.add<int>("length_required", 'l', "length filtering will be enabled if this argument is specified, reads shorter than length_required will be discarded.", false, 30);
+    cmd.add("disable_length_filtering", 'L', "length filtering is enabled by default. If this option is specified, length filtering is disabled");
+    cmd.add<int>("length_required", 'l', "reads shorter than length_required will be discarded.", false, 30);
     
     // reporting
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
@@ -104,7 +105,7 @@ int main(int argc, char* argv[]){
     opt.qualfilter.nBaseLimit = cmd.get<int>("n_base_limit");
 
     // length filtering
-    opt.lengthFilter.enabled = cmd.exist("length_required");
+    opt.lengthFilter.enabled = !cmd.exist("disable_length_filtering");
     opt.lengthFilter.requiredLength = cmd.get<int>("length_required");
 
     // threading
@@ -135,7 +136,7 @@ int main(int argc, char* argv[]){
     if(opt.split.enabled) {
         long readNum;
         Evaluator eva(&opt);
-        eva.evaluate(readNum);
+        eva.evaluateReads(readNum);
         // one record per file at least
         // We reduce it by half of PACI_SIZE due to we are processing data by pack 
         opt.split.size = readNum / opt.split.number - PACK_SIZE/2;
