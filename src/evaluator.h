@@ -13,7 +13,8 @@ public:
     Evaluator(Options* opt);
     ~Evaluator();
     // evaluate how many reads are stored in the input file
-    void evaluate(long& readNum);
+    void evaluateReads(long& readNum);
+    string evaluateRead1Adapter();
 private:
     Options* mOptions;
 };
