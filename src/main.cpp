@@ -26,6 +26,10 @@ int main(int argc, char* argv[]){
     cmd.add("phred64", '6', "indicates the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 2.", false, 2);
 
+    // adapter
+    cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
+    cmd.add<string>("adapter_sequence", 'a', "for single end data, adapter sequence is required for adapter trimming", false, "");
+
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
     cmd.add<int>("trim_tail1", 't', "trimming how many bases in tail for read1, default is 0", false, 0);
@@ -39,7 +43,7 @@ int main(int argc, char* argv[]){
     cmd.add<int>("cut_mean_quality", 'M', "the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20", false, 20);
 
     // quality filtering
-    cmd.add("disable_quality_filtering", 'Q', "quality filtering is enabled by default. If this option is enabled, quality filtering is disabled");
+    cmd.add("disable_quality_filtering", 'Q', "quality filtering is enabled by default. If this option is specified, quality filtering is disabled");
     cmd.add<int>("qualified_quality_phred", 'q', "the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified.", false, 15);
     cmd.add<int>("unqualified_percent_limit", 'u', "how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%", false, 40);
     cmd.add<int>("n_base_limit", 'n', "if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5", false, 5);
@@ -69,6 +73,10 @@ int main(int argc, char* argv[]){
     opt.out2 = cmd.get<string>("out2");
     opt.compression = cmd.get<int>("compression");
     opt.phred64 = cmd.exist("phred64");
+
+    // adapter cutting
+    opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");
+    opt.adapter.sequence = cmd.get<string>("adapter_sequence");
 
     // trimming
     opt.trim.front1 = cmd.get<int>("trim_front1");

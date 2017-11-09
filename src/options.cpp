@@ -19,7 +19,11 @@ bool Options::isPaired() {
 }
 
 bool Options::adapterCuttingEnabled() {
-    return adapter.enabled && isPaired();
+    if(adapter.enabled){
+        if(isPaired() || !adapter.sequence.empty())
+            return true;
+    }
+    return false;
 }
 
 bool Options::validate() {
@@ -86,6 +90,20 @@ bool Options::validate() {
             error_exit("the sliding window size for cutting by quality (--cut_window_size) should be between 2~10.");
         if(qualityCut.quality < 1 || qualityCut.quality > 30)
             error_exit("the mean quality requirement for cutting by quality (--cut_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
+    }
+
+    if(adapter.enabled && !isPaired() && !adapter.sequence.empty()) {
+        // validate adapter sequence for single end adapter trimming
+        if(adapter.sequence.length() < 4 || adapter.sequence.length() > 100)
+            error_exit("the adapter sequence should be 4 ~ 100 long");
+
+        // validate bases
+        for(int i=0; i<adapter.sequence.length(); i++) {
+            char c = adapter.sequence[i];
+            if(c!='A' && c!='T' && c!='C' && c!='G') {
+                error_exit("the adapter sequence can only have bases in {A, T, C, G}, but the given sequence is: " + adapter.sequence);
+            }
+        }
     }
 
     return true;

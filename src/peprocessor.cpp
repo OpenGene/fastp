@@ -196,7 +196,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
         Read* r2 = mFilter->trimAndCut(or2, mOptions->trim.front2, mOptions->trim.tail2);
 
-        if(r1 != NULL && r2!=NULL){
+        if(r1 != NULL && r2!=NULL && mOptions->adapter.enabled){
             AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult());
         }
 

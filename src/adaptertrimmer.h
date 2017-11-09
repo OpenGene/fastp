@@ -6,6 +6,7 @@
 #include <string>
 #include "overlapanalysis.h"
 #include "filterresult.h"
+#include "options.h"
 
 using namespace std;
 
@@ -15,6 +16,9 @@ public:
     ~AdapterTrimmer();
 
     static bool trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr);
+    static bool trimBySequence(Read* r1, FilterResult* fr, string& adapter);
+    static bool test();
+
 
 };
 

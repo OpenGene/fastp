@@ -51,6 +51,7 @@ public:
     }
 public:
     bool enabled;
+    string sequence;
 };
 
 class TrimmingOptions {
