@@ -1,10 +1,11 @@
 # fastp
 This tool is designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance. It has following features:
-* filter low quality reads (too low quality, or too many N)
-* apply possible error correction (being implemented )
-* cut adapters automatically (works for paired-end data)
+* filter out bad reads (too low quality, too short, or too many N...)
+* trim all reads in front and tail
+* cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
+* cut adapters (completely automatic for paired end data, adapter sequence should be provided for single end data)
 * report JSON format result for further interpreting 
-* Visualize quality profiles and filtering results on a single HTML page (being implemented)
+* visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative)
 * ...
 
 This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
