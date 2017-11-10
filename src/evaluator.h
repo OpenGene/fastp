@@ -17,6 +17,8 @@ public:
     string evaluateRead1Adapter();
 private:
     Options* mOptions;
+    string int2seq(unsigned int val, int seqlen);
+    unsigned int seq2int(string& seq, int seqlen, bool& valid);
 };
 
 

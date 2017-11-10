@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
 
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
-    cmd.add<string>("adapter_sequence", 'a', "for single end data, adapter sequence is required for adapter trimming", false, "");
+    cmd.add<string>("adapter_sequence", 'a', "the adapter for SE data, default is auto (automatic detection). For PE data adapters can be trimmed without knowing the sequences.", false, "auto");
 
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
@@ -128,9 +128,24 @@ int main(int argc, char* argv[]){
     }
     command = ss.str();
 
-    opt.validate();
-
     time_t t1 = time(NULL);
+
+    // using evaluator to guess how many reads in total
+    if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
+        long readNum;
+        Evaluator eva(&opt);
+        cout << "Detecting adapter for single end input..." << endl;
+        string adapt = eva.evaluateRead1Adapter();
+        if(adapt.length() >= 12 ) {
+            cout << "Detected adapter: " << adapt << endl << endl;
+            opt.adapter.sequence = adapt;
+        } else {
+            cout << "No adapter detected" << endl << endl;
+            opt.adapter.sequence = "";
+        }
+    }
+
+    opt.validate();
 
     // using evaluator to guess how many reads in total
     if(opt.split.enabled) {

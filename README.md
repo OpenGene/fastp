@@ -56,8 +56,8 @@ options:
   
   # adapter trimming options
   -A, --disable_adapter_trimming     adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled
-  -a, --adapter_sequence             for single end data, adapter sequence is required for adapter trimming (string [=])
-  
+  -a, --adapter_sequence             the adapter for SE data, default is auto (automatic detection). For PE data adapters can be trimmed without knowing the sequences. (string [=auto])
+    
   # global trimming options
   -f, --trim_front1                  trimming how many bases in front for read1, default is 0 (int [=0])
   -t, --trim_tail1                   trimming how many bases in tail for read1, default is 0 (int [=0])
