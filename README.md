@@ -3,13 +3,24 @@ This tool is designed to provide fast all-in-one preprocessing for FastQ files. 
 * filter out bad reads (too low quality, too short, or too many N...)
 * trim all reads in front and tail
 * cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
-* cut adapters (for paired end data it's automatic, for single end data adapter sequence should be provided).
+* cut adapters (adapter sequences are automatically detected).
 * report JSON format result for further interpreting. 
 * visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
 * split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing.
 * ...
 
 This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
+
+# simple usage
+* for single end data (not compressed)
+```
+fastp -i in.fq -o out.fq
+```
+* for paired end data (gzip compressed)
+```
+fastp -i in.R1.fq.gz -I in.R2.fq.gz -o out.R1.fq.gz -O out.R2.fq.gz
+```
+By default, the HTML report are saved to `fastp.html` (can be specified with `-h` option), and the JSON report are saved to `fastp.json` (can be specified with `-j` option).
 
 # examples of report
 `fastp` creates reports in both HTML and JSON format.
