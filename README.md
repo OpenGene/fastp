@@ -20,7 +20,7 @@ fastp -i in.fq -o out.fq
 ```
 fastp -i in.R1.fq.gz -I in.R2.fq.gz -o out.R1.fq.gz -O out.R2.fq.gz
 ```
-By default, the HTML report are saved to `fastp.html` (can be specified with `-h` option), and the JSON report are saved to `fastp.json` (can be specified with `-j` option).
+By default, the HTML report is saved to `fastp.html` (can be specified with `-h` option), and the JSON report is saved to `fastp.json` (can be specified with `-j` option).
 
 # examples of report
 `fastp` creates reports in both HTML and JSON format.
@@ -41,7 +41,7 @@ Get the stable releases
 https://github.com/OpenGene/fastp/releases/latest
 
 ## Build
-fastp only depends on `libz`, which is always available on Linux or Mac systems. If your system has no `libz`, install it first.
+fastp only depends on `zlib`, which is always available on Linux or Mac systems. If your system has no `zlib`, install it first.
 ```shell
 cd fastp
 make
