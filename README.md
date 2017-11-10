@@ -53,7 +53,7 @@ After build is done, run
 sudo make install
 ```
 
-# usage
+# All options
 ```shell
 usage: fastp -i <in1> -o <out1> [-I <in1> -O <out2>] [options...]
 options:
