@@ -1,6 +1,7 @@
 #include "evaluator.h"
 #include "fastqreader.h"
 #include <map>
+#include <memory.h>
 
 Evaluator::Evaluator(Options* opt){
     mOptions = opt;
