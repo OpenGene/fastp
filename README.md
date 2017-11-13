@@ -28,7 +28,7 @@ By default, the HTML report is saved to `fastp.html` (can be specified with `-h`
 * JSON report: http://opengene.org/fastp/fastp.json
 
 # Get fastp
-## Download binary (http://opengene.org/fastp/fastp)
+## Download binary (only for Linux systems, http://opengene.org/fastp/fastp)
 ```shell
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
