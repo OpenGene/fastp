@@ -30,30 +30,20 @@ By default, the HTML report is saved to `fastp.html` (can be specified with `-h`
 # Get fastp
 ## Download binary (only for Linux systems, http://opengene.org/fastp/fastp)
 ```shell
+# this binary was compiled on CentOS, and tested on CentOS/Ubuntu
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 ```
 ## Compile from source
-### Get source
-Get latest code
 ```shell
-# download by http
-https://github.com/OpenGene/fastp/archive/master.zip
-# or clone by git
+# get source (you can also use browser to download from master or releases)
 git clone https://github.com/OpenGene/fastp.git
-```
-Get the stable releases  
-https://github.com/OpenGene/fastp/releases/latest
 
-### Build
-fastp only depends on `zlib`, which is always available on Linux or Mac systems. If your system has no `zlib`, install it first.
-```shell
+# build
 cd fastp
 make
-```
-### Install
-After build is done, run
-```
+
+# Install
 sudo make install
 ```
 # All options
