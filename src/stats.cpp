@@ -319,7 +319,12 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
         json_str += "},";
     }
     json_str += "];\n";
-    json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'}, yaxis:{title:'quality'}};\n";
+    json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'";
+    // use log plot if it's too long
+    if(mCycles>300) {
+        json_str += ",type:'log'";
+    }
+    json_str += "}, yaxis:{title:'quality'}};\n";
     json_str += "Plotly.newPlot('" + divName + "', data, layout);\n";
 
     ofs << json_str;
@@ -358,7 +363,12 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
         json_str += "},";
     }
     json_str += "];\n";
-    json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'}, yaxis:{title:'base content ratios'}};\n";
+    json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'";
+    // use log plot if it's too long
+    if(mCycles>300) {
+        json_str += ",type:'log'";
+    }
+    json_str += "}, yaxis:{title:'base content ratios'}};\n";
     json_str += "Plotly.newPlot('" + divName + "', data, layout);\n";
 
     ofs << json_str;
