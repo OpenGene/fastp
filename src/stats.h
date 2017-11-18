@@ -13,7 +13,7 @@ using namespace std;
 class Stats{
 public:
     // this @guessedCycles parameter should be calculated using the first several records
-    Stats(int guessedCycles, int bufferMargin = 1000);
+    Stats(int guessedCycles, int bufferMargin = 1024);
     ~Stats();
     int getCycles();
     long getReads();

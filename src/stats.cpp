@@ -135,7 +135,7 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
     const char* seqstr = r->mSeq.mStr.c_str();
     const char* qualstr = r->mQuality.c_str();
 
-    for(int i=0; i<len; i++) {
+    for(int i=0; i<len && i<mCycles; i++) {
         char base = seqstr[i];
         char qual = qualstr[i];
         // get last 3 bits
