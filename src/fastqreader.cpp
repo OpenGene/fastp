@@ -46,14 +46,7 @@ void FastqReader::getBytes(size_t& bytesRead, size_t& bytesTotal) {
 	bytesTotal = is.tellg();
 }
 
-bool FastqReader::getLine(char* line, int maxLine){
-	bool status = true;
-	if(mZipped)
-		status = gzgets(mZipFile, line, maxLine);
-	else {
-		mFile.getline(line, maxLine);
-		status = !mFile.fail();
-	}
+void FastqReader::clearLineBreaks(char* line) {
 
 	// trim \n, \r or \r\n in the tail
 	int readed = strlen(line);
@@ -64,36 +57,116 @@ bool FastqReader::getLine(char* line, int maxLine){
 				line[readed-2] = '\0';
 		}
 	}
+}
 
-	return status;
+string FastqReader::getLine(){
+	const int maxLine = 1024;
+	char line[maxLine];
+
+	if(mZipped) {
+		char* buf = NULL;
+		memset(line, 0, maxLine);
+		buf = gzgets(mZipFile, line, maxLine);
+
+		// EOF or error, return an empty string
+		if(!buf)
+			return string();
+
+		// optimize for short reads
+		// reached end of line
+		if(line[maxLine-2] == '\0' || line[maxLine-2] == '\n') {
+			clearLineBreaks(line);
+			return string(line);
+		} else {
+			string s(buf);
+			while(buf) {
+				memset(line, 0, maxLine);
+				buf = gzgets(mZipFile, line, maxLine);
+				//eof or error
+				if(!buf)
+					break;
+				//reached end of line
+				if(line[maxLine-2] == '\0' || line[maxLine-2] == '\n') {
+					clearLineBreaks(buf);
+					s.append(buf);
+					break;
+				} else {
+					s.append(buf);
+				}
+			}
+			return s;
+		}
+	}
+	else {
+		mFile.getline(line, maxLine);
+		// optimize for short reads
+		// reached end of line
+		if(mFile.eof() || mFile.good()) {
+			clearLineBreaks(line);
+			return string(line);
+		} else {
+			string s(line);
+			while(true) {
+				if(mFile.eof())
+					break;
+				//clear fail bit
+				mFile.clear();
+				memset(line, 0, maxLine);
+				mFile.getline(line, maxLine);
+				if(mFile.eof() || mFile.good()) {
+					clearLineBreaks(line);
+					s.append(line);
+					break;
+				} else {
+					// in case of some error happened, break it
+					if(line[0] == '\0'){
+						break;
+					}
+					s.append(line);
+				}
+			}
+			return s;
+		}
+	}
+
+	return string();
+}
+
+bool FastqReader::eof() {
+	if (mZipped) {
+		return gzeof(mZipFile);
+	} else {
+		return mFile.eof();
+	}
 }
 
 Read* FastqReader::read(){
-	const int maxLine = 1000;
-	char line[maxLine];
 	if (mZipped){
 		if (mZipFile == NULL)
 			return NULL;
 	}
 
-	if(!getLine(line, maxLine))return NULL;
-	string name(line);
+	if(eof()) {
+		return NULL;
+	}
 
-	if (!getLine(line, maxLine))return NULL;
-	string sequence(line);
+	string name = getLine();
+	string sequence = getLine();
+	string strand = getLine();
 
-	if (!getLine(line, maxLine))return NULL;
-	string strand(line);
+	if(name.empty() || sequence.empty() || strand.empty())
+		return NULL;
 
-	if (mHasQuality){
-		if (!getLine(line, maxLine))return NULL;
-		string quality(line);
-		Read* read = new Read(name, sequence, strand, quality, mPhred64);
-		return read;
+	// WAR for FQ with no quality
+	if (!mHasQuality){
+		string quality = string(sequence.length(), 'K');
+		return new Read(name, sequence, strand, quality, mPhred64);
 	}
 	else {
-		Read* read = new Read(name, sequence, strand);
-		return read;
+		string quality = getLine();
+		if(quality.empty())
+			return NULL;
+		return new Read(name, sequence, strand, quality, mPhred64);
 	}
 
 	return NULL;

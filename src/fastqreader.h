@@ -20,6 +20,7 @@ public:
 	//this function is not thread-safe
 	//do not call read() of a same FastqReader object from different threads concurrently
 	Read* read();
+	bool eof();
 
 public:
 	static bool isZipFastq(string filename);
@@ -29,7 +30,8 @@ public:
 private:
 	void init();
 	void close();
-	bool getLine(char* line, int maxLine);
+	string getLine();
+	void clearLineBreaks(char* line);
 
 private:
 	string mFilename;
