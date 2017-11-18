@@ -37,6 +37,52 @@ Stats::Stats(int guessedCycles, int bufferMargin){
     memset(mCycleTotalQual, 0, sizeof(long)*mBufLen);
 }
 
+void Stats::extendBuffer(int newBufLen){
+    if(newBufLen <= mBufLen)
+        return ;
+
+    long* newBuf = NULL;
+
+    for(int i=0; i<8; i++){
+        newBuf = new long[newBufLen];
+        memset(newBuf, 0, sizeof(long)*newBufLen);
+        memcpy(newBuf, mCycleQ30Bases[i], sizeof(long) * mBufLen);
+        delete mCycleQ30Bases[i];
+        mCycleQ30Bases[i] = newBuf;
+
+        newBuf = new long[newBufLen];
+        memset(newBuf, 0, sizeof(long)*newBufLen);
+        memcpy(newBuf, mCycleQ20Bases[i], sizeof(long) * mBufLen);
+        delete mCycleQ20Bases[i];
+        mCycleQ20Bases[i] = newBuf;
+
+        newBuf = new long[newBufLen];
+        memset(newBuf, 0, sizeof(long)*newBufLen);
+        memcpy(newBuf, mCycleBaseContents[i], sizeof(long) * mBufLen);
+        delete mCycleBaseContents[i];
+        mCycleBaseContents[i] = newBuf;
+
+        newBuf = new long[newBufLen];
+        memset(newBuf, 0, sizeof(long)*newBufLen);
+        memcpy(newBuf, mCycleBaseQual[i], sizeof(long) * mBufLen);
+        delete mCycleBaseQual[i];
+        mCycleBaseQual[i] = newBuf;
+    }
+    newBuf = new long[newBufLen];
+    memset(newBuf, 0, sizeof(long)*newBufLen);
+    memcpy(newBuf, mCycleTotalBase, sizeof(long)*mBufLen);
+    delete mCycleTotalBase;
+    mCycleTotalBase = newBuf;
+
+    newBuf = new long[newBufLen];
+    memset(newBuf, 0, sizeof(long)*newBufLen);
+    memcpy(newBuf, mCycleTotalQual, sizeof(long)*mBufLen);
+    delete mCycleTotalQual;
+    mCycleTotalQual = newBuf;
+
+    mBufLen = newBufLen;
+}
+
 Stats::~Stats() {
     for(int i=0; i<8; i++){
         delete mCycleQ30Bases[i];
@@ -134,10 +180,14 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
     lowQualNum = 0;
     nBaseNum = 0;
     int len = r->length();
+
+    if(mBufLen < len) {
+        extendBuffer(max(len + 100, (int)(len * 1.5)));
+    }
     const char* seqstr = r->mSeq.mStr.c_str();
     const char* qualstr = r->mQuality.c_str();
 
-    for(int i=0; i<len && i<mBufLen; i++) {
+    for(int i=0; i<len; i++) {
         char base = seqstr[i];
         char qual = qualstr[i];
         // get last 3 bits

@@ -38,6 +38,9 @@ public:
     static string list2string(long* list, int size);
 
 private:
+    void extendBuffer(int newBufLen);
+
+private:
     long mReads;
     /* 
     why we use 8 here?
