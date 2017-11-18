@@ -75,6 +75,8 @@ void Stats::summarize() {
             break;
         }
     }
+    if(mCycleTotalBase[mBufLen-1]>0)
+        mCycles = mBufLen;
 
     // Q20 Q30
     for(int i=0; i<8; i++) {
@@ -135,7 +137,7 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
     const char* seqstr = r->mSeq.mStr.c_str();
     const char* qualstr = r->mQuality.c_str();
 
-    for(int i=0; i<len && i<mCycles; i++) {
+    for(int i=0; i<len && i<mBufLen; i++) {
         char base = seqstr[i];
         char qual = qualstr[i];
         // get last 3 bits
