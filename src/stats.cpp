@@ -326,6 +326,17 @@ string Stats::list2string(double* list, int size) {
     return ss.str();
 }
 
+string Stats::list2string(double* list, int size, long* coords) {
+    stringstream ss;
+    for(int i=0; i<size; i++) {
+        // coords is 1,2,3,...
+        ss << list[coords[i]-1];
+        if(i < size-1)
+            ss << ",";
+    }
+    return ss.str();
+}
+
 string Stats::list2string(long* list, int size) {
     stringstream ss;
     for(int i=0; i<size; i++) {
@@ -357,14 +368,34 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
     string json_str = "var data=[";
 
     long *x = new long[mCycles];
-    for(int i=0; i<mCycles; i++)
-        x[i] = i+1;
+    int total = 0;
+    const int fullSampling = 300;
+    for(int i=0; i<mCycles && i<fullSampling; i++){
+        x[total] = i+1;
+        total++;
+    }
+    // down sampling if it's too long
+    if(mCycles>fullSampling) {
+        double pos = fullSampling;
+        while(true){
+            pos *= 1.05;
+            if(pos >= mCycles)
+                break;
+            x[total] = (int)pos;
+            total++;
+        }
+        // make sure lsat one is contained
+        if(x[total-1] != mCycles){
+            x[total] = mCycles;
+            total++;
+        }
+    }
     // four bases
     for (int b = 0; b<5; b++) {
         string base = alphabets[b];
         json_str += "{";
-        json_str += "x:[" + list2string(x, mCycles) + "],";
-        json_str += "y:[" + list2string(mQualityCurves[base], mCycles) + "],";
+        json_str += "x:[" + list2string(x, total) + "],";
+        json_str += "y:[" + list2string(mQualityCurves[base], total, x) + "],";
         json_str += "name: '" + base + "',";
         json_str += "mode:'lines',";
         json_str += "line:{color:'" + colors[b] + "', width:1}\n";
@@ -373,7 +404,7 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
     json_str += "];\n";
     json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'";
     // use log plot if it's too long
-    if(mCycles>300) {
+    if(mCycles>fullSampling) {
         json_str += ",type:'log'";
     }
     json_str += "}, yaxis:{title:'quality'}};\n";
@@ -401,14 +432,34 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     string json_str = "var data=[";
 
     long *x = new long[mCycles];
-    for(int i=0; i<mCycles; i++)
-        x[i] = i+1;
+    int total = 0;
+    const int fullSampling = 300;
+    for(int i=0; i<mCycles && i<fullSampling; i++){
+        x[total] = i+1;
+        total++;
+    }
+    // down sampling if it's too long
+    if(mCycles>fullSampling) {
+        double pos = fullSampling;
+        while(true){
+            pos *= 1.05;
+            if(pos >= mCycles)
+                break;
+            x[total] = (int)pos;
+            total++;
+        }
+        // make sure lsat one is contained
+        if(x[total-1] != mCycles){
+            x[total] = mCycles;
+            total++;
+        }
+    }
     // four bases
     for (int b = 0; b<6; b++) {
         string base = alphabets[b];
         json_str += "{";
-        json_str += "x:[" + list2string(x, mCycles) + "],";
-        json_str += "y:[" + list2string(mContentCurves[base], mCycles) + "],";
+        json_str += "x:[" + list2string(x, total) + "],";
+        json_str += "y:[" + list2string(mContentCurves[base], total, x) + "],";
         json_str += "name: '" + base + "',";
         json_str += "mode:'lines',";
         json_str += "line:{color:'" + colors[b] + "', width:1}\n";

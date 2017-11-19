@@ -35,6 +35,7 @@ public:
 
 public:
     static string list2string(double* list, int size);
+    static string list2string(double* list, int size, long* coords);
     static string list2string(long* list, int size);
 
 private:
