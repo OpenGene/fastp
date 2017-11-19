@@ -111,7 +111,9 @@ Stats::~Stats() {
     }
 }
 
-void Stats::summarize() {
+void Stats::summarize(bool forced) {
+    if(summarized && !forced)
+        return;
 
     // first get the cycle and count total bases
     for(int c=0; c<mBufLen; c++) {
@@ -431,18 +433,20 @@ Stats* Stats::merge(vector<Stats*>& list) {
     //get the most long cycles
     int cycles = 0;
     for(int t=0; t<list.size(); t++) {
+        list[t]->summarize();
         cycles = max(cycles, list[t]->getCycles());
     }
 
     Stats* s = new Stats(cycles, 0);
 
     for(int t=0; t<list.size(); t++) {
+        int curCycles =  list[t]->getCycles();
         // merge read number
         s->mReads += list[t]->mReads;
 
         // merge per cycle counting for different bases
         for(int i=0; i<8; i++){
-            for(int j=0; j<cycles; j++) {
+            for(int j=0; j<cycles && j<curCycles; j++) {
                 s->mCycleQ30Bases[i][j] += list[t]->mCycleQ30Bases[i][j];
                 s->mCycleQ20Bases[i][j] += list[t]->mCycleQ20Bases[i][j];
                 s->mCycleBaseContents[i][j] += list[t]->mCycleBaseContents[i][j];
@@ -451,7 +455,7 @@ Stats* Stats::merge(vector<Stats*>& list) {
         }
 
         // merge per cycle counting for all bases
-        for(int j=0; j<cycles; j++) {
+        for(int j=0; j<cycles && j<curCycles; j++) {
             s->mCycleTotalBase[j] += list[t]->mCycleTotalBase[j];
             s->mCycleTotalQual[j] += list[t]->mCycleTotalQual[j];
         }

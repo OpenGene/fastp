@@ -25,7 +25,7 @@ public:
 
     static Stats* merge(vector<Stats*>& list);
     void print();
-    void summarize();
+    void summarize(bool forced = false);
     // a port of JSON report
     void reportJson(ofstream& ofs, string padding);
     // a port of HTML report
