@@ -7,6 +7,7 @@ This tool is designed to provide fast all-in-one preprocessing for FastQ files. 
 * report JSON format result for further interpreting. 
 * visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
 * split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing.
+* support long reads (data from PacBio / Nanopore devices).
 * ...
 
 This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
