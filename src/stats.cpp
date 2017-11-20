@@ -330,7 +330,21 @@ string Stats::list2string(double* list, int size, long* coords) {
     stringstream ss;
     for(int i=0; i<size; i++) {
         // coords is 1,2,3,...
-        ss << list[coords[i]-1];
+        long start = 0;
+        if(i>0)
+            start = coords[i-1];
+        long end = coords[i];
+
+        double total = 0.0;
+        for(int k=start; k<end; k++)
+            total += list[k];
+
+        // get average
+        if(end == start)
+            ss << "0.0";
+        else
+            ss << total / (end - start);
+        //ss << list[coords[i]-1];
         if(i < size-1)
             ss << ",";
     }
@@ -352,6 +366,10 @@ void Stats::reportHtml(ofstream& ofs, string filteringType, string readName) {
     reportHtmlContents(ofs, filteringType, readName);
 }
 
+bool Stats::isLongRead() {
+    return mCycles > 300;
+}
+
 void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readName) {
 
     // quality
@@ -369,25 +387,32 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
 
     long *x = new long[mCycles];
     int total = 0;
-    const int fullSampling = 300;
-    for(int i=0; i<mCycles && i<fullSampling; i++){
-        x[total] = i+1;
-        total++;
-    }
-    // down sampling if it's too long
-    if(mCycles>fullSampling) {
-        double pos = fullSampling;
-        while(true){
-            pos *= 1.05;
-            if(pos >= mCycles)
-                break;
-            x[total] = (int)pos;
+    if(!isLongRead()) {
+        for(int i=0; i<mCycles; i++){
+            x[total] = i+1;
             total++;
         }
-        // make sure lsat one is contained
-        if(x[total-1] != mCycles){
-            x[total] = mCycles;
+    } else {
+        const int fullSampling = 40;
+        for(int i=0; i<fullSampling && i<mCycles; i++){
+            x[total] = i+1;
             total++;
+        }
+        // down sampling if it's too long
+        if(mCycles>fullSampling) {
+            double pos = fullSampling;
+            while(true){
+                pos *= 1.05;
+                if(pos >= mCycles)
+                    break;
+                x[total] = (int)pos;
+                total++;
+            }
+            // make sure lsat one is contained
+            if(x[total-1] != mCycles){
+                x[total] = mCycles;
+                total++;
+            }
         }
     }
     // four bases
@@ -404,7 +429,7 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
     json_str += "];\n";
     json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'";
     // use log plot if it's too long
-    if(mCycles>fullSampling) {
+    if(isLongRead()) {
         json_str += ",type:'log'";
     }
     json_str += "}, yaxis:{title:'quality'}};\n";
@@ -433,25 +458,32 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
 
     long *x = new long[mCycles];
     int total = 0;
-    const int fullSampling = 300;
-    for(int i=0; i<mCycles && i<fullSampling; i++){
-        x[total] = i+1;
-        total++;
-    }
-    // down sampling if it's too long
-    if(mCycles>fullSampling) {
-        double pos = fullSampling;
-        while(true){
-            pos *= 1.05;
-            if(pos >= mCycles)
-                break;
-            x[total] = (int)pos;
+    if(!isLongRead()) {
+        for(int i=0; i<mCycles; i++){
+            x[total] = i+1;
             total++;
         }
-        // make sure lsat one is contained
-        if(x[total-1] != mCycles){
-            x[total] = mCycles;
+    } else {
+        const int fullSampling = 40;
+        for(int i=0; i<fullSampling && i<mCycles; i++){
+            x[total] = i+1;
             total++;
+        }
+        // down sampling if it's too long
+        if(mCycles>fullSampling) {
+            double pos = fullSampling;
+            while(true){
+                pos *= 1.05;
+                if(pos >= mCycles)
+                    break;
+                x[total] = (int)pos;
+                total++;
+            }
+            // make sure lsat one is contained
+            if(x[total-1] != mCycles){
+                x[total] = mCycles;
+                total++;
+            }
         }
     }
     // four bases
@@ -468,7 +500,7 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     json_str += "];\n";
     json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'";
     // use log plot if it's too long
-    if(mCycles>300) {
+    if(isLongRead()) {
         json_str += ",type:'log'";
     }
     json_str += "}, yaxis:{title:'base content ratios'}};\n";

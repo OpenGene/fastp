@@ -32,6 +32,7 @@ public:
     void reportHtml(ofstream& ofs, string filteringType, string readName);
     void reportHtmlQuality(ofstream& ofs, string filteringType, string readName);
     void reportHtmlContents(ofstream& ofs, string filteringType, string readName);
+    bool isLongRead();
 
 public:
     static string list2string(double* list, int size);
