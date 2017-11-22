@@ -19,12 +19,6 @@ void FastqReader::init(){
 	if (ends_with(mFilename, ".gz")){
 		mZipFile = gzopen(mFilename.c_str(), "r");
 		mZipped = true;
-		Read* r = read();
-
-		//test if it has quality line or not (fastq/fasta)
-		if (r->mQuality[0] == '@')
-			mHasQuality = false;
-		delete r;
 		gzrewind(mZipFile);
 	}
 	else if (isFastq(mFilename)){
