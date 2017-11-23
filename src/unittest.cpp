@@ -5,6 +5,7 @@
 #include "overlapanalysis.h"
 #include "filter.h"
 #include "adaptertrimmer.h"
+#include "basecorrector.h"
 #include <time.h>
 
 UnitTest::UnitTest(){
@@ -19,6 +20,7 @@ void UnitTest::run(){
     passed &= report(OverlapAnalysis::test(), "OverlapAnalysis::test");
     passed &= report(Filter::test(), "Filter::test");
     passed &= report(AdapterTrimmer::test(), "AdapterTrimmer::test");
+    passed &= report(BaseCorrector::test(), "BaseCorrector::test");
     printf("\n==========================\n");
     printf("%s\n\n", passed?"ALL PASSED":"FAILED");
 }

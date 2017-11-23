@@ -2,6 +2,7 @@
 #include "filterresult.h"
 #include "stats.h"
 #include "htmlreporter.h"
+#include <memory.h>
 
 FilterResult::FilterResult(Options* opt, bool paired){
     mOptions = opt;
@@ -11,9 +12,13 @@ FilterResult::FilterResult(Options* opt, bool paired){
     for(int i=0; i<FILTER_RESULT_TYPES; i++) {
         mFilterReadStats[i] = 0;
     }
+    mCorrectionMatrix = new long[64];
+    memset(mCorrectionMatrix, 0, sizeof(long)*64);
+    mCorrectedReads = 0;
 }
 
 FilterResult::~FilterResult() {
+    delete mCorrectionMatrix;
 }
 
 void FilterResult::addFilterResult(int result) {
@@ -32,7 +37,7 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
     FilterResult* result = new FilterResult(list[0]->mOptions, list[0]->mPaired);
 
     long* target = result->getFilterReadStats();
-    
+    // read stats
     for(int i=0; i<list.size(); i++) {
         long* current = list[i]->getFilterReadStats();
         for(int j=0; j<FILTER_RESULT_TYPES; j++) {
@@ -57,9 +62,44 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
         }
     }
 
+    // correction matrix
+    long* correction = result->getCorrectionMatrix();
+    for(int i=0; i<list.size(); i++) {
+        long* current = list[i]->getCorrectionMatrix();
+        for(int p=0; p<64; p++) {
+            correction[p] += current[p];
+        }
+        // update read counting
+        result->mCorrectedReads += list[i]->mCorrectedReads;
+    }
+
     // sort adapters list by adapter length from short to long
 
     return result;
+}
+
+long FilterResult::getTotalCorrectedBases() {
+    long total = 0;
+    for(int p=0; p<64; p++) {
+        total += mCorrectionMatrix[p];
+    }
+    return total;
+}
+
+void FilterResult::addCorrection(char from, char to) {
+    int f = from & 0x07;
+    int t = to & 0x07;
+    mCorrectionMatrix[f*8 + t]++;
+}
+
+void FilterResult::incCorrectedReads(int count) {
+    mCorrectedReads += count;
+}
+
+long FilterResult::getCorrectionNum(char from, char to) {
+    int f = from & 0x07;
+    int t = to & 0x07;
+    return mCorrectionMatrix[f*8 + t];
 }
 
 void FilterResult::addAdapterTrimmed(string adapter) {
@@ -96,8 +136,14 @@ void FilterResult::print() {
     cout <<  "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
     cout <<  "reads failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
     cout <<  "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
-    cout <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
-    cout <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
+    if(mOptions->adapter.enabled) {
+        cout <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
+        cout <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
+    }
+    if(mOptions->correction.enabled) {
+        cout <<  "reads corrected by overlap analysis: " << mCorrectedReads << endl;
+        cout <<  "bases corrected by overlap analysis: " << getTotalCorrectedBases() << endl;
+    }
 }
 
 void FilterResult::reportJson(ofstream& ofs, string padding) {

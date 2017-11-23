@@ -52,6 +52,9 @@ int main(int argc, char* argv[]){
     cmd.add("disable_length_filtering", 'L', "length filtering is enabled by default. If this option is specified, length filtering is disabled");
     cmd.add<int>("length_required", 'l', "reads shorter than length_required will be discarded.", false, 30);
     
+    // base correction in overlapped regions of paired end data
+    cmd.add("correction", 'c', "enable base correction in overlapped regions (only for PE data), default is disabled");
+
     // reporting
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
     cmd.add<string>("html", 'h', "the html format report file name", false, "fastp.html");
@@ -107,6 +110,9 @@ int main(int argc, char* argv[]){
     // length filtering
     opt.lengthFilter.enabled = !cmd.exist("disable_length_filtering");
     opt.lengthFilter.requiredLength = cmd.get<int>("length_required");
+
+    // overlap correction
+    opt.correction.enabled = cmd.exist("correction");
 
     // threading
     opt.thread = cmd.get<int>("thread");

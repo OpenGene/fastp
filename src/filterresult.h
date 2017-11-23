@@ -46,17 +46,24 @@ public:
     void reportAdapterHtml(ofstream& ofs);
     void outputAdaptersJson(ofstream& ofs, map<string, long, classcomp>& adapterCounts);
     void outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts);
-
+    // deal with base correction results
+    long* getCorrectionMatrix() {return mCorrectionMatrix;}
+    long getTotalCorrectedBases();
+    void addCorrection(char from, char to);
+    long getCorrectionNum(char from, char to);
+    void incCorrectedReads(int count);
 
 public:
     Options* mOptions;
     bool mPaired;
+    long mCorrectedReads;
 private:
     long mFilterReadStats[FILTER_RESULT_TYPES];
     long mTrimmedAdapterRead;
     long mTrimmedAdapterBases;
     map<string, long, classcomp> mAdapter1;
     map<string, long, classcomp> mAdapter2;
+    long* mCorrectionMatrix;
 };
 
 #endif

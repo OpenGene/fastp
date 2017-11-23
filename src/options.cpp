@@ -106,5 +106,9 @@ bool Options::validate() {
         }
     }
 
+    if(correction.enabled && !isPaired()) {
+        cerr << "WARNING: base correction is only appliable for paired end data, ignored -c/--correction" << endl;
+    }
+
     return true;
 }

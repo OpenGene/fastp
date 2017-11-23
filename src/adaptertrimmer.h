@@ -16,6 +16,7 @@ public:
     ~AdapterTrimmer();
 
     static bool trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr);
+    static bool trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, OverlapResult ov);
     static bool trimBySequence(Read* r1, FilterResult* fr, string& adapter);
     static bool test();
 

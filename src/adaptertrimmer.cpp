@@ -9,6 +9,10 @@ AdapterTrimmer::~AdapterTrimmer(){
 
 bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr) {
     OverlapResult ov = OverlapAnalysis::analyze(r1, r2);
+    return trimByOverlapAnalysis(r1, r2, fr, ov);
+}
+
+bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, OverlapResult ov) {
     int ol = ov.overlap_len;
     if(ov.diff<=5 && ov.overlapped && ov.offset < 0 && ol > r1->length()/2) {
         string adapter1 = r1->mSeq.mStr.substr(ol, r1->length() - ol);

@@ -4,6 +4,7 @@ This tool is designed to provide fast all-in-one preprocessing for FastQ files. 
 * trim all reads in front and tail
 * cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
 * cut adapters (adapter sequences are automatically detected).
+* correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
 * report JSON format result for further interpreting. 
 * visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
 * split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing.
@@ -84,6 +85,9 @@ options:
   # length filtering options
   -L, --disable_length_filtering     length filtering is enabled by default. If this option is specified, length filtering is disabled
   -l, --length_required              reads shorter than length_required will be discarded. (int [=30])
+
+  # base correction by overlap analysis options
+  -c, --correction                   enable base correction in overlapped regions (only for PE data), default is disabled
   
   # reporting options
   -j, --json                         the json format report file name (string [=fastp.json])

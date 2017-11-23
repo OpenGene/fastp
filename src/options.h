@@ -7,6 +7,15 @@
 
 using namespace std;
 
+class CorrectionOptions {
+public:
+    CorrectionOptions() {
+        enabled = false;
+    }
+public:
+    bool enabled;
+};
+
 class QualityCutOptions {
 public:
     QualityCutOptions() {
@@ -145,6 +154,8 @@ public:
     SplitOptions split;
     // options for quality cutting
     QualityCutOptions qualityCut;
+    // options for base correction
+    CorrectionOptions correction;
 
 };
 
