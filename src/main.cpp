@@ -12,6 +12,10 @@
 string command;
 
 int main(int argc, char* argv[]){
+    // display version info if no argument is given
+    if(argc == 1) {
+        cout << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
+    }
     if (argc == 2 && strcmp(argv[1], "test")==0){
         UnitTest tester;
         tester.run();
