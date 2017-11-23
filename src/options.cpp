@@ -108,6 +108,7 @@ bool Options::validate() {
 
     if(correction.enabled && !isPaired()) {
         cerr << "WARNING: base correction is only appliable for paired end data, ignored -c/--correction" << endl;
+        correction.enabled = false;
     }
 
     return true;

@@ -41,11 +41,11 @@ public:
     // a part of JSON report for adapters
     void reportAdapterJson(ofstream& ofs, string padding);
     // a part of HTML report
-    void reportHtml(ofstream& ofs, long totalReads);
+    void reportHtml(ofstream& ofs, long totalReads, long totalBases);
     // a part of HTML report for adapters
-    void reportAdapterHtml(ofstream& ofs);
+    void reportAdapterHtml(ofstream& ofs, long totalBases);
     void outputAdaptersJson(ofstream& ofs, map<string, long, classcomp>& adapterCounts);
-    void outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts);
+    void outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts, long totalBases);
     // deal with base correction results
     long* getCorrectionMatrix() {return mCorrectionMatrix;}
     long getTotalCorrectedBases();

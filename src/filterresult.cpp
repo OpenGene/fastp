@@ -150,6 +150,10 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
     ofs << "{" << endl;
 
     ofs << padding << "\t" << "\"passed_filter_reads\": " << mFilterReadStats[PASS_FILTER] << "," << endl;
+    if(mOptions->correction.enabled) {
+        ofs << padding << "\t" << "\"corrected_reads\": " << mCorrectedReads << ","  << endl;
+        ofs << padding << "\t" << "\"corrected_bases\": " << getTotalCorrectedBases() << ","  << endl;
+    }
     ofs << padding << "\t" << "\"low_quality_reads\": " << mFilterReadStats[FAIL_QUALITY] << "," << endl;
     ofs << padding << "\t" << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << "," << endl;
     ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << endl;
@@ -237,42 +241,52 @@ void FilterResult::reportAdapterJson(ofstream& ofs, string padding) {
     ofs << "</script>" << endl;
 } */
 
-void FilterResult::reportHtml(ofstream& ofs, long totalReads) {
+void FilterResult::reportHtml(ofstream& ofs, long totalReads, long totalBases) {
     double total = (double)totalReads;
     ofs << "<table class='summary_table'>\n";
     HtmlReporter::outputRow(ofs, "reads passed filters:", HtmlReporter::formatNumber(mFilterReadStats[PASS_FILTER]) + " (" + to_string(mFilterReadStats[PASS_FILTER] * 100.0 / total) + "%)");
+    if(mOptions->correction.enabled) {
+        HtmlReporter::outputRow(ofs, "reads corrected:", HtmlReporter::formatNumber(mCorrectedReads) + " (" + to_string(mCorrectedReads * 100.0 / total) + "%)");
+        HtmlReporter::outputRow(ofs, "bases corrected:", HtmlReporter::formatNumber(getTotalCorrectedBases()) + " (" + to_string(getTotalCorrectedBases() * 100.0 / totalBases) + "%)" );
+    }
     HtmlReporter::outputRow(ofs, "reads with low quality:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_QUALITY]) + " (" + to_string(mFilterReadStats[FAIL_QUALITY] * 100.0 / total) + "%)");
     HtmlReporter::outputRow(ofs, "reads with too many N:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_N_BASE]) + " (" + to_string(mFilterReadStats[FAIL_N_BASE] * 100.0 / total) + "%)");
     HtmlReporter::outputRow(ofs, "reads too short:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_LENGTH]) + " (" + to_string(mFilterReadStats[FAIL_LENGTH] * 100.0 / total) + "%)");
     ofs << "</table>\n";
 }
 
-void FilterResult::reportAdapterHtml(ofstream& ofs) {
+void FilterResult::reportAdapterHtml(ofstream& ofs, long totalBases) {
     ofs << "<div class='subsection_title'>Adapter or bad ligation of read1</div>\n";
-    ofs << "<table class='summary_table'>\n";
-    outputAdaptersHtml(ofs, mAdapter1);
-    ofs << "</table>\n";
+    outputAdaptersHtml(ofs, mAdapter1, totalBases);
     if(mOptions->isPaired()) {
         ofs << "<div class='subsection_title'>Adapter or bad ligation of read2</div>\n";
-        ofs << "<table class='summary_table'>\n";
-        outputAdaptersHtml(ofs, mAdapter2);
-        ofs << "</table>\n";
+        outputAdaptersHtml(ofs, mAdapter2, totalBases);
     }
 }
 
+void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts, long totalBases) {
 
-
-void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts) {
     map<string, long>::iterator iter;
 
     long total = 0;
+    long totalAdapterBases = 0;
     for(iter = adapterCounts.begin(); iter!=adapterCounts.end(); iter++) {
         total += iter->second;
+        totalAdapterBases += iter->first.length() * iter->second;
+    }
+
+    double frac = (double)totalAdapterBases / (double)totalBases;
+    if(mOptions->isPaired())
+        frac *= 2.0;
+
+    if(frac < 0.01) {
+        ofs << "<div style='color:#999999;font-size:10px;padding-left:5px;'>The input has little adapter percentage (~" << to_string(frac*100.0) << "%), probably it's trimmed before.</div>\n";
     }
 
     if(total == 0)
         return ;
 
+    ofs << "<table class='summary_table'>\n";
     ofs << "<tr><td class='adapter_col' style='font-size:14px;color:#ffffff;background:#556699'>" << "Sequence" << "</td><td class='col2' style='font-size:14px;color:#ffffff;background:#556699'>" << "Count" << "</td></tr>\n";
 
     const double reportThreshold = 0.01;
@@ -292,4 +306,5 @@ void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp
     if(unreported > 0) {
         ofs << "<tr><td class='adapter_col'>" << "others" << "</td><td class='col2'>" << unreported << "</td></tr>\n";
     }
+    ofs << "</table>\n";
 }

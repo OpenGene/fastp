@@ -110,7 +110,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
 
     if(result) {
         ofs << "<div class='subsection_title'>Filtering result</div>\n";
-        result -> reportHtml(ofs, pre_total_reads);
+        result -> reportHtml(ofs, pre_total_reads, pre_total_bases);
     }
 
     ofs << "</div>\n";
@@ -119,7 +119,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
         ofs << "<div class='section_div'>\n";
         ofs << "<div class='section_title'><a name='summary'>Adapters</a></div>\n";
 
-        result->reportAdapterHtml(ofs);
+        result->reportAdapterHtml(ofs, pre_total_bases);
 
         ofs << "</div>\n";
     }

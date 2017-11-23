@@ -100,6 +100,12 @@ int main(int argc, char* argv[]){
     opt.qualityCut.enabled3 = cmd.exist("cut_by_quality3");
     opt.qualityCut.windowSize = cmd.get<int>("cut_window_size");
     opt.qualityCut.quality = cmd.get<int>("cut_mean_quality");
+    // raise a warning if -5/-3 is not enabled but -W/-M is enabled
+    if(cmd.exist("cut_window_size") && !opt.qualityCut.enabled5 && !opt.qualityCut.enabled3) {
+        cerr << "WARNING: you've specified sliding window size (-W/--cut_window_size), but you haven't enabled per read cutting by quality for 5'(-5/--cut_by_quality5) or 3' (-3/--cut_by_quality3), so quality cutting is ignored " << endl << endl;
+    } else if(cmd.exist("cut_mean_quality") && !opt.qualityCut.enabled5 && !opt.qualityCut.enabled3) {
+        cerr << "WARNING: you've specified sliding window mean quality requirement (-M/--cut_mean_quality), but you haven't enabled per read cutting by quality for 5'(-5/--cut_by_quality5) or 3' (-3/--cut_by_quality3), so quality cutting is ignored "<<endl << endl;
+    }
 
     // quality filtering
     opt.qualfilter.enabled = !cmd.exist("disable_quality_filtering");
