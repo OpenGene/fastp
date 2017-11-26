@@ -7,7 +7,7 @@ This tool is designed to provide fast all-in-one preprocessing for FastQ files. 
 * correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
 * report JSON format result for further interpreting. 
 * visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
-* split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing.
+* split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total splitted file number, or limitting the lines of each splitted file.
 * support long reads (data from PacBio / Nanopore devices).
 * ...
 
