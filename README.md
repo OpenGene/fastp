@@ -1,9 +1,9 @@
 # fastp
 This tool is designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance. It has following features:
 * filter out bad reads (too low quality, too short, or too many N...)
-* trim all reads in front and tail
 * cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
-* cut adapters (adapter sequences are automatically detected).
+* trim all reads in front and tail
+* cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
 * correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
 * report JSON format result for further interpreting. 
 * visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
