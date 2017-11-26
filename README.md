@@ -7,7 +7,7 @@ This tool is designed to provide fast all-in-one preprocessing for FastQ files. 
 * correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
 * report JSON format result for further interpreting. 
 * visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
-* split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total splitted file number, or limitting the lines of each splitted file.
+* split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
 * support long reads (data from PacBio / Nanopore devices).
 * ...
 
@@ -97,7 +97,7 @@ options:
   -w, --thread                       worker thread number, default is 3 (int [=3])
   
   # output splitting options
-  -s, --split                        split output by limiting total splitted file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (int [=0])
+  -s, --split                        split output by limiting total split file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (int [=0])
   -S, --split_by_lines               split output by limiting lines of each file with this option(>=1000), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (long [=0])
   -d, --split_prefix_digits          the digits for the sequential number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding (int [=4])
   
