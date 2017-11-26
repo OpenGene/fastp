@@ -28,7 +28,7 @@ ThreadConfig::~ThreadConfig() {
 }
 
 void ThreadConfig::cleanup() {
-    if(mOptions->split.enabled)
+    if(mOptions->split.enabled && mOptions->split.byFileNumber)
         writeEmptyFilesForSplitting();
     deleteWriter();
 }
@@ -108,8 +108,9 @@ void ThreadConfig::markProcessed(long readNum) {
         return ;
     // if splitting is enabled, check whether current file is full
     if(mCurrentSplitReads >= mOptions->split.size) {
-        // totally we cannot exceed split.number
-        if(mWorkingSplit + mOptions->thread < mOptions->split.number ){
+        // if it's splitting by file number, totally we cannot exceed split.number
+        // if it's splitting by file lines, then we don't need to check
+        if(mOptions->split.byFileLines || mWorkingSplit + mOptions->thread < mOptions->split.number ){
             mWorkingSplit += mOptions->thread;
             initWriterForSplit();
             mCurrentSplitReads = 0;

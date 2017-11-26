@@ -150,6 +150,7 @@ bool SingleEndProcessor::process(){
 
 bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     string outstr;
+    int readPassed = 0;
     for(int p=0;p<pack->count;p++){
 
         // original read1
@@ -178,6 +179,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
             // stats the read after filtering
             config->getPostStats1()->statRead(r1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
+            readPassed++;
         }
 
         delete or1;
@@ -196,7 +198,10 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     delete pack->data;
     delete pack;
 
-    config->markProcessed(pack->count);
+    if(mOptions->split.byFileLines)
+        config->markProcessed(readPassed);
+    else
+        config->markProcessed(pack->count);
 
     return true;
 }
@@ -298,7 +303,7 @@ void SingleEndProcessor::producerTask()
             }
             readNum += PACK_SIZE;
             // re-evaluate split size
-            if(mOptions->split.enabled && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
+            if(mOptions->split.needEvaluation && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
                 size_t bytesRead;
                 size_t bytesTotal;
                 reader.getBytes(bytesRead, bytesTotal);

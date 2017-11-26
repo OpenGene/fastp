@@ -67,8 +67,9 @@ int main(int argc, char* argv[]){
     cmd.add<int>("thread", 'w', "worker thread number, default is 3", false, 3);
 
     // split the output
-    cmd.add<int>("split", 's', "if this option is specified, the output will be split to multiple (--split) files (i.e. 0001.out.fq, 0002.out.fq...). ", false, 0);
-    cmd.add<int>("split_prefix_digits", 'd', "the digits for the slice number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding", false, 4);
+    cmd.add<int>("split", 's', "split output by limiting total splitted file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default", false, 0);
+    cmd.add<long>("split_by_lines", 'S', "split output by limiting lines of each file with this option(>=1000), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default", false, 0);
+    cmd.add<int>("split_prefix_digits", 'd', "the digits for the sequential number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding", false, 4);
 
     cmd.parse_check(argc, argv);
 
@@ -132,10 +133,24 @@ int main(int argc, char* argv[]){
     opt.htmlFile = cmd.get<string>("html");
 
     // splitting
-    opt.split.enabled = cmd.exist("split");
-    if(opt.split.enabled) {
+    opt.split.enabled = cmd.exist("split") || cmd.exist("split_by_lines");
+    opt.split.digits = cmd.get<int>("split_prefix_digits");
+    if(cmd.exist("split") && cmd.exist("split_by_lines")) {
+        error_exit("You cannot set both splitting by file number (--split) and splitting by file lines (--split_by_lines), please choose either.");
+    }
+    if(cmd.exist("split")) {
         opt.split.number = cmd.get<int>("split");
-        opt.split.digits = cmd.get<int>("split_prefix_digits");
+        opt.split.needEvaluation = true;
+        opt.split.byFileNumber = true;
+    }
+    if(cmd.exist("split_by_lines")) {
+        long lines = cmd.get<long>("split_by_lines");
+        if(lines % 4 != 0) {
+            error_exit("Line number (--split_by_lines) should be a multiple of 4");
+        }
+        opt.split.size = lines / 4; // 4 lines per record
+        opt.split.needEvaluation = false;
+        opt.split.byFileLines = true;
     }
 
     stringstream ss;
@@ -164,7 +179,7 @@ int main(int argc, char* argv[]){
     opt.validate();
 
     // using evaluator to guess how many reads in total
-    if(opt.split.enabled) {
+    if(opt.split.needEvaluation) {
         long readNum;
         Evaluator eva(&opt);
         eva.evaluateReads(readNum);

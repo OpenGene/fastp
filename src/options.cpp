@@ -79,10 +79,18 @@ bool Options::validate() {
         error_exit("length requirement (--length_required) should be >0, suggest 20 ~ 100");
 
     if(split.enabled ) {
-        if(split.number < 2 || split.number > 1000)
-            error_exit("you have enabled splitting output to multiple files, the number of files (--split) should be 2 ~ 1000.");
         if(split.digits < 0 || split.digits > 10)
             error_exit("you have enabled splitting output to multiple files, the digits number of file name prefix (--split_prefix_digits) should be 0 ~ 10.");
+        
+        if(split.byFileNumber) {
+            if(split.number < 2 || split.number >= 1000)
+                error_exit("you have enabled splitting output by file number, the number of files (--split) should be 2 ~ 999.");
+        }
+
+        if(split.byFileLines) {
+            if(split.size < 1000/4)
+                error_exit("you have enabled splitting output by file lines, the file lines (--split_by_lines) should be >= 1000.");
+        }
     }
 
     if(qualityCut.enabled5 || qualityCut.enabled3) {

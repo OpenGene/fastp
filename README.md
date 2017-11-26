@@ -97,8 +97,9 @@ options:
   -w, --thread                       worker thread number, default is 3 (int [=3])
   
   # output splitting options
-  -s, --split                        if this option is specified, the output will be split to multiple (--split) files (i.e. 0001.out.fq, 0002.out.fq...).  (int [=0])
-  -d, --split_prefix_digits          the digits for the slice number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding (int [=4])
+  -s, --split                        split output by limiting total splitted file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (int [=0])
+  -S, --split_by_lines               split output by limiting lines of each file with this option(>=1000), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (long [=0])
+  -d, --split_prefix_digits          the digits for the sequential number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding (int [=4])
   
   # help
   -?, --help                         print this message

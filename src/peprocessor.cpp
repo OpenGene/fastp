@@ -179,6 +179,7 @@ bool PairEndProcessor::process(){
 bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     string outstr1;
     string outstr2;
+    int readPassed = 0;
     for(int p=0;p<pack->count;p++){
         ReadPair* pair = pack->data[p];
         Read* or1 = pair->mLeft;
@@ -220,6 +221,8 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             // stats the read after filtering
             config->getPostStats1()->statRead(r1, lowQualNum1, nBaseNum1, mOptions->qualfilter.qualifiedQual);
             config->getPostStats2()->statRead(r2, lowQualNum2, nBaseNum2, mOptions->qualfilter.qualifiedQual);
+
+            readPassed++;
         }
 
 
@@ -244,7 +247,10 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     delete pack->data;
     delete pack;
 
-    config->markProcessed(pack->count);
+    if(mOptions->split.byFileLines)
+        config->markProcessed(readPassed);
+    else
+        config->markProcessed(pack->count);
 
     return true;
 }
@@ -351,7 +357,7 @@ void PairEndProcessor::producerTask()
             }
             readNum += PACK_SIZE;
             // re-evaluate split size
-            if(mOptions->split.enabled && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
+            if(mOptions->split.needEvaluation && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
                 size_t bytesRead;
                 size_t bytesTotal;
                 reader.mLeft->getBytes(bytesRead, bytesTotal);

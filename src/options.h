@@ -39,18 +39,25 @@ class SplitOptions {
 public:
     SplitOptions() {
         enabled = false;
+        needEvaluation = false;
         number = 0;
         size = 0;
         digits = 4;
+        byFileNumber = false;
+        byFileLines = false;
     }
 public:
     bool enabled;
     // number of files
     int number;
-    // how many reads per file
-    int size;
+    // lines of each file
+    long size;
     // digits number of file name prefix, for example 0001 means 4 digits
     int digits;
+    // need evaluation?
+    bool needEvaluation;
+    bool byFileNumber;
+    bool byFileLines;
 };
 
 class AdapterOptions {
