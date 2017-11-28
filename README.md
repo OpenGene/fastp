@@ -98,6 +98,7 @@ options:
   # reporting options
   -j, --json                         the json format report file name (string [=fastp.json])
   -h, --html                         the html format report file name (string [=fastp.html])
+  -R, --report_title                 should be quoted with ' or ", default is "fastp report" (string [=fastp report])
   
   # thread options
   -w, --thread                       worker thread number, default is 3 (int [=3])
