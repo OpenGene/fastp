@@ -196,12 +196,14 @@ int main(int argc, char* argv[]){
 
     time_t t1 = time(NULL);
 
+    long readNum = 0;
+
     // using evaluator to guess how many reads in total
     if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
         long readNum;
         Evaluator eva(&opt);
         cout << "Detecting adapter for single end input..." << endl;
-        string adapt = eva.evaluateRead1Adapter();
+        string adapt = eva.evaluateRead1AdapterAndReadNum(readNum);
         if(adapt.length() >= 12 ) {
             cout << "Detected adapter: " << adapt << endl << endl;
             opt.adapter.sequence = adapt;
@@ -215,9 +217,11 @@ int main(int argc, char* argv[]){
 
     // using evaluator to guess how many reads in total
     if(opt.split.needEvaluation) {
-        long readNum;
-        Evaluator eva(&opt);
-        eva.evaluateReads(readNum);
+        // if readNum is not 0, means it is already evaluated by other functions
+        if(readNum == 0) {
+            Evaluator eva(&opt);
+            eva.evaluateReadNum(readNum);
+        }
         // one record per file at least
         // We reduce it by half of PACI_SIZE due to we are processing data by pack 
         opt.split.size = readNum / opt.split.number - PACK_SIZE/2;

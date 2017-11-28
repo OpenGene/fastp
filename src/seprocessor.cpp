@@ -199,13 +199,13 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     if(!mOptions->split.enabled)
         mOutputMtx.unlock();
 
-    delete pack->data;
-    delete pack;
-
     if(mOptions->split.byFileLines)
         config->markProcessed(readPassed);
     else
         config->markProcessed(pack->count);
+
+    delete pack->data;
+    delete pack;
 
     return true;
 }
@@ -307,7 +307,7 @@ void SingleEndProcessor::producerTask()
             }
             readNum += PACK_SIZE;
             // re-evaluate split size
-            if(mOptions->split.needEvaluation && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
+            /*if(mOptions->split.needEvaluation && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
                 size_t bytesRead;
                 size_t bytesTotal;
                 reader.getBytes(bytesRead, bytesTotal);
@@ -315,7 +315,7 @@ void SingleEndProcessor::producerTask()
                 if(mOptions->split.size <= 0)
                     mOptions->split.size = 1;
                 splitSizeReEvaluated = true;
-            }
+            }*/
         }
     }
 

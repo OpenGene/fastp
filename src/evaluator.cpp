@@ -11,10 +11,10 @@ Evaluator::Evaluator(Options* opt){
 Evaluator::~Evaluator(){
 }
 
-void Evaluator::evaluateReads(long& readNum) {
+void Evaluator::evaluateReadNum(long& readNum) {
     FastqReader reader(mOptions->in1);
 
-    const long READ_LIMIT = 100000;
+    const long READ_LIMIT = 1024*1024;
     long records = 0;
     long bytes = 0;
 
@@ -43,7 +43,7 @@ void Evaluator::evaluateReads(long& readNum) {
     readNum = (long) (bytesTotal / bytesPerRead);
 }
 
-string Evaluator::evaluateRead1Adapter() {
+string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
     FastqReader reader(mOptions->in1);
     // stat up to 1M reads
     const long READ_LIMIT = 1024*1024;
@@ -205,6 +205,21 @@ string Evaluator::evaluateRead1Adapter() {
     }
 
     delete counts;
+
+    if(reachedEOF){
+        readNum = records;
+        return finalAdapter;
+    }
+
+    // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
+    size_t bytesRead;
+    size_t bytesTotal;
+
+    reader.getBytes(bytesRead, bytesTotal);
+
+    double bytesPerRead = (double)bytesRead / (double) records;
+    readNum = (long) (bytesTotal / bytesPerRead);
+
     return finalAdapter;
 
 }
