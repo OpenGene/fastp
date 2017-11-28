@@ -119,5 +119,22 @@ bool Options::validate() {
         correction.enabled = false;
     }
 
+    if(umi.enabled) {
+        if(umi.length<1 && umi.length>100)
+            error_exit("UMI length should be 1~100");
+        if(!umi.separator.empty()) {
+            if(umi.separator.length()>10)
+                error_exit("UMI separator cannot be longer than 10 base pairs");
+            // validate bases
+            for(int i=0; i<umi.separator.length(); i++) {
+                char c = umi.separator[i];
+                if(c!='A' && c!='T' && c!='C' && c!='G') {
+                    error_exit("UMI separator can only have bases in {A, T, C, G}, but the given sequence is: " + umi.separator);
+                }
+            }
+        }
+
+    }
+
     return true;
 }

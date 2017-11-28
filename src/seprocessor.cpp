@@ -16,6 +16,7 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
     mFilter = new Filter(opt);
     mOutStream = NULL;
     mZipFile = NULL;
+    mUmiProcessor = new UmiProcessor(opt);
 }
 
 SingleEndProcessor::~SingleEndProcessor() {
@@ -161,7 +162,10 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         // stats the original read before trimming
         config->getPreStats1()->statRead(or1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
-
+        
+        // umi processing
+        if(mOptions->umi.enabled)
+            mUmiProcessor->process(or1);
 
         // trim in head and tail, and apply quality cut in sliding window
         Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);

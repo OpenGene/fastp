@@ -19,6 +19,7 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mZipFile1 = NULL;
     mOutStream2 = NULL;
     mZipFile2 = NULL;
+    mUmiProcessor = new UmiProcessor(opt);
 }
 
 PairEndProcessor::~PairEndProcessor() {
@@ -193,6 +194,10 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         // stats the original read before trimming
         config->getPreStats1()->statRead(or1, lowQualNum1, nBaseNum1, mOptions->qualfilter.qualifiedQual);
         config->getPreStats2()->statRead(or2, lowQualNum2, nBaseNum2, mOptions->qualfilter.qualifiedQual);
+
+        // umi processing
+        if(mOptions->umi.enabled)
+            mUmiProcessor->process(or1, or2);
 
         // trim in head and tail, and apply quality cut in sliding window
         Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);

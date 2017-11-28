@@ -80,14 +80,35 @@ void Read::resize(int len) {
 	mSeq.mStr.resize(len);
 	mQuality.resize(len);
 }
+   
+void Read::trimFront(int len){
+	len = min(length()-1, len);
+	mSeq.mStr = mSeq.mStr.substr(len, length() - len);
+	mQuality = mQuality.substr(len, length() - len);
+}
 
 string Read::lastIndex(){
 	int len = mName.length();
 	if(len<5)
 		return "";
-	for(int i=len-5;i>=0;i--){
+	for(int i=len-3;i>=0;i--){
 		if(mName[i]==':' || mName[i]=='+'){
 			return mName.substr(i+1, len-i);
+		}
+	}
+	return "";
+}
+
+string Read::firstIndex(){
+	int len = mName.length();
+	int end = len;
+	if(len<5)
+		return "";
+	for(int i=len-3;i>=0;i--){
+		if(mName[i]=='+')
+			end = i-1;
+		if(mName[i]==':'){
+			return mName.substr(i+1, end-i);
 		}
 	}
 	return "";

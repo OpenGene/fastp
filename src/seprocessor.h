@@ -12,6 +12,7 @@
 #include "options.h"
 #include "threadconfig.h"
 #include "filter.h"
+#include "umiprocessor.h"
 
 using namespace std;
 
@@ -61,6 +62,7 @@ private:
     Filter* mFilter;
     gzFile mZipFile;
     ofstream* mOutStream;
+    UmiProcessor* mUmiProcessor;
 };
 
 

@@ -59,6 +59,12 @@ int main(int argc, char* argv[]){
     // base correction in overlapped regions of paired end data
     cmd.add("correction", 'c', "enable base correction in overlapped regions (only for PE data), default is disabled");
 
+    // umi
+    cmd.add("umi", 'U', "enable unique molecular identifer (UMI) preprocessing");
+    cmd.add<string>("umi_loc", 0, "specify the location of UMI, can be (index1/index2/read1/read2), default is none", false, "");
+    cmd.add<int>("umi_len", 0, "if the UMI is in read1/read2, its length should be provided", false, 0);
+    //cmd.add<string>("umi_sep", 0, "if the UMI is in read1/read2, it can have a separator (several bases separate UMI and insert DNA), default is empty", false, "");
+
     // reporting
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
     cmd.add<string>("html", 'h', "the html format report file name", false, "fastp.html");
@@ -151,6 +157,33 @@ int main(int argc, char* argv[]){
         opt.split.size = lines / 4; // 4 lines per record
         opt.split.needEvaluation = false;
         opt.split.byFileLines = true;
+    }
+
+    // umi
+    opt.umi.enabled = cmd.exist("umi");
+    opt.umi.length = cmd.get<int>("umi_len");
+    //opt.umi.separator = cmd.get<string>("umi_sep");
+    if(opt.umi.enabled) {
+        string umiLoc = cmd.get<string>("umi_loc");
+        str2lower(umiLoc);
+        if(umiLoc.empty())
+            error_exit("You've enabled UMI by (--umi), you should specify the UMI location by (--umi_loc)");
+        if(umiLoc != "index1" && umiLoc != "index2" && umiLoc != "read1" && umiLoc != "read2") {
+            error_exit("UMI location can only be index1/index2/read1/read2");
+        }
+        if(!opt.isPaired() && (umiLoc == "index2" || umiLoc == "read2"))
+            error_exit("You specified the UMI location as " + umiLoc + ", but the data is not paired end.");
+        if(opt.umi.length == 0 && (umiLoc == "read1" || umiLoc == "read2"))
+            error_exit("You specified the UMI location as " + umiLoc + ", but the length is not specified (--umi_len).");
+        if(umiLoc == "index1") {
+            opt.umi.location = UMI_LOC_INDEX1;
+        } else if(umiLoc == "index2") {
+            opt.umi.location = UMI_LOC_INDEX2;
+        } else if(umiLoc == "read1") {
+            opt.umi.location = UMI_LOC_READ1;
+        } else if(umiLoc == "read2") {
+            opt.umi.location = UMI_LOC_READ2;
+        }
     }
 
     stringstream ss;

@@ -29,6 +29,7 @@ public:
     string toString();
     void resize(int len);
     void convertPhred64To33();
+    void trimFront(int len);
 
 public:
     static bool test();

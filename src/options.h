@@ -7,6 +7,26 @@
 
 using namespace std;
 
+#define UMI_LOC_NONE 0
+#define UMI_LOC_INDEX1 1
+#define UMI_LOC_INDEX2 2
+#define UMI_LOC_READ1 3
+#define UMI_LOC_READ2 4
+
+class UMIOptions {
+public:
+    UMIOptions() {
+        enabled = false;
+        location = UMI_LOC_NONE;
+        length = 0;
+    }
+public:
+    bool enabled;
+    int location;
+    int length;
+    string separator;
+};
+
 class CorrectionOptions {
 public:
     CorrectionOptions() {
@@ -163,6 +183,8 @@ public:
     QualityCutOptions qualityCut;
     // options for base correction
     CorrectionOptions correction;
+    // options for UMI
+    UMIOptions umi;
 
 };
 
