@@ -5,6 +5,7 @@ This tool is designed to provide fast all-in-one preprocessing for FastQ files. 
 * trim all reads in front and tail
 * cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
 * correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
+* preprocess unique molecular identifer (UMI) enabled data, shift UMI to sequence name.
 * report JSON format result for further interpreting. 
 * visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
 * split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
@@ -89,6 +90,11 @@ options:
   # base correction by overlap analysis options
   -c, --correction                   enable base correction in overlapped regions (only for PE data), default is disabled
   
+  # UMI processing
+  -U, --umi                          enable unique molecular identifer (UMI) preprocessing
+      --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2), default is none (string [=])
+      --umi_len                      if the UMI is in read1/read2, its length should be provided (int [=0])
+
   # reporting options
   -j, --json                         the json format report file name (string [=fastp.json])
   -h, --html                         the html format report file name (string [=fastp.html])
