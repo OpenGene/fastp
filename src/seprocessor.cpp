@@ -307,14 +307,18 @@ void SingleEndProcessor::producerTask()
             }
             readNum += PACK_SIZE;
             // re-evaluate split size
+            // TODO: following codes are commented since it may cause threading related conflicts in some systems
             /*if(mOptions->split.needEvaluation && !splitSizeReEvaluated && readNum >= mOptions->split.size) {
-                size_t bytesRead;
-                size_t bytesTotal;
-                reader.getBytes(bytesRead, bytesTotal);
-                mOptions->split.size *=  (double)bytesTotal / ((double)bytesRead * (double) mOptions->split.number);
-                if(mOptions->split.size <= 0)
-                    mOptions->split.size = 1;
                 splitSizeReEvaluated = true;
+                // greater than the initial evaluation
+                if(readNum >= 1024*1024) {
+                    size_t bytesRead;
+                    size_t bytesTotal;
+                    reader.getBytes(bytesRead, bytesTotal);
+                    mOptions->split.size *=  (double)bytesTotal / ((double)bytesRead * (double) mOptions->split.number);
+                    if(mOptions->split.size <= 0)
+                        mOptions->split.size = 1;
+                }
             }*/
         }
     }
