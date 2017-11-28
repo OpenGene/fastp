@@ -83,8 +83,8 @@ void Read::resize(int len) {
    
 void Read::trimFront(int len){
 	len = min(length()-1, len);
-	mSeq.mStr = mSeq.mStr.substr(len, length() - len);
-	mQuality = mQuality.substr(len, length() - len);
+	mSeq.mStr = mSeq.mStr.substr(len, mSeq.mStr.length() - len);
+	mQuality = mQuality.substr(len, mQuality.length() - len);
 }
 
 string Read::lastIndex(){
