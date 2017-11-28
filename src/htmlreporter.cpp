@@ -82,7 +82,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     }
 
     ofs << endl;
-    ofs << "<h1 style='text-align:left;'><a href='https://github.com/OpenGene/fastp' target='_blank' style='color:#663355;text-decoration:none;'>fastp report</a>"<<endl;
+    ofs << "<h1 style='text-align:left;'><a href='https://github.com/OpenGene/fastp' target='_blank' style='color:#663355;text-decoration:none;'>" + mOptions->reportTitle + "</a>"<<endl;
     ofs << "<div class='section_div'>\n";
     ofs << "<div class='section_title'><a name='summary'>Summary</a></div>\n";
 

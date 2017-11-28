@@ -163,6 +163,8 @@ public:
     string jsonFile;
     // html file
     string htmlFile;
+    // html report title
+    string reportTitle;
     // compression level
     int compression;
     // the input file is using phred64 quality scoring

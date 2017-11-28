@@ -68,6 +68,7 @@ int main(int argc, char* argv[]){
     // reporting
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
     cmd.add<string>("html", 'h', "the html format report file name", false, "fastp.html");
+    cmd.add<string>("report_title", 'R', "should be quoted with \' or \", default is \"fastp report\"", false, "fastp report");
 
     // threading
     cmd.add<int>("thread", 'w', "worker thread number, default is 3", false, 3);
@@ -137,6 +138,7 @@ int main(int argc, char* argv[]){
     // reporting
     opt.jsonFile = cmd.get<string>("json");
     opt.htmlFile = cmd.get<string>("html");
+    opt.reportTitle = cmd.get<string>("report_title");
 
     // splitting
     opt.split.enabled = cmd.exist("split") || cmd.exist("split_by_lines");
