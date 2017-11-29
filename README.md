@@ -54,10 +54,12 @@ sudo make install
 Quality filtering is enabled by default, but you can disable it by `-Q` or `disable_quality_filtering`. Currently it supports filtering by limiting the N base number (`-n, --n_base_limit`),  and the percentage of unqualified bases.  
 
 To filter reads by its percentage of unqualified bases, two options should be provided:
-* -q, --qualified_quality_phred       the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. 
-* -u, --unqualified_percent_limit    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%
+* `-q, --qualified_quality_phred`       the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. 
+* `-u, --unqualified_percent_limit`    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%
 
 Length filtering is enabled by default, but you can disable it by `-L` or `--disable_length_filtering`. The minimum length requirement is specified with `-l` or `--length_required`.
+
+New filters are being implemented, such like `polyX` filter and `low complexity` filter. If you have a new idea or new request, please file an issue.
 
 # adapters
 Adapter trimming is enabled by default, but you can disable it by `-A` or `--disable_adapter_trimming`. Adapter sequences can be automatically detected for both PE/SE data, which means you don't have to input the adapter sequences to trim them.
@@ -66,14 +68,27 @@ Adapter trimming is enabled by default, but you can disable it by `-A` or `--dis
 
 The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
 
-# cutting by quality score
+# per read cutting by quality score
 `fastp` supports per read sliding window cutting by evaluate the mean quality scores in the sliding window, which is similar with how `Trimmomatic` does, but `fastp` is much faster. This function is disabled by default, to enable it, you can specify either or both of:
-* -5, --cut_by_quality5              enable per read cutting by quality in front (5')
-* -3, --cut_by_quality3              enable per read cutting by quality in tail (3')
+* `-5, --cut_by_quality5`              enable per read cutting by quality in front (5')
+* `-3, --cut_by_quality3`              enable per read cutting by quality in tail (3')
 
 Please be noted that `--cut_by_quality5` will interfere deduplication for both PE/SE data, and `--cut_by_quality3` will interfere deduplication for SE data, since the deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.
 
-The size of sliding window can be specified with `-W, --cut_window_size`, and the mean quality requirement can be specified with `-M, --cut_mean_quality `
+The size of sliding window can be specified with `-W, --cut_window_size`, and the mean quality requirement can be specified with `-M, --cut_mean_quality `.
+
+# base correction for PE data
+`fastp` perform `overlap analysis` for PE data, which try to find an overlap of each pair of reads. If an proper overlap is found, it can correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality. If a base is corrected, the quality of its paired base will be assigned to it so that they will share the same quality.   
+
+This function is not enabled by default, specify `-c` or `--correction` to enable it.
+
+# global trimming
+`fastp` supports global trimming, which means trim all reads in the front or the tail. This function is useful since sometimes you want to drop some cycles of a sequencing run.
+
+For example, the last cycle of Illumina sequencing is uaually with low quality, and it can be dropped with `-t 1` or `--trim_tail1=1` option.
+
+* For read1 or SE data, the front/tail trimming settings are given with `-f, --trim_front1` and `-t, --trim_tail1`.
+* For read2 of PE data, the front/tail trimming settings are given with `-F, --trim_front2` and `-T, --trim_tail2`. But if these options are not specified, they will be as same as read1 options, which means `trim_front2 = trim_front1` and `trim_tail2 = trim_tail1`.
 
 # unique molecular identifer (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consesus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
