@@ -1,5 +1,7 @@
 # fastp
-This tool is designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance. It has following features:
+A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance. 
+
+# features:
 * filter out bad reads (too low quality, too short, or too many N...)
 * cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
 * trim all reads in front and tail
@@ -191,3 +193,11 @@ options:
   # help
   -?, --help                         print this message
 ```
+
+# citation
+A paper for this tool is being written, and may be soon available in bioRxiv. If you want to cite this tool before it 
+is completed, cite like this:
+```
+Shifu Chen, A fast FASTQ preprocessor with full features, (2017), GitHub repository, https://github.com/OpenGene/fastp
+```
+
