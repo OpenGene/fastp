@@ -57,6 +57,15 @@ adapter trimming is enabled by default, but you can disable it by `-A` or `--dis
 
 The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
 
+# cutting by quality score
+`fastp` supports per read sliding window cutting by evaluate the mean quality scores in the sliding window, which is similar with how `Trimmomatic` does, but `fastp` is much faster. This function is disabled by default, to enable it, you can specify either or both of:
+* -5, --cut_by_quality5              enable per read cutting by quality in front (5')
+* -3, --cut_by_quality3              enable per read cutting by quality in tail (3')
+
+Please be noted that `--cut_by_quality5` will interfere deduplication for both PE/SE data, and `--cut_by_quality3` will interfere deduplication for SE data, since the deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.
+
+The size of sliding window can be specified with `-W, --cut_window_size`, and the mean quality requirement can be specified with `-M, --cut_mean_quality `
+
 # unique molecular identifer (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consesus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
 To enable UMI processing, you have to enable `-U` or `--umi` option in the command line, and specify `--umi_loc`  to specify the UMI location, it can be one of:
@@ -64,6 +73,7 @@ To enable UMI processing, you have to enable `-U` or `--umi` option in the comma
 * `index2` the second index is used as UMI. PE data only.
 * `read1` the head of read1 is used as UMI.
 * `read2` the head of read2 is used as UMI. PE data only.  
+
 If `--umi_loc` is specifie dwith `read1` or `read2`, the length of UMI should specified with `--umi_len`. 
 
 `fastp` will extract the UMIs, and append them to the first part of read names, so that it will also be presented in SAM/BAM records. A perfix `UMI_` will be added to each UMI. If the UMI is in the reads, then it will be shifted from read so that the read will become shorter. If the UMI is in the index, it will be kept.
