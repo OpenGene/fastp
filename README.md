@@ -107,12 +107,14 @@ For example, the last cycle of Illumina sequencing is uaually with low quality, 
 # unique molecular identifer (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consesus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
 To enable UMI processing, you have to enable `-U` or `--umi` option in the command line, and specify `--umi_loc`  to specify the UMI location, it can be one of:
-* `index1` the first index is used as UMI.
-* `index2` the second index is used as UMI. PE data only.
-* `read1` the head of read1 is used as UMI.
-* `read2` the head of read2 is used as UMI. PE data only.  
+* `index1` the first index is used as UMI. If the data is PE, this UMI will be used for both read1/read2.
+* `index2` the second index is used as UMI. PE data only, this UMI will be used for both read1/read2.
+* `read1` the head of read1 is used as UMI. If the data is PE, this UMI will be used for both read1/read2.
+* `read2` the head of read2 is used as UMI. PE data only, this UMI will be used for both read1/read2.
+* `per_index` read1 will use UMI extracted from index1, read2 will use UMI extracted from index2.  
+* `per_read` read1 will use UMI extracted from the head of read1, read2 will use UMI extracted from the head of read2. 
 
-If `--umi_loc` is specifie dwith `read1` or `read2`, the length of UMI should specified with `--umi_len`. 
+If `--umi_loc` is specifie dwith `read1`, `read2` or `per_read`, the length of UMI should specified with `--umi_len`. 
 
 `fastp` will extract the UMIs, and append them to the first part of read names, so that it will also be presented in SAM/BAM records. A perfix `UMI_` will be added to each UMI. If the UMI is in the reads, then it will be shifted from read so that the read will become shorter. If the UMI is in the index, it will be kept.
 
@@ -186,7 +188,7 @@ options:
   
   # UMI processing
   -U, --umi                          enable unique molecular identifer (UMI) preprocessing
-      --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2), default is none (string [=])
+      --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none (string [=])
       --umi_len                      if the UMI is in read1/read2, its length should be provided (int [=0])
 
   # reporting options
@@ -210,6 +212,6 @@ options:
 A paper for this tool is being written, and may be soon available in bioRxiv. If you want to cite this tool before it 
 is completed, cite like this:
 ```
-Shifu Chen, A fast FASTQ preprocessor with full features, (2017), GitHub repository, https://github.com/OpenGene/fastp
+Shifu Chen, fastp: A fast FASTQ preprocessor with full features, (2017), GitHub repository, https://github.com/OpenGene/fastp
 ```
 

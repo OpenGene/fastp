@@ -61,7 +61,7 @@ int main(int argc, char* argv[]){
 
     // umi
     cmd.add("umi", 'U', "enable unique molecular identifer (UMI) preprocessing");
-    cmd.add<string>("umi_loc", 0, "specify the location of UMI, can be (index1/index2/read1/read2), default is none", false, "");
+    cmd.add<string>("umi_loc", 0, "specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none", false, "");
     cmd.add<int>("umi_len", 0, "if the UMI is in read1/read2, its length should be provided", false, 0);
     //cmd.add<string>("umi_sep", 0, "if the UMI is in read1/read2, it can have a separator (several bases separate UMI and insert DNA), default is empty", false, "");
 
@@ -170,12 +170,12 @@ int main(int argc, char* argv[]){
         str2lower(umiLoc);
         if(umiLoc.empty())
             error_exit("You've enabled UMI by (--umi), you should specify the UMI location by (--umi_loc)");
-        if(umiLoc != "index1" && umiLoc != "index2" && umiLoc != "read1" && umiLoc != "read2") {
-            error_exit("UMI location can only be index1/index2/read1/read2");
+        if(umiLoc != "index1" && umiLoc != "index2" && umiLoc != "read1" && umiLoc != "read2" && umiLoc != "per_index" && umiLoc != "per_read") {
+            error_exit("UMI location can only be index1/index2/read1/read2/per_index/per_read");
         }
         if(!opt.isPaired() && (umiLoc == "index2" || umiLoc == "read2"))
-            error_exit("You specified the UMI location as " + umiLoc + ", but the data is not paired end.");
-        if(opt.umi.length == 0 && (umiLoc == "read1" || umiLoc == "read2"))
+            error_exit("You specified the UMI location as " + umiLoc + ", but the input data is not paired end.");
+        if(opt.umi.length == 0 && (umiLoc == "read1" || umiLoc == "read2" ||  umiLoc == "per_read"))
             error_exit("You specified the UMI location as " + umiLoc + ", but the length is not specified (--umi_len).");
         if(umiLoc == "index1") {
             opt.umi.location = UMI_LOC_INDEX1;
@@ -185,6 +185,10 @@ int main(int argc, char* argv[]){
             opt.umi.location = UMI_LOC_READ1;
         } else if(umiLoc == "read2") {
             opt.umi.location = UMI_LOC_READ2;
+        } else if(umiLoc == "per_index") {
+            opt.umi.location = UMI_LOC_PER_INDEX;
+        } else if(umiLoc == "per_read") {
+            opt.umi.location = UMI_LOC_PER_READ;
         }
     }
 
