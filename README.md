@@ -13,18 +13,18 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [all options](#all-options)
 * [citation](#citation)
 
-# features:
-* filter out bad reads (too low quality, too short, or too many N...)
-* cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
-* trim all reads in front and tail
-* cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
-* correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
-* preprocess unique molecular identifer (UMI) enabled data, shift UMI to sequence name.
-* report JSON format result for further interpreting. 
-* visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
-* split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
-* support long reads (data from PacBio / Nanopore devices).
-* ...
+# features
+1. filter out bad reads (too low quality, too short, or too many N...)
+2. cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
+3. trim all reads in front and tail
+4. cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
+5. correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
+6. preprocess unique molecular identifer (UMI) enabled data, shift UMI to sequence name.
+7. report JSON format result for further interpreting. 
+8. visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
+9. split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
+10. support long reads (data from PacBio / Nanopore devices).
+11. ...
 
 This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
 
