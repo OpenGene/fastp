@@ -30,14 +30,14 @@ By default, the HTML report is saved to `fastp.html` (can be specified with `-h`
 * HTML report: http://opengene.org/fastp/fastp.html
 * JSON report: http://opengene.org/fastp/fastp.json
 
-# Get fastp
-## Download binary (only for Linux systems, http://opengene.org/fastp/fastp)
+# get fastp
+## download binary (only for Linux systems, http://opengene.org/fastp/fastp)
 ```shell
 # this binary was compiled on CentOS, and tested on CentOS/Ubuntu
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 ```
-## Compile from source
+## compile from source
 ```shell
 # get source (you can also use browser to download from master or releases)
 git clone https://github.com/OpenGene/fastp.git
@@ -50,7 +50,7 @@ make
 sudo make install
 ```
 
-# Unique molecular identifer (UMI) processing
+# unique molecular identifer (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consesus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
 To enable UMI processing, you have to enable `-U` or `--umi` option in the command line, and specify `--umi_loc`  to specify the UMI location, it can be one of:
 * `index1` the first index is used as UMI.
@@ -63,21 +63,32 @@ If `--umi_loc` is specifie dwith `read1` or `read2`, the length of UMI should sp
 
 ## UMI example
 original read:
-```txt
+```
 @NS500713:64:HFKJJBGXY:1:11101:1675:1101 1:N:0:TATAGCCT+GACCCCCA
 AAAAAAAAGCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
 +
 6AAAAAEEEEE/E/EA/E/AEA6EE//AEE66/AAE//EEE/E//E/AA/EEE/A/AEE/EEA//EEEEEEEE6EEAA
 ```
 processed with: `fastp -i testdata/R1.fq -o testdata/out.R1.fq -U --umi_loc=read1 --umi_len=8`:  
-```txt
+```
 @NS500713:64:HFKJJBGXY:1:11101:1675:1101:UMI_AAAAAAAA 1:N:0:TATAGCCT+GACCCCCA
 GCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
 +
 EEE/E/EA/E/AEA6EE//AEE66/AAE//EEE/E//E/AA/EEE/A/AEE/EEA//EEEEEEEE6EEAA
 ```
 
-# All options
+# output splitting
+For parallel processing of FASTQ files (i.e. alignment in parallel), `fastp` supports splitting the output into multiple files. The splitting can work with two different modes: `by limiting file number` or `by limiting lines of each file`. These two modes cannot be enabled together.   
+
+The file names of these split files will have a sequential number prefix, adding to the original file name specified by `--out1` or `--out2`, and the width of the prefix is controlled by the `-d` or `--split_prefix_digits` option. For example, `--split_prefix_digits=4`, `--out1=out.fq`, `--split=3`, then the output files will be `0001.out.fq`,`0002.out.fq`,`0003.out.fq`
+
+## splitting by limiting file number
+Use `-s` or `--split` to specify how many files you want to have. `fastp` evaluates the read number of a FASTQ by reading its first ~1M reads. This evaluation is not accurate so the file sizes of the last several files can be a little differnt (a bit bigger or smaller). For best performance, it is suggested to specify the file number to be a multiple of the thread number.
+
+## splitting by limiting the lines of each file
+Use `-S` or `--split_by_lines` to limit the lines of each file. The last files may have smaller sizes since usually the input file cannot be perfectly divided. The actual file lines may be a little greater than the value specified by `--split_by_lines` since `fastp` reads and writes data by blocks (a block = 1000 reads).
+
+# all options
 ```shell
 usage: fastp -i <in1> -o <out1> [-I <in1> -O <out2>] [options...]
 options:
