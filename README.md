@@ -105,7 +105,7 @@ For example, the last cycle of Illumina sequencing is uaually with low quality, 
 * For read2 of PE data, the front/tail trimming settings are given with `-F, --trim_front2` and `-T, --trim_tail2`. But if these options are not specified, they will be as same as read1 options, which means `trim_front2 = trim_front1` and `trim_tail2 = trim_tail1`.
 
 # unique molecular identifer (UMI) processing
-UMI is useful for duplication elimination and error correction based on generating consesus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
+UMI is useful for duplication elimination and error correction based on generating consensus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
 To enable UMI processing, you have to enable `-U` or `--umi` option in the command line, and specify `--umi_loc`  to specify the UMI location, it can be one of:
 * `index1` the first index is used as UMI. If the data is PE, this UMI will be used for both read1/read2.
 * `index2` the second index is used as UMI. PE data only, this UMI will be used for both read1/read2.
@@ -114,9 +114,9 @@ To enable UMI processing, you have to enable `-U` or `--umi` option in the comma
 * `per_index` read1 will use UMI extracted from index1, read2 will use UMI extracted from index2.  
 * `per_read` read1 will use UMI extracted from the head of read1, read2 will use UMI extracted from the head of read2. 
 
-If `--umi_loc` is specifie dwith `read1`, `read2` or `per_read`, the length of UMI should specified with `--umi_len`. 
+If `--umi_loc` is specified with `read1`, `read2` or `per_read`, the length of UMI should specified with `--umi_len`. 
 
-`fastp` will extract the UMIs, and append them to the first part of read names, so that it will also be presented in SAM/BAM records. A perfix `UMI_` will be added to each UMI. If the UMI is in the reads, then it will be shifted from read so that the read will become shorter. If the UMI is in the index, it will be kept.
+`fastp` will extract the UMIs, and append them to the first part of read names, so the UMIs will also be presented in SAM/BAM records. A perfix `UMI_` will be added to each UMI. If the UMI is in the reads, then it will be shifted from read so that the read will become shorter. If the UMI is in the index, it will be kept.
 
 ## UMI example
 original read:
