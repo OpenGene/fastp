@@ -50,6 +50,13 @@ make
 sudo make install
 ```
 
+# adapters
+adapter trimming is enabled by default, but you can disable it by `-A` or `--disable_adapter_trimming`. Adapter sequences can be automatically detected for both PE/SE data, which means you don't have to input the adapter sequences to trim them.
+* For SE data, the adapters are evaluated by analyzing the tails of first ~1M reads. This evaluation may be inacurrate, and you can specify the adapter sequence by `-a` or `--adapter_sequence` option. If adapter sequence is specified, the auto detection for SE data will be disabled.
+* For PE data, the adapters are detected by overlap analysis, which seeks for the overlap of each pair of reads. This method is robust and fast so that you don't have to input the adapter sequence even you know it. For PE data, the `-a` or `--adapter_sequence` option is ignored.  
+
+The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
+
 # unique molecular identifer (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consesus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
 To enable UMI processing, you have to enable `-U` or `--umi` option in the command line, and specify `--umi_loc`  to specify the UMI location, it can be one of:
