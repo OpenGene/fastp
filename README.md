@@ -1,5 +1,17 @@
 # fastp
 A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance. 
+* [features](#features)
+* [simple usage](#simple-usage)
+* [examples of report](#examples-of-report)
+* [download, compile and install](#get-fastp)
+* [adapter trimming](#adapters)
+* [per read cutting by quality score](#per-read-cutting-by-quality-score)
+* [base correction for paired end (PE) data](#base-correction-for-pe-data)
+* [globa trimming](#global-trimming)
+* [unique molecular identifer (UMI) processing](#unique-molecular-identifer-umi-processing)
+* [output splitting](#output-splitting)
+* [all options](#all-options)
+* [citation](#citation)
 
 # features:
 * filter out bad reads (too low quality, too short, or too many N...)
