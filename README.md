@@ -49,6 +49,35 @@ make
 # Install
 sudo make install
 ```
+
+# Unique molecular identifer (UMI) processing
+UMI is useful for duplication elimination and error correction based on generating consesus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
+To enable UMI processing, you have to enable `-U` or `--umi` option in the command line, and specify `--umi_loc`  to specify the UMI location, it can be one of:
+* `index1` the first index is used as UMI.
+* `index2` the second index is used as UMI. PE data only.
+* `read1` the head of read1 is used as UMI.
+* `read2` the head of read2 is used as UMI. PE data only.  
+If `--umi_loc` is specifie dwith `read1` or `read2`, the length of UMI should specified with `--umi_len`. 
+
+`fastp` will extract the UMIs, and append them to the first part of read names, so that it will also be presented in SAM/BAM records. A perfix `UMI_` will be added to each UMI. If the UMI is in the reads, then it will be shifted from read so that the read will become shorter. If the UMI is in the index, it will be kept.
+
+## UMI example
+original read:
+```txt
+@NS500713:64:HFKJJBGXY:1:11101:1675:1101 1:N:0:TATAGCCT+GACCCCCA
+AAAAAAAAGCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
++
+6AAAAAEEEEE/E/EA/E/AEA6EE//AEE66/AAE//EEE/E//E/AA/EEE/A/AEE/EEA//EEEEEEEE6EEAA
+```
+processed with: `fastp -i testdata/R1.fq -o testdata/out.R1.fq -U --umi_loc=read1 --umi_len=8`  
+result:
+```txt
+@NS500713:64:HFKJJBGXY:1:11101:1675:1101:UMI_AAAAAAAA 1:N:0:TATAGCCT+GACCCCCA
+GCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
++
+EEE/E/EA/E/AEA6EE//AEE66/AAE//EEE/E//E/AA/EEE/A/AEE/EEA//EEEEEEEE6EEAA
+```
+
 # All options
 ```shell
 usage: fastp -i <in1> -o <out1> [-I <in1> -O <out2>] [options...]
