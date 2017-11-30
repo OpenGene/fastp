@@ -23,9 +23,9 @@ string HtmlReporter::formatNumber(long number) {
     double num = (double)number;
     string unit[6] = {"", "K", "M", "G", "T", "P"};
     int order = 0;
-    while (num > 1024.0) {
+    while (num > 1000.0) {
         order += 1;
-        num /= 1024.0;
+        num /= 1000.0;
     }
 
     if (order == 0)
