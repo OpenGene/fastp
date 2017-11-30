@@ -15,8 +15,9 @@ void Evaluator::evaluateReadNum(long& readNum) {
     FastqReader reader(mOptions->in1);
 
     const long READ_LIMIT = 1024*1024;
+    const long BASE_LIMIT = 151 * 1024*1024;
     long records = 0;
-    long bytes = 0;
+    long bases = 0;
     size_t firstReadPos = 0;
 
     size_t bytesRead;
@@ -24,7 +25,7 @@ void Evaluator::evaluateReadNum(long& readNum) {
 
     bool reachedEOF = false;
     bool first = true;
-    while(records < READ_LIMIT) {
+    while(records < READ_LIMIT && bases < BASE_LIMIT) {
         Read* r = reader.read();
         if(!r) {
             reachedEOF = true;
@@ -36,6 +37,7 @@ void Evaluator::evaluateReadNum(long& readNum) {
             first = false;
         }
         records++;
+        bases += r->length();
         delete r;
     }
 
@@ -55,7 +57,9 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
     FastqReader reader(mOptions->in1);
     // stat up to 1M reads
     const long READ_LIMIT = 1024*1024;
+    const long BASE_LIMIT = 151 * 1024*1024;
     long records = 0;
+    long bases = 0;
     size_t firstReadPos = 0;
 
     size_t bytesRead;
@@ -72,7 +76,7 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
     memset(counts, 0, sizeof(unsigned int)*size);
     bool reachedEOF = false;
     bool first = true;
-    while(records < READ_LIMIT) {
+    while(records < READ_LIMIT && bases < BASE_LIMIT) {
         Read* r = reader.read();
         if(!r) {
             reachedEOF = true;
@@ -84,6 +88,7 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
             first = false;
         }
         int rlen = r->length();
+        bases += rlen;
         if(rlen < keylen + 1 + shiftTail)
             continue;
 
