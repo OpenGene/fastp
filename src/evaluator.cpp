@@ -17,13 +17,23 @@ void Evaluator::evaluateReadNum(long& readNum) {
     const long READ_LIMIT = 1024*1024;
     long records = 0;
     long bytes = 0;
+    size_t firstReadPos = 0;
+
+    size_t bytesRead;
+    size_t bytesTotal;
 
     bool reachedEOF = false;
+    bool first = true;
     while(records < READ_LIMIT) {
         Read* r = reader.read();
         if(!r) {
             reachedEOF = true;
             break;
+        }
+        if(first) {
+            reader.getBytes(bytesRead, bytesTotal);
+            firstReadPos = bytesRead;
+            first = false;
         }
         records++;
         delete r;
@@ -34,13 +44,11 @@ void Evaluator::evaluateReadNum(long& readNum) {
         return ;
     }
 
-    size_t bytesRead;
-    size_t bytesTotal;
-
     reader.getBytes(bytesRead, bytesTotal);
 
-    double bytesPerRead = (double)bytesRead / (double) records;
-    readNum = (long) (bytesTotal / bytesPerRead);
+    double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
+    // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
+    readNum = (long) (bytesTotal*1.01 / bytesPerRead);
 }
 
 string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
@@ -48,6 +56,11 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
     // stat up to 1M reads
     const long READ_LIMIT = 1024*1024;
     long records = 0;
+    size_t firstReadPos = 0;
+
+    size_t bytesRead;
+    size_t bytesTotal;
+
     // we have to shift last cycle for evaluation since it is so noisy, especially for Illumina data
     const int shiftTail = max(1, mOptions->trim.tail1);
 
@@ -58,11 +71,17 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
     unsigned int* counts = new unsigned int[size];
     memset(counts, 0, sizeof(unsigned int)*size);
     bool reachedEOF = false;
+    bool first = true;
     while(records < READ_LIMIT) {
         Read* r = reader.read();
         if(!r) {
             reachedEOF = true;
             break;
+        }
+        if(first) {
+            reader.getBytes(bytesRead, bytesTotal);
+            firstReadPos = bytesRead;
+            first = false;
         }
         int rlen = r->length();
         if(rlen < keylen + 1 + shiftTail)
@@ -212,13 +231,11 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
     }
 
     // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
-    size_t bytesRead;
-    size_t bytesTotal;
-
     reader.getBytes(bytesRead, bytesTotal);
 
-    double bytesPerRead = (double)bytesRead / (double) records;
-    readNum = (long) (bytesTotal / bytesPerRead);
+    double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
+    // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
+    readNum = (long) (bytesTotal*1.01 / bytesPerRead);
 
     return finalAdapter;
 

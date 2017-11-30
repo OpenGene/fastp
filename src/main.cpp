@@ -204,7 +204,6 @@ int main(int argc, char* argv[]){
 
     // using evaluator to guess how many reads in total
     if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
-        long readNum;
         Evaluator eva(&opt);
         cout << "Detecting adapter for single end input..." << endl;
         string adapt = eva.evaluateRead1AdapterAndReadNum(readNum);
@@ -226,9 +225,8 @@ int main(int argc, char* argv[]){
             Evaluator eva(&opt);
             eva.evaluateReadNum(readNum);
         }
+        opt.split.size = readNum / opt.split.number;
         // one record per file at least
-        // We reduce it by half of PACI_SIZE due to we are processing data by pack 
-        opt.split.size = readNum / opt.split.number - PACK_SIZE/2;
         if(opt.split.size <= 0) {
             opt.split.size = 1;
             cerr << "WARNING: the input file has less reads than the number of files to split" << endl;
