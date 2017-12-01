@@ -63,6 +63,7 @@ int main(int argc, char* argv[]){
     cmd.add("umi", 'U', "enable unique molecular identifer (UMI) preprocessing");
     cmd.add<string>("umi_loc", 0, "specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none", false, "");
     cmd.add<int>("umi_len", 0, "if the UMI is in read1/read2, its length should be provided", false, 0);
+    cmd.add<string>("umi_prefix", 0, "if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default", false, "");
     //cmd.add<string>("umi_sep", 0, "if the UMI is in read1/read2, it can have a separator (several bases separate UMI and insert DNA), default is empty", false, "");
 
     // reporting
@@ -164,7 +165,7 @@ int main(int argc, char* argv[]){
     // umi
     opt.umi.enabled = cmd.exist("umi");
     opt.umi.length = cmd.get<int>("umi_len");
-    //opt.umi.separator = cmd.get<string>("umi_sep");
+    opt.umi.prefix = cmd.get<string>("umi_prefix");
     if(opt.umi.enabled) {
         string umiLoc = cmd.get<string>("umi_loc");
         str2lower(umiLoc);

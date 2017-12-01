@@ -55,6 +55,11 @@ void UmiProcessor::process(Read* r1, Read* r2) {
 }
 
 void UmiProcessor::addUmiToName(Read* r, string umi){
+    string tag;
+    if(mOptions->umi.prefix.empty())
+        tag = ":" + umi;
+    else
+        tag = ":" + mOptions->umi.prefix + "_" + umi;
     int spacePos = -1;
     for(int i=0; i<r->mName.length(); i++) {
         if(r->mName[i] == ' ') {
@@ -63,9 +68,9 @@ void UmiProcessor::addUmiToName(Read* r, string umi){
         }
     }
     if(spacePos == -1) {
-        r->mName = r->mName + ":UMI_" + umi;
+        r->mName = r->mName + tag;
     } else {
-        r->mName = r->mName.substr(0, spacePos) + ":UMI_" + umi + r->mName.substr(spacePos, r->mName.length() - spacePos);
+        r->mName = r->mName.substr(0, spacePos) + tag + r->mName.substr(spacePos, r->mName.length() - spacePos);
     }
 
 }

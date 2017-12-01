@@ -123,6 +123,16 @@ bool Options::validate() {
     if(umi.enabled) {
         if(umi.length<1 && umi.length>100)
             error_exit("UMI length should be 1~100");
+        if(!umi.prefix.empty()) {
+            if(umi.prefix.length() >= 10)
+                error_exit("UMI prefix should be shorter than 10");
+            for(int i=0; i<umi.prefix.length(); i++) {
+                char c = umi.prefix[i];
+                if( !(c>='A' && c<='Z') && !(c>='z' && c<='z') && !(c>='0' && c<='9')) {
+                    error_exit("UMI prefix can only have characters and numbers, but the given is: " + umi.prefix);
+                }
+            }
+        }
         if(!umi.separator.empty()) {
             if(umi.separator.length()>10)
                 error_exit("UMI separator cannot be longer than 10 base pairs");

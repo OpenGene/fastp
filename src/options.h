@@ -26,6 +26,7 @@ public:
     bool enabled;
     int location;
     int length;
+    string prefix;
     string separator;
 };
 

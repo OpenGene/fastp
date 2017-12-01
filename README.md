@@ -116,7 +116,9 @@ To enable UMI processing, you have to enable `-U` or `--umi` option in the comma
 
 If `--umi_loc` is specified with `read1`, `read2` or `per_read`, the length of UMI should specified with `--umi_len`. 
 
-`fastp` will extract the UMIs, and append them to the first part of read names, so the UMIs will also be presented in SAM/BAM records. A perfix `UMI_` will be added to each UMI. If the UMI is in the reads, then it will be shifted from read so that the read will become shorter. If the UMI is in the index, it will be kept.
+`fastp` will extract the UMIs, and append them to the first part of read names, so the UMIs will also be presented in SAM/BAM records. If the UMI is in the reads, then it will be shifted from read so that the read will become shorter. If the UMI is in the index, it will be kept.
+
+A prefix can be specified with `--umi_prefix`. If prefix is specified, an underline will be used to connect it and UMI. For example, UMI=AATTCCGG, prefix=UMI, then the final string presented in the name will be `UMI_AATTCCGG`.
 
 ## UMI example
 original read:
@@ -190,6 +192,7 @@ options:
   -U, --umi                          enable unique molecular identifer (UMI) preprocessing
       --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none (string [=])
       --umi_len                      if the UMI is in read1/read2, its length should be provided (int [=0])
+      --umi_prefix                   if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default (string [=])
 
   # reporting options
   -j, --json                         the json format report file name (string [=fastp.json])
