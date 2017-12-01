@@ -121,16 +121,16 @@ If `--umi_loc` is specified with `read1`, `read2` or `per_read`, the length of U
 A prefix can be specified with `--umi_prefix`. If prefix is specified, an underline will be used to connect it and UMI. For example, UMI=AATTCCGG, prefix=UMI, then the final string presented in the name will be `UMI_AATTCCGG`.
 
 ## UMI example
-original read:
+The original read:
 ```
 @NS500713:64:HFKJJBGXY:1:11101:1675:1101 1:N:0:TATAGCCT+GACCCCCA
 AAAAAAAAGCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
 +
 6AAAAAEEEEE/E/EA/E/AEA6EE//AEE66/AAE//EEE/E//E/AA/EEE/A/AEE/EEA//EEEEEEEE6EEAA
 ```
-processed with: `fastp -i testdata/R1.fq -o testdata/out.R1.fq -U --umi_loc=read1 --umi_len=8`:  
+After it's processed with command: `fastp -i R1.fq -o out.R1.fq -U --umi_loc=read1 --umi_len=8`:  
 ```
-@NS500713:64:HFKJJBGXY:1:11101:1675:1101:UMI_AAAAAAAA 1:N:0:TATAGCCT+GACCCCCA
+@NS500713:64:HFKJJBGXY:1:11101:1675:1101:AAAAAAAA 1:N:0:TATAGCCT+GACCCCCA
 GCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
 +
 EEE/E/EA/E/AEA6EE//AEE66/AAE//EEE/E//E/AA/EEE/A/AEE/EEA//EEEEEEEE6EEAA
