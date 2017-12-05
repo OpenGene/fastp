@@ -8,6 +8,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [per read cutting by quality score](#per-read-cutting-by-quality-score)
 * [base correction for paired end (PE) data](#base-correction-for-pe-data)
 * [globa trimming](#global-trimming)
+* [polyG tail trimming](#polyg-tail-trimming)
 * [unique molecular identifer (UMI) processing](#unique-molecular-identifer-umi-processing)
 * [output splitting](#output-splitting)
 * [all options](#all-options)
@@ -103,6 +104,9 @@ For example, the last cycle of Illumina sequencing is uaually with low quality, 
 
 * For read1 or SE data, the front/tail trimming settings are given with `-f, --trim_front1` and `-t, --trim_tail1`.
 * For read2 of PE data, the front/tail trimming settings are given with `-F, --trim_front2` and `-T, --trim_tail2`. But if these options are not specified, they will be as same as read1 options, which means `trim_front2 = trim_front1` and `trim_tail2 = trim_tail1`.
+
+# polyG tail trimming
+For Illumina NextSeq/NovaSeq data, `polyG` can happen in read tails since `G` means no signal in the Illumina two-color systems. `fastp` can detect the polyG in read tails and trim them. This feature is enabled for NextSeq/NovaSeq data by default, and you can specify `-g` or `--trim_poly_g` to enable it for any data, or specify `-G` or `--disable_trim_poly_g` to disable it. NextSeq/NovaSeq data is detected by the machine ID in the FASTQ records.
 
 # unique molecular identifer (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consensus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
