@@ -11,6 +11,24 @@ Evaluator::Evaluator(Options* opt){
 Evaluator::~Evaluator(){
 }
 
+bool Evaluator::isTwoColorSystem() {
+    FastqReader reader(mOptions->in1);
+
+    Read* r = reader.read();
+
+    if(!r)
+        return false;
+
+    // NEXTSEQ500, NEXTSEQ 550, NOVASEQ
+    if(starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@A0")) {
+        delete r;
+        return true;
+    }
+
+    delete r;
+    return false;
+}
+
 void Evaluator::evaluateReadNum(long& readNum) {
     FastqReader reader(mOptions->in1);
 

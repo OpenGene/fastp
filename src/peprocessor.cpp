@@ -10,6 +10,7 @@
 #include "basecorrector.h"
 #include "jsonreporter.h"
 #include "htmlreporter.h"
+#include "polyx.h"
 
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
@@ -202,6 +203,10 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         // trim in head and tail, and apply quality cut in sliding window
         Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
         Read* r2 = mFilter->trimAndCut(or2, mOptions->trim.front2, mOptions->trim.tail2);
+
+        if(mOptions->polyGTrim.enabled) {
+            PolyX::trimPolyG(r1, r2, config->getFilterResult());
+        }
 
         if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)){
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2);

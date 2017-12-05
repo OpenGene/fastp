@@ -15,6 +15,15 @@ using namespace std;
 #define UMI_LOC_PER_INDEX 5
 #define UMI_LOC_PER_READ 6
 
+class PolyGTrimmerOptions {
+public:
+    PolyGTrimmerOptions() {
+        enabled = false;
+    }
+public:
+    bool enabled;
+};
+
 class UMIOptions {
 public:
     UMIOptions() {
@@ -190,6 +199,8 @@ public:
     CorrectionOptions correction;
     // options for UMI
     UMIOptions umi;
+    // polyG trimming for Illumina NextSeq/NovaSeq
+    PolyGTrimmerOptions polyGTrim;
 
 };
 

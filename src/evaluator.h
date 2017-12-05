@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string>
 #include "options.h"
+#include "util.h"
 
 using namespace std;
 
@@ -15,6 +16,7 @@ public:
     // evaluate how many reads are stored in the input file
     void evaluateReadNum(long& readNum);
     string evaluateRead1AdapterAndReadNum(long& readNum);
+    bool isTwoColorSystem();
 private:
     Options* mOptions;
     string int2seq(unsigned int val, int seqlen);

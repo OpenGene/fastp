@@ -9,6 +9,7 @@
 #include "jsonreporter.h"
 #include "htmlreporter.h"
 #include "adaptertrimmer.h"
+#include "polyx.h"
 
 SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOptions = opt;
@@ -169,6 +170,10 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         // trim in head and tail, and apply quality cut in sliding window
         Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
+
+        if(mOptions->polyGTrim.enabled) {
+            PolyX::trimPolyG(r1, config->getFilterResult());
+        }
 
         if(r1 != NULL && mOptions->adapter.enabled && !mOptions->adapter.sequence.empty()){
             AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence);

@@ -40,6 +40,10 @@ int main(int argc, char* argv[]){
     cmd.add<int>("trim_front2", 'F', "trimming how many bases in front for read2. If it's not specified, it will follow read1's settings", false, 0);
     cmd.add<int>("trim_tail2", 'T', "trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings", false, 0);
 
+    // polyG tail trimming
+    cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
+    cmd.add("disable_trim_poly_g", 'G', "disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
+    
     // sliding window cutting for each reads
     cmd.add("cut_by_quality5", '5', "enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)");
     cmd.add("cut_by_quality3", '3', "enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)");
@@ -107,6 +111,15 @@ int main(int argc, char* argv[]){
         opt.trim.tail2 = cmd.get<int>("trim_tail2");
     else
         opt.trim.tail2 = opt.trim.tail1;
+
+    // polyG tail trimming
+    if(cmd.exist("trim_poly_g") && cmd.exist("disable_trim_poly_g")) {
+        error_exit("You cannot enabled both trim_poly_g and disable_trim_poly_g");
+    } else if(cmd.exist("trim_poly_g")) {
+        opt.polyGTrim.enabled = true;
+    } else if(cmd.exist("disable_trim_poly_g")) {
+        opt.polyGTrim.enabled = false;
+    }
 
     // sliding window cutting by quality
     opt.qualityCut.enabled5 = cmd.exist("cut_by_quality5");
@@ -200,12 +213,13 @@ int main(int argc, char* argv[]){
     command = ss.str();
 
     time_t t1 = time(NULL);
+        
+    Evaluator eva(&opt);
 
     long readNum = 0;
 
     // using evaluator to guess how many reads in total
     if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
-        Evaluator eva(&opt);
         cout << "Detecting adapter for single end input..." << endl;
         string adapt = eva.evaluateRead1AdapterAndReadNum(readNum);
         if(adapt.length() >= 12 ) {
@@ -223,7 +237,6 @@ int main(int argc, char* argv[]){
     if(opt.split.needEvaluation) {
         // if readNum is not 0, means it is already evaluated by other functions
         if(readNum == 0) {
-            Evaluator eva(&opt);
             eva.evaluateReadNum(readNum);
         }
         opt.split.size = readNum / opt.split.number;
@@ -231,6 +244,14 @@ int main(int argc, char* argv[]){
         if(opt.split.size <= 0) {
             opt.split.size = 1;
             cerr << "WARNING: the input file has less reads than the number of files to split" << endl;
+        }
+    }
+
+    // using evaluator to check if it's two color system
+    if(!cmd.exist("trim_poly_g") && !cmd.exist("disable_trim_poly_g")) {
+        bool twoColorSystem = eva.isTwoColorSystem();
+        if(twoColorSystem){
+            opt.polyGTrim.enabled = true;
         }
     }
 
