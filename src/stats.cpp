@@ -384,6 +384,25 @@ void Stats::reportJson(ofstream& ofs, string padding) {
             ofs << ",";
         ofs << endl; 
     }
+    ofs << padding << "\t" << "}," << endl;
+
+    // KMER counting
+    ofs << padding << "\t" << "\"kmer_count\": {" << endl;
+    for(int i=0; i<64; i++) {
+        string first = kmer3(i);
+        for(int j=0; j<16; j++) {
+            int target = (i<<4) + j;
+            long count = mKmer[target];
+            string last = kmer2(j);
+            ofs << padding << "\t\t\"" << first << last << "\":" << count;
+            if(j != 16-1)
+                ofs << ",";
+        }
+        if(i != 64-1)
+            ofs << "," << endl;
+        else
+            ofs << endl;
+    }
     ofs << padding << "\t" << "}" << endl;
 
     ofs << padding << "}," << endl;
