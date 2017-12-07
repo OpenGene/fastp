@@ -74,6 +74,7 @@ private:
     long mBases;
     long mQ20Bases[8];
     long mQ30Bases[8];
+    long mBaseContents[8];
     long mQ20Total;
     long mQ30Total;
     bool summarized;

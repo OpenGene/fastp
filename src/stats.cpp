@@ -21,6 +21,7 @@ Stats::Stats(int guessedCycles, int bufferMargin){
     for(int i=0; i<8; i++){
         mQ20Bases[i] = 0;
         mQ30Bases[i] = 0;
+        mBaseContents[i] = 0;
 
         mCycleQ30Bases[i] = new long[mBufLen];
         memset(mCycleQ30Bases[i], 0, sizeof(long) * mBufLen);
@@ -135,15 +136,17 @@ void Stats::summarize(bool forced) {
     if(mCycleTotalBase[mBufLen-1]>0)
         mCycles = mBufLen;
 
-    // Q20 Q30
+    // Q20, Q30, base content
     for(int i=0; i<8; i++) {
         for(int c=0; c<mCycles; c++) {
             mQ20Bases[i] += mCycleQ20Bases[i][c];
             mQ30Bases[i] += mCycleQ30Bases[i][c];
+            mBaseContents[i] += mCycleBaseContents[i][c];
         }
         mQ20Total += mQ20Bases[i];
         mQ30Total += mQ30Bases[i];
     }
+
 
     // quality curve for mean qual
     double* meanQualCurve = new double[mCycles];
@@ -663,10 +666,22 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     // four bases
     for (int b = 0; b<6; b++) {
         string base = alphabets[b];
+        long count = 0;
+        if(base.size()==1) {
+            char b = base[0] & 0x07;
+            count = mBaseContents[b];
+        } else {
+            count = mBaseContents['G' & 0x07] + mBaseContents['C' & 0x07] ;
+        }
+        string percentage = to_string((double)count * 100.0 / mBases);
+        if(percentage.length()>5)
+            percentage = percentage.substr(0,5);
+        string name = base + "(" + percentage + "%)"; 
+
         json_str += "{";
         json_str += "x:[" + list2string(x, total) + "],";
         json_str += "y:[" + list2string(mContentCurves[base], total, x) + "],";
-        json_str += "name: '" + base + "',";
+        json_str += "name: '" + name + "',";
         json_str += "mode:'lines',";
         json_str += "line:{color:'" + colors[b] + "', width:1}\n";
         json_str += "},";
