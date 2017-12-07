@@ -3,6 +3,8 @@
 #include <sstream>
 #include "util.h"
 
+#define KMER_LEN 5
+
 Stats::Stats(int guessedCycles, int bufferMargin){
     mReads = 0;
     mCycles = guessedCycles;
@@ -10,6 +12,8 @@ Stats::Stats(int guessedCycles, int bufferMargin){
     mQ20Total = 0;
     mQ30Total = 0;
     summarized = false;
+    mKmerMin = 0;
+    mKmerMax = 0;
 
     // extend the buffer to make sure it's long enough
     mBufLen = guessedCycles + bufferMargin;
@@ -35,6 +39,10 @@ Stats::Stats(int guessedCycles, int bufferMargin){
 
     mCycleTotalQual = new long[mBufLen];
     memset(mCycleTotalQual, 0, sizeof(long)*mBufLen);
+
+    mKmerBufLen = 2<<(KMER_LEN * 2);
+    mKmer = new long[mKmerBufLen];
+    memset(mKmer, 0, sizeof(long)*mKmerBufLen);
 }
 
 void Stats::extendBuffer(int newBufLen){
@@ -109,6 +117,7 @@ Stats::~Stats() {
     for(iter = mContentCurves.begin(); iter != mContentCurves.end(); iter++) {
         delete iter->second;
     }
+    delete mKmer;
 }
 
 void Stats::summarize(bool forced) {
@@ -175,6 +184,15 @@ void Stats::summarize(bool forced) {
     }
     mContentCurves["GC"] = gcContentCurve;
 
+    mKmerMin = mKmer[0];
+    mKmerMax = mKmer[0];
+    for(int i=0; i<mKmerBufLen; i++) {
+        if(mKmer[i] > mKmerMax)
+            mKmerMax = mKmer[i];
+        if(mKmer[i] < mKmerMin)
+            mKmerMin = mKmer[i];
+    }
+
     summarized = true;
 }
 
@@ -189,14 +207,13 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
     const char* seqstr = r->mSeq.mStr.c_str();
     const char* qualstr = r->mQuality.c_str();
 
+    int kmer = 0;
+    bool needFullCompute = true;
     for(int i=0; i<len; i++) {
         char base = seqstr[i];
         char qual = qualstr[i];
         // get last 3 bits
         char b = base & 0x07;
-
-        if(base == 'N')
-            nBaseNum++;
 
         const char q20 = '5';
         const char q30 = '?';
@@ -217,9 +234,65 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
         mCycleTotalBase[i]++;
         mCycleTotalQual[i] += (qual-33);
 
+        if(base == 'N'){
+            nBaseNum++;
+            needFullCompute = true;
+            continue;
+        }
+
+        // 5 bases required for kmer computing
+        if(i<4)
+            continue;
+
+        // calc 5 KMER
+        // 0x3FC == 0011 1111 1100
+        if(!needFullCompute){
+            int val = base2val(base);
+            if(val < 0){
+                needFullCompute = true;
+                continue;
+            } else {
+                kmer = ((kmer<<2) & 0x3FC ) | val;
+                mKmer[kmer]++;
+            }
+        } else {
+            bool valid = true;
+            kmer = 0;
+            for(int k=0; k<5; k++) {
+                int val = base2val(seqstr[i - 4 + k]);
+                if(val < 0) {
+                    valid = false;
+                    break;
+                }
+                kmer = ((kmer<<2) & 0x3FC ) | val;
+            }
+            if(!valid) {
+                needFullCompute = true;
+                continue;
+            } else {
+                mKmer[kmer]++;
+                needFullCompute = false;
+            }
+        }
+
     }
 
     mReads++;
+}
+
+int Stats::base2val(char base) {
+    switch(base){
+        case 'A':
+            return 0;
+        case 'T':
+            return 1;
+        case 'C':
+            return 2;
+        case 'G':
+            return 3;
+        default:
+            return -1;
+    }
 }
 
 int Stats::getCycles() {
@@ -364,10 +437,92 @@ string Stats::list2string(long* list, int size) {
 void Stats::reportHtml(ofstream& ofs, string filteringType, string readName) {
     reportHtmlQuality(ofs, filteringType, readName);
     reportHtmlContents(ofs, filteringType, readName);
+    reportHtmlKMER(ofs, filteringType, readName);
 }
 
 bool Stats::isLongRead() {
     return mCycles > 300;
+}
+
+void Stats::reportHtmlKMER(ofstream& ofs, string filteringType, string readName) {
+
+    // KMER
+    string subsection = filteringType + ": " + readName + ": KMER counting";
+    string divName = replace(subsection, " ", "_");
+    string title = "";
+
+    ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
+    ofs << "<div class='sub_section_tips'>Darker background means higher counts. The count will be shown on mouse over.</div>\n";
+    ofs << "<table class='kmer_table'>\n";
+    ofs << "<tr>";
+    ofs << "<td></td>";
+    // the heading row
+    for(int h=0; h<16; h++) 
+        ofs << "<td style='color:#333333'>" << kmer2(h) << "</td>";
+    ofs << "</tr>\n";
+    // content
+    for(int i=0; i<64; i++) {
+        ofs << "<tr>";
+
+        ofs << "<td style='color:#333333'>" << kmer3(i) << "</td>";
+        for(int j=0; j<16; j++) {
+            ofs << makeKmerTD(i,j) ;
+        }
+        ofs << "</tr>\n";
+    }
+    ofs << "</table>\n";
+}
+
+string Stats::makeKmerTD(int i, int j) {
+    int target = (i<<4) + j;
+    long val = mKmer[target];
+    // 3bp + 2bp = 5bp
+    string first = kmer3(i);
+    string last = kmer2(j);
+    string kmer = first+last;
+    double meanBases = (double)(mBases+1) / mKmerBufLen;
+    double prop = val / meanBases;
+    double frac = 0.5;
+    if(prop > 2.0) 
+        frac = (prop-2.0)/20.0 + 0.5;
+    else if(prop< 0.5)
+        frac = prop;
+
+    frac = max(0.01, min(1.0, frac));
+    int r = (1.0-frac) * 255;
+    int g = r;
+    int b = r;
+    stringstream ss;
+    ss << "<td style='background:#"; 
+    if(r<16)
+        ss << "0";
+    ss<<hex<<r;
+    if(g<16)
+        ss << "0";
+    ss<<hex<<g;
+    if(b<16)
+        ss << "0";
+    ss<<hex<<b;
+    ss << dec << "' title='"<< kmer << ": " << val << "\n" << prop << " times as mean value'>";
+    ss << kmer << "</td>";
+    return ss.str();
+}
+
+string Stats::kmer3(int val) {
+    const char bases[4] = {'A', 'T', 'C', 'G'};
+    string ret(3, ' ');
+    ret[0] = bases[(val & 0x30) >> 4];
+    ret[1] = bases[(val & 0x0C) >> 2];
+    ret[2] = bases[(val & 0x03)];
+    return ret;
+}
+
+string Stats::kmer2(int val) {
+    const char bases[4] = {'A', 'T', 'C', 'G'};
+    string ret(2, ' ');
+    ret[0] = bases[(val & 0x0C) >> 2];
+    ret[1] = bases[(val & 0x03)];
+    return ret;
 }
 
 void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readName) {
@@ -541,6 +696,11 @@ Stats* Stats::merge(vector<Stats*>& list) {
         for(int j=0; j<cycles && j<curCycles; j++) {
             s->mCycleTotalBase[j] += list[t]->mCycleTotalBase[j];
             s->mCycleTotalQual[j] += list[t]->mCycleTotalQual[j];
+        }
+
+        // merge kMer
+        for(int i=0; i<s->mKmerBufLen; i++) {
+            s->mKmer[i] += list[t]->mKmer[i];
         }
     }
 

@@ -32,15 +32,20 @@ public:
     void reportHtml(ofstream& ofs, string filteringType, string readName);
     void reportHtmlQuality(ofstream& ofs, string filteringType, string readName);
     void reportHtmlContents(ofstream& ofs, string filteringType, string readName);
+    void reportHtmlKMER(ofstream& ofs, string filteringType, string readName);
     bool isLongRead();
 
 public:
     static string list2string(double* list, int size);
     static string list2string(double* list, int size, long* coords);
     static string list2string(long* list, int size);
+    static int base2val(char base);
 
 private:
     void extendBuffer(int newBufLen);
+    string makeKmerTD(int i, int j);
+    string kmer3(int val);
+    string kmer2(int val);
 
 private:
     long mReads;
@@ -59,6 +64,7 @@ private:
     long *mCycleBaseQual[8];
     long *mCycleTotalBase;
     long *mCycleTotalQual;
+    long *mKmer;
 
     map<string, double*> mQualityCurves;
     map<string, double*> mContentCurves;
@@ -71,6 +77,9 @@ private:
     long mQ20Total;
     long mQ30Total;
     bool summarized;
+    long mKmerMax;
+    long mKmerMin;
+    int mKmerBufLen;
 };
 
 #endif

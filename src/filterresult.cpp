@@ -280,7 +280,7 @@ void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp
         frac *= 2.0;
 
     if(frac < 0.01) {
-        ofs << "<div style='color:#999999;font-size:10px;padding-left:5px;'>The input has little adapter percentage (~" << to_string(frac*100.0) << "%), probably it's trimmed before.</div>\n";
+        ofs << "<div class='sub_section_tips'>The input has little adapter percentage (~" << to_string(frac*100.0) << "%), probably it's trimmed before.</div>\n";
     }
 
     if(total == 0)
