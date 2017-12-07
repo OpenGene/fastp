@@ -30,6 +30,10 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     if(preStats2)
         pre_q30_bases += preStats2->getQ30();
 
+    long pre_total_gc = preStats1->getGCNumber();
+    if(preStats2)
+        pre_total_gc += preStats2->getGCNumber();
+
     long post_total_reads = postStats1->getReads();
     if(postStats2)
         post_total_reads += postStats2->getReads();
@@ -46,6 +50,10 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     if(postStats2)
         post_q30_bases += postStats2->getQ30();
 
+    long post_total_gc = postStats1->getGCNumber();
+    if(postStats2)
+        post_total_gc += postStats2->getGCNumber();
+
     // summary
     ofs << "\t" << "\"summary\": {" << endl;
 
@@ -55,7 +63,8 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "\t\t\t" << "\"q20_bases\":" << pre_q20_bases << "," << endl; 
     ofs << "\t\t\t" << "\"q30_bases\":" << pre_q30_bases << "," << endl; 
     ofs << "\t\t\t" << "\"q20_rate\":" << (pre_total_bases == 0?0.0:(double)pre_q20_bases / (double)pre_total_bases) << "," << endl; 
-    ofs << "\t\t\t" << "\"q30_rate\":" << (pre_total_bases == 0?0.0:(double)pre_q30_bases / (double)pre_total_bases)  << endl; 
+    ofs << "\t\t\t" << "\"q30_rate\":" << (pre_total_bases == 0?0.0:(double)pre_q30_bases / (double)pre_total_bases) << "," << endl; 
+    ofs << "\t\t\t" << "\"gc_content\":" << (pre_total_bases == 0?0.0:(double)pre_total_gc / (double)pre_total_bases)  << endl; 
     ofs << "\t\t" << "}," << endl;
 
     ofs << "\t\t" << "\"after_filtering\": {" << endl;
@@ -64,7 +73,8 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "\t\t\t" << "\"q20_bases\":" << post_q20_bases << "," << endl; 
     ofs << "\t\t\t" << "\"q30_bases\":" << post_q30_bases << "," << endl; 
     ofs << "\t\t\t" << "\"q20_rate\":" << (post_total_bases == 0?0.0:(double)post_q20_bases / (double)post_total_bases) << "," << endl; 
-    ofs << "\t\t\t" << "\"q30_rate\":" << (post_total_bases == 0?0.0:(double)post_q30_bases / (double)post_total_bases) << endl; 
+    ofs << "\t\t\t" << "\"q30_rate\":" << (post_total_bases == 0?0.0:(double)post_q30_bases / (double)post_total_bases) << "," << endl; 
+    ofs << "\t\t\t" << "\"gc_content\":" << (post_total_bases == 0?0.0:(double)post_total_gc / (double)post_total_bases)  << endl; 
     ofs << "\t\t" << "}" << endl;
 
     ofs << "\t" << "}," << endl;

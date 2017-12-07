@@ -328,6 +328,12 @@ long Stats::getQ30() {
     return mQ30Total;
 }
 
+long Stats::getGCNumber() {
+    if(!summarized)
+        summarize();
+    return mBaseContents['G' & 0x07] + mBaseContents['C' & 0x07];
+}
+
 void Stats::print() {
     if(!summarized) {
         summarize();
@@ -474,8 +480,8 @@ void Stats::reportHtmlKMER(ofstream& ofs, string filteringType, string readName)
     string title = "";
 
     ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
-    ofs << "<div class='sub_section_tips'>Darker background means higher counts. The count will be shown on mouse over.</div>\n";
-    ofs << "<table class='kmer_table'>\n";
+    ofs << "<div class='sub_section_tips'>Darker background means larger counts. The count will be shown on mouse over.</div>\n";
+    ofs << "<table class='kmer_table' style='width:680px;'>\n";
     ofs << "<tr>";
     ofs << "<td></td>";
     // the heading row

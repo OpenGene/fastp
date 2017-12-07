@@ -20,6 +20,7 @@ public:
     long getBases();
     long getQ20();
     long getQ30();
+    long getGCNumber();
     // by default the qualified qual score is Q20 ('5')
     void statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual = '5');
 
