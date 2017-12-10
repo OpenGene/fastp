@@ -78,7 +78,7 @@ bool SingleEndProcessor::process(){
     int cycle = 151;
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        configs[t] = new ThreadConfig(mOptions, cycle, t, false);
+        configs[t] = new ThreadConfig(mOptions, t, false);
         initConfig(configs[t]);
     }
 

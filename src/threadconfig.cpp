@@ -1,16 +1,16 @@
 #include "threadconfig.h"
 #include "util.h"
 
-ThreadConfig::ThreadConfig(Options* opt, int seqCycles, int threadId, bool paired){
+ThreadConfig::ThreadConfig(Options* opt, int threadId, bool paired){
     mOptions = opt;
     mThreadId = threadId;
     mWorkingSplit = threadId;
     mCurrentSplitReads = 0;
-    mPreStats1 = new Stats(seqCycles);
-    mPostStats1 = new Stats(seqCycles);
+    mPreStats1 = new Stats(mOptions, false);
+    mPostStats1 = new Stats(mOptions, false);
     if(paired){
-        mPreStats2 = new Stats(seqCycles);
-        mPostStats2 = new Stats(seqCycles);
+        mPreStats2 = new Stats(mOptions, true);
+        mPostStats2 = new Stats(mOptions, true);
     }
     else {
         mPreStats2 = NULL;

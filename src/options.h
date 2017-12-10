@@ -206,6 +206,8 @@ public:
     // for overrepresentation analysis
     map<string, long> overRepSeqs1;
     map<string, long> overRepSeqs2;
+    int seqLen1;
+    int seqLen2;
 
 };
 

@@ -216,6 +216,8 @@ int main(int argc, char* argv[]){
         
     Evaluator eva(&opt);
 
+    eva.evaluateSeqLen();
+
     //eva.evaluateOverRepSeqs();
 
     long readNum = 0;

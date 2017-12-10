@@ -5,8 +5,17 @@
 
 #define KMER_LEN 5
 
-Stats::Stats(int guessedCycles, int bufferMargin){
+Stats::Stats(Options* opt, bool isRead2, int guessedCycles, int bufferMargin){
+    mOptions = opt;
+    mIsRead2 = isRead2;
     mReads = 0;
+
+    if(guessedCycles == 0) {
+        guessedCycles = mOptions->seqLen1;
+        if(mIsRead2)
+            guessedCycles = mOptions->seqLen2;
+    }
+
     mCycles = guessedCycles;
     mBases = 0;
     mQ20Total = 0;
@@ -119,6 +128,8 @@ Stats::~Stats() {
         delete iter->second;
     }
     delete mKmer;
+
+    deleteOverRepSeqDist();
 }
 
 void Stats::summarize(bool forced) {
@@ -708,6 +719,9 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
 }
 
 Stats* Stats::merge(vector<Stats*>& list) {
+    if(list.size() == 0)
+        return NULL;
+
     //get the most long cycles
     int cycles = 0;
     for(int t=0; t<list.size(); t++) {
@@ -715,7 +729,10 @@ Stats* Stats::merge(vector<Stats*>& list) {
         cycles = max(cycles, list[t]->getCycles());
     }
 
-    Stats* s = new Stats(cycles, 0);
+    Stats* s = new Stats(list[0]->mOptions, list[0]->mIsRead2, cycles, 0);
+
+    // init overrepresented seq maps
+    s->initOverRepSeq();
 
     for(int t=0; t<list.size(); t++) {
         int curCycles =  list[t]->getCycles();
@@ -747,5 +764,32 @@ Stats* Stats::merge(vector<Stats*>& list) {
     s->summarize();
 
     return s;
+}
+
+void Stats::initOverRepSeq() {
+    map<string, long>& overRepSeq = mOptions->overRepSeqs1;
+    int seqLen = mOptions->seqLen1;
+    if(mIsRead2) {
+        overRepSeq = mOptions->overRepSeqs2;
+        seqLen = mOptions->seqLen2;
+    }
+
+    map<string, long>::iterator iter;
+    for(iter = overRepSeq.begin(); iter!=overRepSeq.end(); iter++) {
+        string seq = iter->first;
+        mOverRepSeq[seq] = 0;
+        long* distBuf = new long[seqLen];
+        memset(distBuf, 0, sizeof(long)*seqLen);
+        mOverRepSeqDist[seq] = distBuf;
+    }
+}
+
+void Stats::deleteOverRepSeqDist() {
+    map<string, long>::iterator iter;
+    for(iter = mOverRepSeq.begin(); iter!=mOverRepSeq.end(); iter++) {
+        string seq = iter->first;
+        delete mOverRepSeqDist[seq];
+        mOverRepSeqDist[seq] = NULL;
+    }
 }
 

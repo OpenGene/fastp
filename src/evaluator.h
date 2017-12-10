@@ -17,8 +17,10 @@ public:
     void evaluateReadNum(long& readNum);
     string evaluateRead1AdapterAndReadNum(long& readNum);
     bool isTwoColorSystem();
+    void evaluateSeqLen();
     void evaluateOverRepSeqs();
-    void computeOverRepSeq(string filename, map<string, long>& hotseqs);
+    void computeOverRepSeq(string filename, map<string, long>& hotseqs, int seqLen);
+    int computeSeqLen(string filename);
 private:
     Options* mOptions;
     string int2seq(unsigned int val, int seqlen);

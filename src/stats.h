@@ -7,13 +7,14 @@
 #include <vector>
 #include <map>
 #include "read.h"
+#include "options.h"
 
 using namespace std;
 
 class Stats{
 public:
     // this @guessedCycles parameter should be calculated using the first several records
-    Stats(int guessedCycles, int bufferMargin = 1024);
+    Stats(Options* opt, bool isRead2 = false, int guessedCycles = 0, int bufferMargin = 1024);
     ~Stats();
     int getCycles();
     long getReads();
@@ -35,6 +36,7 @@ public:
     void reportHtmlContents(ofstream& ofs, string filteringType, string readName);
     void reportHtmlKMER(ofstream& ofs, string filteringType, string readName);
     bool isLongRead();
+    void initOverRepSeq();
 
 public:
     static string list2string(double* list, int size);
@@ -47,8 +49,11 @@ private:
     string makeKmerTD(int i, int j);
     string kmer3(int val);
     string kmer2(int val);
+    void deleteOverRepSeqDist();
 
 private:
+    Options* mOptions;
+    bool mIsRead2;
     long mReads;
     /* 
     why we use 8 here?
@@ -70,6 +75,8 @@ private:
     map<string, double*> mQualityCurves;
     map<string, double*> mContentCurves;
     map<string, long> mOverRepSeq;
+    map<string, long*> mOverRepSeqDist;
+
 
     int mCycles;
     int mBufLen;

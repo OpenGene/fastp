@@ -14,7 +14,7 @@ using namespace std;
 
 class ThreadConfig{
 public:
-    ThreadConfig(Options* opt, int seqCycles, int threadId, bool paired = false);
+    ThreadConfig(Options* opt, int threadId, bool paired = false);
     ~ThreadConfig();
     inline Stats* getPreStats1() {return mPreStats1;}
     inline Stats* getPostStats1() {return mPostStats1;}

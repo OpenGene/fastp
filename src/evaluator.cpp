@@ -29,19 +29,22 @@ bool Evaluator::isTwoColorSystem() {
     return false;
 }
 
-void Evaluator::computeOverRepSeq(string filename, map<string, long>& hotseqs) {
+void Evaluator::evaluateSeqLen() {
+    if(!mOptions->in1.empty())
+        mOptions->seqLen1 = computeSeqLen(mOptions->in1);
+    if(!mOptions->in2.empty())
+        mOptions->seqLen2 = computeSeqLen(mOptions->in2);
+}
+
+int Evaluator::computeSeqLen(string filename) {
     FastqReader reader(filename);
 
-    map<string, long> seqCounts;
-
-    const long BASE_LIMIT = 151 * 10000;
     long records = 0;
-    long bases = 0;
     bool reachedEOF = false;
 
     // get seqlen
     int seqlen=0;
-    while(records < 100) {
+    while(records < 1000) {
         Read* r = reader.read();
         if(!r) {
             reachedEOF = true;
@@ -53,6 +56,19 @@ void Evaluator::computeOverRepSeq(string filename, map<string, long>& hotseqs) {
         records ++;
         delete r;
     }
+
+    return seqlen;
+}
+
+void Evaluator::computeOverRepSeq(string filename, map<string, long>& hotseqs, int seqlen) {
+    FastqReader reader(filename);
+
+    map<string, long> seqCounts;
+
+    const long BASE_LIMIT = 151 * 10000;
+    long records = 0;
+    long bases = 0;
+    bool reachedEOF = false;
 
     while(bases < BASE_LIMIT) {
         Read* r = reader.read();
@@ -139,9 +155,9 @@ void Evaluator::computeOverRepSeq(string filename, map<string, long>& hotseqs) {
 
 void Evaluator::evaluateOverRepSeqs() {
     if(!mOptions->in1.empty())
-        computeOverRepSeq(mOptions->in1, mOptions->overRepSeqs1);
+        computeOverRepSeq(mOptions->in1, mOptions->overRepSeqs1, mOptions->seqLen1);
     if(!mOptions->in2.empty())
-        computeOverRepSeq(mOptions->in2, mOptions->overRepSeqs2);
+        computeOverRepSeq(mOptions->in2, mOptions->overRepSeqs2, mOptions->seqLen2);
 }
 
 void Evaluator::evaluateReadNum(long& readNum) {
