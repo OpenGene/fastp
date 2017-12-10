@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <vector>
+#include <map>
 
 using namespace std;
 
@@ -201,6 +203,9 @@ public:
     UMIOptions umi;
     // polyG trimming for Illumina NextSeq/NovaSeq
     PolyGTrimmerOptions polyGTrim;
+    // for overrepresentation analysis
+    map<string, long> overRepSeqs1;
+    map<string, long> overRepSeqs2;
 
 };
 

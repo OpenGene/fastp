@@ -69,6 +69,7 @@ private:
 
     map<string, double*> mQualityCurves;
     map<string, double*> mContentCurves;
+    map<string, long> mOverRepSeq;
 
     int mCycles;
     int mBufLen;

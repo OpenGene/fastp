@@ -216,6 +216,8 @@ int main(int argc, char* argv[]){
         
     Evaluator eva(&opt);
 
+    //eva.evaluateOverRepSeqs();
+
     long readNum = 0;
 
     // using evaluator to guess how many reads in total

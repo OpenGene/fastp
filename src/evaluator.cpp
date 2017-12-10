@@ -29,6 +29,121 @@ bool Evaluator::isTwoColorSystem() {
     return false;
 }
 
+void Evaluator::computeOverRepSeq(string filename, map<string, long>& hotseqs) {
+    FastqReader reader(filename);
+
+    map<string, long> seqCounts;
+
+    const long BASE_LIMIT = 151 * 10000;
+    long records = 0;
+    long bases = 0;
+    bool reachedEOF = false;
+
+    // get seqlen
+    int seqlen=0;
+    while(records < 100) {
+        Read* r = reader.read();
+        if(!r) {
+            reachedEOF = true;
+            break;
+        }
+        int rlen = r->length();
+        if(rlen > seqlen)
+            seqlen = rlen;
+        records ++;
+        delete r;
+    }
+
+    while(bases < BASE_LIMIT) {
+        Read* r = reader.read();
+        if(!r) {
+            reachedEOF = true;
+            break;
+        }
+        int rlen = r->length();
+        bases += rlen;
+        records ++;
+        // 10, 20, 40, 80, 150
+
+        int steps[5] = {10, 20, 40, 100, seqlen-1};
+        
+        for(int s=0; s<5; s++) {
+            int step = steps[s];
+            for(int i=0; i<rlen-step; i++) {
+                string seq = r->mSeq.mStr.substr(i, step);
+                if(seqCounts.count(seq)>0)
+                    seqCounts[seq]++;
+                else
+                    seqCounts[seq]=1;
+            }
+        }
+
+        delete r;
+    }
+    
+    map<string, long>::iterator iter;
+    for(iter = seqCounts.begin(); iter!=seqCounts.end(); iter++) {
+        string seq = iter->first;
+        long count = iter->second;
+
+        if(seq.length() >= seqlen-1) {
+            if(count >= 3) {
+                hotseqs[seq]=count;
+            }
+        } else if(seq.length() >= 100) {
+            if(count >= 5) {
+                hotseqs[seq]=count;
+            }
+        } else if(seq.length() >= 40) {
+            if(count >= 20) {
+                hotseqs[seq]=count;
+            }
+        } else if(seq.length() >= 20) {
+            if(count >= 100) {
+                hotseqs[seq]=count;
+            }
+        } else if(seq.length() >= 10) {
+            if(count >= 500) {
+                hotseqs[seq]=count;
+            }
+        }
+    }
+
+    // remove substrings
+    map<string, long>::iterator iter2;
+    iter = hotseqs.begin(); 
+    while(iter!=hotseqs.end()) {
+        string seq = iter->first;
+        long count = iter->second;
+        bool isSubString = false;
+        for(iter2 = hotseqs.begin(); iter2!=hotseqs.end(); iter2++) {
+            string seq2 = iter2->first;
+            long count2 = iter2->second;
+            if(seq != seq2 && seq2.find(seq) != string::npos && count / count2 < 10) {
+                isSubString = true;
+                break;
+            }
+        }
+        if(isSubString) {
+            hotseqs.erase(iter++);
+        } else {
+            iter++;
+        }
+    }
+
+    // output for test
+    /*for(iter = hotseqs.begin(); iter!=hotseqs.end(); iter++) {
+        cout << iter->first << ": " << iter->second << endl;
+    }*/
+}
+
+void Evaluator::evaluateOverRepSeqs() {
+    if(!mOptions->in1.empty())
+        computeOverRepSeq(mOptions->in1, mOptions->overRepSeqs1);
+    if(!mOptions->in2.empty())
+        computeOverRepSeq(mOptions->in2, mOptions->overRepSeqs2);
+}
+
 void Evaluator::evaluateReadNum(long& readNum) {
     FastqReader reader(mOptions->in1);
 
