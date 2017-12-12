@@ -70,6 +70,10 @@ int main(int argc, char* argv[]){
     cmd.add<string>("umi_prefix", 0, "if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default", false, "");
     //cmd.add<string>("umi_sep", 0, "if the UMI is in read1/read2, it can have a separator (several bases separate UMI and insert DNA), default is empty", false, "");
 
+    // overrepresented sequence analysis
+    cmd.add("overrepresentation_analysis", 'p', "enable overrepresented sequence analysis.");
+    cmd.add<int>("overrepresentation_sampling", 'P', "One in (--overrepresentation_sampling) reads will be computed for overrepresentation analysis (1~10000), smaller is slower, default is 100.", false, 100);
+    
     // reporting
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
     cmd.add<string>("html", 'h', "the html format report file name", false, "fastp.html");
@@ -206,6 +210,10 @@ int main(int argc, char* argv[]){
         }
     }
 
+    // overrepresented sequence analysis
+    opt.overRepAnalysis.enabled = cmd.exist("overrepresentation_analysis");
+    opt.overRepAnalysis.sampling = cmd.get<int>("overrepresentation_sampling");
+
     stringstream ss;
     for(int i=0;i<argc;i++){
         ss << argv[i] << " ";
@@ -213,12 +221,12 @@ int main(int argc, char* argv[]){
     command = ss.str();
 
     time_t t1 = time(NULL);
-        
-    Evaluator eva(&opt);
 
+    Evaluator eva(&opt);
     eva.evaluateSeqLen();
 
-    //eva.evaluateOverRepSeqs();
+    if(opt.overRepAnalysis.enabled)
+        eva.evaluateOverRepSeqs();
 
     long readNum = 0;
 

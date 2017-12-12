@@ -147,5 +147,8 @@ bool Options::validate() {
 
     }
 
+    if(overRepAnalysis.sampling < 1 || overRepAnalysis.sampling > 10000)
+        error_exit("overrepresentation_sampling should be 1~10000");
+
     return true;
 }

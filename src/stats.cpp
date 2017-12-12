@@ -10,10 +10,12 @@ Stats::Stats(Options* opt, bool isRead2, int guessedCycles, int bufferMargin){
     mIsRead2 = isRead2;
     mReads = 0;
 
+    mEvaluatedSeqLen = mOptions->seqLen1;
+    if(mIsRead2)
+        mEvaluatedSeqLen = mOptions->seqLen2;
+
     if(guessedCycles == 0) {
-        guessedCycles = mOptions->seqLen1;
-        if(mIsRead2)
-            guessedCycles = mOptions->seqLen2;
+        guessedCycles = mEvaluatedSeqLen;
     }
 
     mCycles = guessedCycles;
@@ -53,6 +55,8 @@ Stats::Stats(Options* opt, bool isRead2, int guessedCycles, int bufferMargin){
     mKmerBufLen = 2<<(KMER_LEN * 2);
     mKmer = new long[mKmerBufLen];
     memset(mKmer, 0, sizeof(long)*mKmerBufLen);
+
+    initOverRepSeq();
 }
 
 void Stats::extendBuffer(int newBufLen){
@@ -291,6 +295,26 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
 
     }
 
+    // do overrepresentation analysis for 1 of every 100 reads
+    if(mOptions->overRepAnalysis.enabled) {
+        if(mReads % mOptions->overRepAnalysis.sampling == 0) {
+            const int steps[5] = {10, 20, 40, 100, mEvaluatedSeqLen-1};
+            for(int s=0; s<5; s++) {
+                int step = steps[s];
+                for(int i=0; i<len-step; i++) {
+                    string seq = r->mSeq.mStr.substr(i, step);
+                    if(mOverRepSeq.count(seq)>0) {
+                        mOverRepSeq[seq]++;
+                        for(int p = i; p < seq.length() + i && p < mEvaluatedSeqLen; p++) {
+                            mOverRepSeqDist[seq][p]++;
+                        }
+                        i+=step;
+                    }
+                }
+            }
+        }
+    }
+
     mReads++;
 }
 
@@ -419,6 +443,23 @@ void Stats::reportJson(ofstream& ofs, string padding) {
                 ofs << ",";
         }
         if(i != 64-1)
+            ofs << "," << endl;
+        else
+            ofs << endl;
+    }
+    ofs << padding << "\t" << "}," << endl;
+
+    // over represented seqs
+    double dBases = mBases;
+    map<string, long>::iterator iter;
+    int displayed = 0;
+    ofs << padding << "\t" << "\"overrepresented_sequences\": {" << endl;
+    for(iter=mOverRepSeq.begin(); iter!=mOverRepSeq.end(); iter++) {
+        string seq = iter->first;
+        long count = iter->second;
+        ofs << padding << "\t\t\"" << seq <<  "\":" << (count * seq.length() * mOptions->overRepAnalysis.sampling)/dBases;
+        displayed++;
+        if(displayed != mOverRepSeq.size())
             ofs << "," << endl;
         else
             ofs << endl;
@@ -732,7 +773,7 @@ Stats* Stats::merge(vector<Stats*>& list) {
     Stats* s = new Stats(list[0]->mOptions, list[0]->mIsRead2, cycles, 0);
 
     // init overrepresented seq maps
-    s->initOverRepSeq();
+    map<string, long>::iterator iter;
 
     for(int t=0; t<list.size(); t++) {
         int curCycles =  list[t]->getCycles();
@@ -759,6 +800,17 @@ Stats* Stats::merge(vector<Stats*>& list) {
         for(int i=0; i<s->mKmerBufLen; i++) {
             s->mKmer[i] += list[t]->mKmer[i];
         }
+
+        // merge over rep seq
+        for(iter = s->mOverRepSeq.begin(); iter != s->mOverRepSeq.end(); iter++) {
+            string seq = iter->first;
+            s->mOverRepSeq[seq] += list[t]->mOverRepSeq[seq];
+            if(s->mIsRead2 != list[t]->mIsRead2 || list[t]->mOverRepSeqDist[seq] == NULL)
+                cout << t <<seq<< ":" << (s->mIsRead2?2:1 ) << "," << (list[t]->mIsRead2?2:1 ) <<endl;
+            for(int i=0; i<s->mEvaluatedSeqLen; i++) {
+                s->mOverRepSeqDist[seq][i] += list[t]->mOverRepSeqDist[seq][i];
+            }
+        }
     }
 
     s->summarize();
@@ -767,19 +819,18 @@ Stats* Stats::merge(vector<Stats*>& list) {
 }
 
 void Stats::initOverRepSeq() {
-    map<string, long>& overRepSeq = mOptions->overRepSeqs1;
-    int seqLen = mOptions->seqLen1;
-    if(mIsRead2) {
+    map<string, long> overRepSeq;
+    if(mIsRead2)
         overRepSeq = mOptions->overRepSeqs2;
-        seqLen = mOptions->seqLen2;
-    }
+    else
+        overRepSeq = mOptions->overRepSeqs1;
 
     map<string, long>::iterator iter;
     for(iter = overRepSeq.begin(); iter!=overRepSeq.end(); iter++) {
         string seq = iter->first;
         mOverRepSeq[seq] = 0;
-        long* distBuf = new long[seqLen];
-        memset(distBuf, 0, sizeof(long)*seqLen);
+        long* distBuf = new long[mEvaluatedSeqLen];
+        memset(distBuf, 0, sizeof(long)*mEvaluatedSeqLen);
         mOverRepSeqDist[seq] = distBuf;
     }
 }

@@ -17,6 +17,17 @@ using namespace std;
 #define UMI_LOC_PER_INDEX 5
 #define UMI_LOC_PER_READ 6
 
+class OverrepresentedSequenceAnasysOptions {
+public:
+    OverrepresentedSequenceAnasysOptions() {
+        enabled = false;
+        sampling = 10;
+    }
+public:
+    bool enabled;
+    int sampling;
+};
+
 class PolyGTrimmerOptions {
 public:
     PolyGTrimmerOptions() {
@@ -204,6 +215,7 @@ public:
     // polyG trimming for Illumina NextSeq/NovaSeq
     PolyGTrimmerOptions polyGTrim;
     // for overrepresentation analysis
+    OverrepresentedSequenceAnasysOptions overRepAnalysis;
     map<string, long> overRepSeqs1;
     map<string, long> overRepSeqs2;
     int seqLen1;
