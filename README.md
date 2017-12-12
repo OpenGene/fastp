@@ -11,6 +11,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [polyG tail trimming](#polyg-tail-trimming)
 * [unique molecular identifer (UMI) processing](#unique-molecular-identifer-umi-processing)
 * [output splitting](#output-splitting)
+* [overrepresented sequence analysis](overrepresented-sequence-analysis)
 * [all options](#all-options)
 * [citation](#citation)
 
@@ -150,6 +151,13 @@ Use `-s` or `--split` to specify how many files you want to have. `fastp` evalua
 
 ## splitting by limiting the lines of each file
 Use `-S` or `--split_by_lines` to limit the lines of each file. The last files may have smaller sizes since usually the input file cannot be perfectly divided. The actual file lines may be a little greater than the value specified by `--split_by_lines` since `fastp` reads and writes data by blocks (a block = 1000 reads).
+
+# overrepresented sequence analysis
+Overrepresented sequence analysis is disabled by default, you can specify `-p` or `--overrepresentation_analysis` to enable it. For consideration of speed and memory, `fastp` only counts sequences with length of 10bp, 20bp, 40bp, 100bp or (cycles - 2 ).  
+
+By default, fastp uses 1/20 reads for sequence counting, and you can change this settings by specifying `-P` or `--overrepresentation_sampling` option. For example, if you set `-P 100`, only 1/100 reads will be used for counting, and if you set `-P 1`, all reads will be used but it will be extremely slow. The default value 20 is a balance of speed and accuracy.  
+
+`fastp` not only gives the counts of overrepresented sequence, but also gives the information that how they distribute over cycles. A figure is provided for each detected overrepresented sequence, from which you can know where this sequence is mostly found.
 
 # all options
 ```shell
