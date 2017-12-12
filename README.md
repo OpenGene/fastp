@@ -11,7 +11,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [polyG tail trimming](#polyg-tail-trimming)
 * [unique molecular identifer (UMI) processing](#unique-molecular-identifer-umi-processing)
 * [output splitting](#output-splitting)
-* [overrepresented sequence analysis](overrepresented-sequence-analysis)
+* [overrepresented sequence analysis](#overrepresented-sequence-analysis)
 * [all options](#all-options)
 * [citation](#citation)
 
