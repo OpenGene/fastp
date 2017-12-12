@@ -212,6 +212,13 @@ void HtmlReporter::printCSS(ofstream& ofs){
 void HtmlReporter::printJS(ofstream& ofs){
     ofs << "<script src='http://cdn.plot.ly/plotly-latest.min.js'></script>" << endl;
     ofs << "\n<script type=\"text/javascript\">" << endl;
+    ofs << "    function showOrHide(divname) {" << endl;
+    ofs << "        div = document.getElementById(divname);" << endl;
+    ofs << "        if(div.style.display == 'none')" << endl;
+    ofs << "            div.style.display = 'block';" << endl;
+    ofs << "        else" << endl;
+    ofs << "            div.style.display = 'none';" << endl;
+    ofs << "    }" << endl;
     ofs << "</script>" << endl;
 }
 

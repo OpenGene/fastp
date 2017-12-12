@@ -551,7 +551,7 @@ void Stats::reportHtmlORA(ofstream& ofs, string filteringType, string readName) 
     divName = replace(divName, ":", "_");
     string title = "";
 
-    ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
+    ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
     ofs << "<div class='sub_section_tips'>Sampling rate: 1 / " << mOptions->overRepAnalysis.sampling << "</div>\n";
     ofs << "<table class='summary_table'>\n";
     ofs << "<tr style='font-weight:bold;'><td>overrepresented sequence</td><td>count (% of bases)</td><td>distribution: cycle 1 ~ cycle " << mEvaluatedSeqLen << "</td></tr>"<<endl;
@@ -631,6 +631,7 @@ void Stats::reportHtmlKMER(ofstream& ofs, string filteringType, string readName)
     // KMER
     string subsection = filteringType + ": " + readName + ": KMER counting";
     string divName = replace(subsection, " ", "_");
+    divName = replace(divName, ":", "_");
     string title = "";
 
     ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
@@ -712,9 +713,11 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
     // quality
     string subsection = filteringType + ": " + readName + ": quality";
     string divName = replace(subsection, " ", "_");
+    divName = replace(divName, ":", "_");
     string title = "";
 
-    ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
+    ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
+    ofs << "<div class='sub_section_tips'>Value of each position will be shown on mouse over.</div>\n";
     ofs << "<div class='figure' id='" + divName + "'></div>\n";
 
     string alphabets[5] = {"A", "T", "C", "G", "mean"};
@@ -764,7 +767,7 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
         json_str += "},";
     }
     json_str += "];\n";
-    json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'";
+    json_str += "var layout={title:'" + title + "', xaxis:{title:'position'";
     // use log plot if it's too long
     if(isLongRead()) {
         json_str += ",type:'log'";
@@ -783,9 +786,11 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     // content
     string subsection = filteringType + ": " + readName + ": base contents";
     string divName = replace(subsection, " ", "_");
+    divName = replace(divName, ":", "_");
     string title = "";
 
-    ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
+    ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
+    ofs << "<div class='sub_section_tips'>Value of each position will be shown on mouse over.</div>\n";
     ofs << "<div class='figure' id='" + divName + "'></div>\n";
 
     string alphabets[6] = {"A", "T", "C", "G", "N", "GC"};
@@ -847,7 +852,7 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
         json_str += "},";
     }
     json_str += "];\n";
-    json_str += "var layout={title:'" + title + "', xaxis:{title:'cycles'";
+    json_str += "var layout={title:'" + title + "', xaxis:{title:'position'";
     // use log plot if it's too long
     if(isLongRead()) {
         json_str += ",type:'log'";
