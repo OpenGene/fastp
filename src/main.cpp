@@ -72,7 +72,7 @@ int main(int argc, char* argv[]){
 
     // overrepresented sequence analysis
     cmd.add("overrepresentation_analysis", 'p', "enable overrepresented sequence analysis.");
-    cmd.add<int>("overrepresentation_sampling", 'P', "One in (--overrepresentation_sampling) reads will be computed for overrepresentation analysis (1~10000), smaller is slower, default is 20.", false, 20);
+    cmd.add<int>("overrepresentation_sampling", 'P', "one in (--overrepresentation_sampling) reads will be computed for overrepresentation analysis (1~10000), smaller is slower, default is 20.", false, 20);
     
     // reporting
     cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");

@@ -554,7 +554,7 @@ void Stats::reportHtmlORA(ofstream& ofs, string filteringType, string readName) 
     ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
     ofs << "<div class='sub_section_tips'>Sampling rate: 1 / " << mOptions->overRepAnalysis.sampling << "</div>\n";
     ofs << "<table class='summary_table'>\n";
-    ofs << "<tr style='font-weight:bold;'><td>overrepresented sequence</td><td>count (% of bases)</td><td>cycle distribution</td></tr>"<<endl;
+    ofs << "<tr style='font-weight:bold;'><td>overrepresented sequence</td><td>count (% of bases)</td><td>distribution: cycle 1 ~ cycle " << mEvaluatedSeqLen << "</td></tr>"<<endl;
     int found = 0;
     for(iter=mOverRepSeq.begin(); iter!=mOverRepSeq.end(); iter++) {
         string seq = iter->first;

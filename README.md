@@ -202,6 +202,10 @@ options:
       --umi_len                      if the UMI is in read1/read2, its length should be provided (int [=0])
       --umi_prefix                   if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default (string [=])
 
+  # overrepresented sequence analysis
+  -p, --overrepresentation_analysis    enable overrepresented sequence analysis.
+  -P, --overrepresentation_sampling    One in (--overrepresentation_sampling) reads will be computed for overrepresentation analysis (1~10000), smaller is slower, default is 20. (int [=20])
+
   # reporting options
   -j, --json                         the json format report file name (string [=fastp.json])
   -h, --html                         the html format report file name (string [=fastp.html])
