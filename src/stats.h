@@ -35,6 +35,7 @@ public:
     void reportHtmlQuality(ofstream& ofs, string filteringType, string readName);
     void reportHtmlContents(ofstream& ofs, string filteringType, string readName);
     void reportHtmlKMER(ofstream& ofs, string filteringType, string readName);
+    void reportHtmlORA(ofstream& ofs, string filteringType, string readName);
     bool isLongRead();
     void initOverRepSeq();
 
@@ -50,6 +51,7 @@ private:
     string kmer3(int val);
     string kmer2(int val);
     void deleteOverRepSeqDist();
+    bool overRepPassed(string& seq, long count);
 
 private:
     Options* mOptions;

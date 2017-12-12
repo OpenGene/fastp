@@ -21,7 +21,7 @@ class OverrepresentedSequenceAnasysOptions {
 public:
     OverrepresentedSequenceAnasysOptions() {
         enabled = false;
-        sampling = 10;
+        sampling = 20;
     }
 public:
     bool enabled;

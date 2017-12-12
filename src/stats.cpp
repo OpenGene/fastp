@@ -298,7 +298,7 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
     // do overrepresentation analysis for 1 of every 100 reads
     if(mOptions->overRepAnalysis.enabled) {
         if(mReads % mOptions->overRepAnalysis.sampling == 0) {
-            const int steps[5] = {10, 20, 40, 100, mEvaluatedSeqLen-1};
+            const int steps[5] = {10, 20, 40, 100, min(150, mEvaluatedSeqLen-2)};
             for(int s=0; s<5; s++) {
                 int step = steps[s];
                 for(int i=0; i<len-step; i++) {
@@ -450,19 +450,19 @@ void Stats::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "}," << endl;
 
     // over represented seqs
-    double dBases = mBases;
     map<string, long>::iterator iter;
-    int displayed = 0;
+    bool first = true;
     ofs << padding << "\t" << "\"overrepresented_sequences\": {" << endl;
     for(iter=mOverRepSeq.begin(); iter!=mOverRepSeq.end(); iter++) {
         string seq = iter->first;
         long count = iter->second;
-        ofs << padding << "\t\t\"" << seq <<  "\":" << (count * seq.length() * mOptions->overRepAnalysis.sampling)/dBases;
-        displayed++;
-        if(displayed != mOverRepSeq.size())
+        if(!overRepPassed(seq, count))
+            continue;
+        if(!first) {
             ofs << "," << endl;
-        else
-            ofs << endl;
+        } else
+            first = false;
+        ofs << padding << "\t\t\"" << seq <<  "\":" << count;
     }
     ofs << padding << "\t" << "}" << endl;
 
@@ -518,6 +518,108 @@ void Stats::reportHtml(ofstream& ofs, string filteringType, string readName) {
     reportHtmlQuality(ofs, filteringType, readName);
     reportHtmlContents(ofs, filteringType, readName);
     reportHtmlKMER(ofs, filteringType, readName);
+    if(mOptions->overRepAnalysis.enabled) {
+        reportHtmlORA(ofs, filteringType, readName);
+    }
+}
+
+bool Stats::overRepPassed(string& seq, long count) {
+    int s = mOptions->overRepAnalysis.sampling;
+    switch(seq.length()) {
+        case 10:
+            return s * count > 500;
+        case 20:
+            return s * count > 200;
+        case 40:
+            return s * count > 100;
+        case 100:
+            return s * count > 50;
+        default:
+            return s * count > 20;
+    }
+}
+
+void Stats::reportHtmlORA(ofstream& ofs, string filteringType, string readName) {
+    // over represented seqs
+    double dBases = mBases;
+    map<string, long>::iterator iter;
+    int displayed = 0;
+
+    // KMER
+    string subsection = filteringType + ": " + readName + ": overrepresented sequences";
+    string divName = replace(subsection, " ", "_");
+    divName = replace(divName, ":", "_");
+    string title = "";
+
+    ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
+    ofs << "<div class='sub_section_tips'>Sampling rate: 1 / " << mOptions->overRepAnalysis.sampling << "</div>\n";
+    ofs << "<table class='summary_table'>\n";
+    ofs << "<tr style='font-weight:bold;'><td>overrepresented sequence</td><td>count (% of bases)</td><td>cycle distribution</td></tr>"<<endl;
+    int found = 0;
+    for(iter=mOverRepSeq.begin(); iter!=mOverRepSeq.end(); iter++) {
+        string seq = iter->first;
+        long count = iter->second;
+        if(!overRepPassed(seq, count))
+            continue;
+        found++;
+        double percent = (100.0 * count * seq.length() * mOptions->overRepAnalysis.sampling)/dBases;
+        ofs << "<tr>";
+        ofs << "<td width='400' style='word-break:break-all;font-size:8px;'>" << seq << "</td>";
+        ofs << "<td width='200'>" << count << " (" << to_string(percent) <<"%)</td>";
+        ofs << "<td width='250'><canvas id='" << divName << "_" << seq << "' width='240' height='20'></td>";
+        ofs << "</tr>" << endl;
+    }
+    if(found == 0)
+        ofs << "<tr><td style='text-align:center' colspan='3'>not found</td></tr>" << endl;
+    ofs << "</table>\n";
+
+    // output the JS
+    ofs << "<script language='javascript'>" << endl;
+    ofs << "var seqlen = " << mEvaluatedSeqLen << ";" << endl;
+    ofs << "var orp_dist = {" << endl;
+    bool first = true;
+    for(iter=mOverRepSeq.begin(); iter!=mOverRepSeq.end(); iter++) {
+        string seq = iter->first;
+        long count = iter->second;
+        if(!overRepPassed(seq, count))
+            continue;
+
+        if(!first) {
+            ofs << "," << endl;
+        } else
+            first = false;
+        ofs << "\t\"" << divName << "_" << seq << "\":[";
+        for(int i=0; i<mEvaluatedSeqLen; i++){
+            if(i !=0 )
+                ofs << ",";
+            ofs << mOverRepSeqDist[seq][i];
+        }
+        ofs << "]";
+    }
+    ofs << "\n};" << endl;
+
+    ofs << "for (seq in orp_dist) {"<< endl;
+    ofs << "    var cvs = document.getElementById(seq);"<< endl;
+    ofs << "    var ctx = cvs.getContext('2d'); "<< endl;
+    ofs << "    var data = orp_dist[seq];"<< endl;
+    ofs << "    var w = 240;"<< endl;
+    ofs << "    var h = 20;"<< endl;
+    ofs << "    ctx.fillStyle='#cccccc';"<< endl;
+    ofs << "    ctx.fillRect(0, 0, w, h);"<< endl;
+    ofs << "    ctx.fillStyle='#0000FF';"<< endl;
+    ofs << "    var maxVal = 0;"<< endl;
+    ofs << "    for(d=0; d<seqlen; d++) {"<< endl;
+    ofs << "        if(data[d]>maxVal) maxVal = data[d];"<< endl;
+    ofs << "    }"<< endl;
+    ofs << "    var step = (seqlen-1) /  (w-1);"<< endl;
+    ofs << "    for(x=0; x<w; x++){"<< endl;
+    ofs << "        var target = step * x;"<< endl;
+    ofs << "        var val = data[Math.floor(target)];"<< endl;
+    ofs << "        var y = Math.floor((val / maxVal) * h);"<< endl;
+    ofs << "        ctx.fillRect(x,h-1, 1, -y);"<< endl;
+    ofs << "    }"<< endl;
+    ofs << "}"<< endl;
+    ofs << "</script>"<< endl;
 }
 
 bool Stats::isLongRead() {

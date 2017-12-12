@@ -81,7 +81,7 @@ void Evaluator::computeOverRepSeq(string filename, map<string, long>& hotseqs, i
         records ++;
         // 10, 20, 40, 80, 150
 
-        int steps[5] = {10, 20, 40, 100, seqlen-1};
+        int steps[5] = {10, 20, 40, 100, min(150,seqlen-2)};
         
         for(int s=0; s<5; s++) {
             int step = steps[s];
