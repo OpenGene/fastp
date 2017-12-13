@@ -92,15 +92,19 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     ofs << endl;
     ofs << "<h1 style='text-align:left;'><a href='https://github.com/OpenGene/fastp' target='_blank' style='color:#663355;text-decoration:none;'>" + mOptions->reportTitle + "</a>"<<endl;
     ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title'><a name='summary'>Summary</a></div>\n";
+    ofs << "<div class='section_title' onclick=showOrHide('summary')><a name='summary'>Summary</a></div>\n";
+    ofs << "<div id='summary'>\n";
 
-    ofs << "<div class='subsection_title'>General</div>\n";
+    ofs << "<div class='subsection_title' onclick=showOrHide('general')>General</div>\n";
+    ofs << "<div id='general'>\n";
     ofs << "<table class='summary_table'>\n";
     outputRow(ofs, "fastp version:", FASTP_VER);
     outputRow(ofs, "sequencing:", sequencingInfo);
     ofs << "</table>\n";
+    ofs << "</div>\n";
 
-    ofs << "<div class='subsection_title'>Before filtering</div>\n";
+    ofs << "<div class='subsection_title' onclick=showOrHide('before_filtering_summary')>Before filtering</div>\n";
+    ofs << "<div id='before_filtering_summary'>\n";
     ofs << "<table class='summary_table'>\n";
     outputRow(ofs, "total reads:", formatNumber(pre_total_reads));
     outputRow(ofs, "total bases:", formatNumber(pre_total_bases));
@@ -108,8 +112,10 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     outputRow(ofs, "Q30 bases:", formatNumber(pre_q30_bases) + " (" + getPercents(pre_q30_bases, pre_total_bases) + "%)");
     outputRow(ofs, "GC content:", getPercents(pre_total_gc,pre_total_bases) + "%");
     ofs << "</table>\n";
+    ofs << "</div>\n";
 
-    ofs << "<div class='subsection_title'>After filtering</div>\n";
+    ofs << "<div class='subsection_title' onclick=showOrHide('after_filtering_summary')>After filtering</div>\n";
+    ofs << "<div id='after_filtering_summary'>\n";
     ofs << "<table class='summary_table'>\n";
     outputRow(ofs, "total reads:", formatNumber(post_total_reads));
     outputRow(ofs, "total bases:", formatNumber(post_total_bases));
@@ -117,20 +123,26 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     outputRow(ofs, "Q30 bases:", formatNumber(post_q30_bases) + " (" + getPercents(post_q30_bases, post_total_bases) + "%)");
     outputRow(ofs, "GC content:", getPercents(post_total_gc,post_total_bases) + "%");
     ofs << "</table>\n";
+    ofs << "</div>\n";
 
     if(result) {
-        ofs << "<div class='subsection_title'>Filtering result</div>\n";
+        ofs << "<div class='subsection_title' onclick=showOrHide('filtering_result')>Filtering result</div>\n";
+        ofs << "<div id='filtering_result'>\n";
         result -> reportHtml(ofs, pre_total_reads, pre_total_bases);
+        ofs << "</div>\n";
     }
 
+    ofs << "</div>\n";
     ofs << "</div>\n";
 
     if(result && mOptions->adapterCuttingEnabled()) {
         ofs << "<div class='section_div'>\n";
-        ofs << "<div class='section_title'><a name='summary'>Adapters</a></div>\n";
+        ofs << "<div class='section_title' onclick=showOrHide('adapters')><a name='summary'>Adapters</a></div>\n";
+        ofs << "<div id='adapters'>\n";
 
         result->reportAdapterHtml(ofs, pre_total_bases);
 
+        ofs << "</div>\n";
         ofs << "</div>\n";
     }
 }
@@ -144,7 +156,8 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     printSummary(ofs, result, preStats1, postStats1, preStats2, postStats2);
 
     ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title'><a name='summary'>Before filtering</a></div>\n";
+    ofs << "<div class='section_title' onclick=showOrHide('before_filtering')><a name='summary'>Before filtering</a></div>\n";
+    ofs << "<div id='before_filtering'>\n";
 
     if(preStats1) {
         preStats1 -> reportHtml(ofs, "Before filtering", "read1");
@@ -154,10 +167,12 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         preStats2 -> reportHtml(ofs, "Before filtering", "read2");
     }
 
-    ofs << "</div>";
+    ofs << "</div>\n";
+    ofs << "</div>\n";
 
     ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title'><a name='summary'>After filtering</a></div>\n";
+    ofs << "<div class='section_title' onclick=showOrHide('after_filtering')><a name='summary'>After filtering</a></div>\n";
+    ofs << "<div id='after_filtering'>\n";
 
     if(postStats1) {
         postStats1 -> reportHtml(ofs, "After filtering", "read1");
@@ -167,7 +182,8 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         postStats2 -> reportHtml(ofs, "After filtering", "read2");
     }
 
-    ofs << "</div>";
+    ofs << "</div>\n";
+    ofs << "</div>\n";
 
     printFooter(ofs);
 

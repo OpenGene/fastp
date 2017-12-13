@@ -256,11 +256,15 @@ void FilterResult::reportHtml(ofstream& ofs, long totalReads, long totalBases) {
 }
 
 void FilterResult::reportAdapterHtml(ofstream& ofs, long totalBases) {
-    ofs << "<div class='subsection_title'>Adapter or bad ligation of read1</div>\n";
+    ofs << "<div class='subsection_title' onclick=showOrHide('read1_adapters')>Adapter or bad ligation of read1</div>\n";
+    ofs << "<div id='read1_adapters'>\n";
     outputAdaptersHtml(ofs, mAdapter1, totalBases);
+    ofs << "</div>\n";
     if(mOptions->isPaired()) {
-        ofs << "<div class='subsection_title'>Adapter or bad ligation of read2</div>\n";
+        ofs << "<div class='subsection_title' onclick=showOrHide('read2_adapters')>Adapter or bad ligation of read2</div>\n";
+        ofs << "<div id='read2_adapters'>\n";
         outputAdaptersHtml(ofs, mAdapter2, totalBases);
+        ofs << "</div>\n";
     }
 }
 

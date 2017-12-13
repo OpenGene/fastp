@@ -552,6 +552,7 @@ void Stats::reportHtmlORA(ofstream& ofs, string filteringType, string readName) 
     string title = "";
 
     ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
+    ofs << "<div  id='" << divName << "'>\n";
     ofs << "<div class='sub_section_tips'>Sampling rate: 1 / " << mOptions->overRepAnalysis.sampling << "</div>\n";
     ofs << "<table class='summary_table'>\n";
     ofs << "<tr style='font-weight:bold;'><td>overrepresented sequence</td><td>count (% of bases)</td><td>distribution: cycle 1 ~ cycle " << mEvaluatedSeqLen << "</td></tr>"<<endl;
@@ -572,6 +573,7 @@ void Stats::reportHtmlORA(ofstream& ofs, string filteringType, string readName) 
     if(found == 0)
         ofs << "<tr><td style='text-align:center' colspan='3'>not found</td></tr>" << endl;
     ofs << "</table>\n";
+    ofs << "</div>\n";
 
     // output the JS
     ofs << "<script language='javascript'>" << endl;
@@ -634,7 +636,8 @@ void Stats::reportHtmlKMER(ofstream& ofs, string filteringType, string readName)
     divName = replace(divName, ":", "_");
     string title = "";
 
-    ofs << "<div class='subsection_title'>" + subsection + "</div>\n";
+    ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
+    ofs << "<div  id='" << divName << "'>\n";
     ofs << "<div class='sub_section_tips'>Darker background means larger counts. The count will be shown on mouse over.</div>\n";
     ofs << "<table class='kmer_table' style='width:680px;'>\n";
     ofs << "<tr>";
@@ -654,6 +657,7 @@ void Stats::reportHtmlKMER(ofstream& ofs, string filteringType, string readName)
         ofs << "</tr>\n";
     }
     ofs << "</table>\n";
+    ofs << "</div>\n";
 }
 
 string Stats::makeKmerTD(int i, int j) {
@@ -717,9 +721,11 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
     string title = "";
 
     ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
+    ofs << "<div id='" + divName + "'>\n";
     ofs << "<div class='sub_section_tips'>Value of each position will be shown on mouse over.</div>\n";
-    ofs << "<div class='figure' id='" + divName + "'></div>\n";
-
+    ofs << "<div class='figure' id='plot_" + divName + "'></div>\n";
+    ofs << "</div>\n";
+    
     string alphabets[5] = {"A", "T", "C", "G", "mean"};
     string colors[5] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)", "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)", "rgba(20,20,20,1.0)"};
     ofs << "\n<script type=\"text/javascript\">" << endl;
@@ -773,7 +779,7 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
         json_str += ",type:'log'";
     }
     json_str += "}, yaxis:{title:'quality'}};\n";
-    json_str += "Plotly.newPlot('" + divName + "', data, layout);\n";
+    json_str += "Plotly.newPlot('plot_" + divName + "', data, layout);\n";
 
     ofs << json_str;
     ofs << "</script>" << endl;
@@ -790,9 +796,11 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     string title = "";
 
     ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
+    ofs << "<div id='" + divName + "'>\n";
     ofs << "<div class='sub_section_tips'>Value of each position will be shown on mouse over.</div>\n";
-    ofs << "<div class='figure' id='" + divName + "'></div>\n";
-
+    ofs << "<div class='figure' id='plot_" + divName + "'></div>\n";
+    ofs << "</div>\n";
+    
     string alphabets[6] = {"A", "T", "C", "G", "N", "GC"};
     string colors[6] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)", "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)", "rgba(255, 0, 0, 1.0)", "rgba(20,20,20,1.0)"};
     ofs << "\n<script type=\"text/javascript\">" << endl;
@@ -858,7 +866,7 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
         json_str += ",type:'log'";
     }
     json_str += "}, yaxis:{title:'base content ratios'}};\n";
-    json_str += "Plotly.newPlot('" + divName + "', data, layout);\n";
+    json_str += "Plotly.newPlot('plot_" + divName + "', data, layout);\n";
 
     ofs << json_str;
     ofs << "</script>" << endl;
