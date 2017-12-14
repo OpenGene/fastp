@@ -77,7 +77,7 @@ bool Options::validate() {
         error_exit("N base limit (--n_base_limit) should be 0 ~ 50, suggest 3 ~ 10");
 
     if(lengthFilter.requiredLength < 0 )
-        error_exit("length requirement (--length_required) should be >0, suggest 20 ~ 100");
+        error_exit("length requirement (--length_required) should be >0, suggest 15 ~ 100");
 
     if(split.enabled ) {
         if(split.digits < 0 || split.digits > 10)

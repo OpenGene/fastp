@@ -199,7 +199,7 @@ options:
   
   # length filtering options
   -L, --disable_length_filtering     length filtering is enabled by default. If this option is specified, length filtering is disabled
-  -l, --length_required              reads shorter than length_required will be discarded. (int [=30])
+  -l, --length_required              reads shorter than length_required will be discarded, default is 15. (int [=15])
 
   # base correction by overlap analysis options
   -c, --correction                   enable base correction in overlapped regions (only for PE data), default is disabled

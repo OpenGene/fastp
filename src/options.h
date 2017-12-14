@@ -158,7 +158,7 @@ class ReadLengthFilteringOptions {
 public:
     ReadLengthFilteringOptions() {
         enabled = false;
-        requiredLength = 30;
+        requiredLength = 15;
     }
 public:
     // length filter enabled

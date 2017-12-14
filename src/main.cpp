@@ -58,7 +58,7 @@ int main(int argc, char* argv[]){
 
     // length filtering
     cmd.add("disable_length_filtering", 'L', "length filtering is enabled by default. If this option is specified, length filtering is disabled");
-    cmd.add<int>("length_required", 'l', "reads shorter than length_required will be discarded.", false, 30);
+    cmd.add<int>("length_required", 'l', "reads shorter than length_required will be discarded, default is 15.", false, 15);
     
     // base correction in overlapped regions of paired end data
     cmd.add("correction", 'c', "enable base correction in overlapped regions (only for PE data), default is disabled");
