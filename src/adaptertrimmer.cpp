@@ -53,11 +53,11 @@ bool AdapterTrimmer::trimBySequence(Read* r1, FilterResult* fr, string& adapters
 
     int l=0;
     bool found = false;
-    for(l = matchReq; l<min(rlen, alen); l++) {
-        int allowedMismatch = l/allowOneMismatchForEach;
+    for(l = matchReq; l<rlen; l++) {
+        int allowedMismatch = min(l,alen)/allowOneMismatchForEach;
         int mismatch = 0;
         bool matched = true;
-        for(int i=0; i<l; i++) {
+        for(int i=0; i<l && i<alen; i++) {
             if( adata[i] != rdata[rlen - l + i] ){
                 mismatch++;
                 if(mismatch > allowedMismatch) {
