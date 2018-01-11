@@ -51,13 +51,20 @@ By default, the HTML report is saved to `fastp.html` (can be specified with `-h`
 * JSON report: http://opengene.org/fastp/fastp.json
 
 # get fastp
-## download binary (only for Linux systems, http://opengene.org/fastp/fastp)
+## install with Bioconda
+[![install with conda](
+https://anaconda.org/bioconda/fastp/badges/version.svg)](https://anaconda.org/bioconda/fastp)
+```shell
+# note: the fastp version in bioconda may be not the latest
+conda install -c bioconda fastp
+```
+## or download binary (only for Linux systems, http://opengene.org/fastp/fastp)
 ```shell
 # this binary was compiled on CentOS, and tested on CentOS/Ubuntu
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 ```
-## compile from source
+## or compile from source
 ```shell
 # get source (you can also use browser to download from master or releases)
 git clone https://github.com/OpenGene/fastp.git
