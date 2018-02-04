@@ -215,9 +215,11 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             }
             if(mOptions->adapter.enabled) {
                 bool trimmed = AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
-                if(!trimmed && !mOptions->adapter.sequence.empty()){
-                    AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
-                    AdapterTrimmer::trimBySequence(r2, config->getFilterResult(), mOptions->adapter.sequence, true);
+                if(!trimmed){
+                    if(mOptions->adapter.hasSeqR1)
+                        AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
+                    if(mOptions->adapter.hasSeqR2)
+                        AdapterTrimmer::trimBySequence(r2, config->getFilterResult(), mOptions->adapter.sequenceR2, true);
                 }
             }
         }

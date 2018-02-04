@@ -175,7 +175,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             PolyX::trimPolyG(r1, config->getFilterResult());
         }
 
-        if(r1 != NULL && mOptions->adapter.enabled && !mOptions->adapter.sequence.empty()){
+        if(r1 != NULL && mOptions->adapter.enabled && mOptions->adapter.hasSeqR1){
             AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence);
         }
 

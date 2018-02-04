@@ -32,7 +32,8 @@ int main(int argc, char* argv[]){
 
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
-    cmd.add<string>("adapter_sequence", 'a', "the adapter for SE data, default is auto (automatic detection). For PE data adapters can be trimmed without knowing the sequences.", false, "auto");
+    cmd.add<string>("adapter_sequence", 'a', "the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped.", false, "auto");
+    cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "");
 
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
@@ -102,6 +103,10 @@ int main(int argc, char* argv[]){
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");
     opt.adapter.sequence = cmd.get<string>("adapter_sequence");
+    opt.adapter.sequenceR2 = cmd.get<string>("adapter_sequence_r2");
+    if(opt.adapter.sequenceR2.empty() && opt.adapter.sequence != "auto") {
+        opt.adapter.sequenceR2 = opt.adapter.sequence;
+    }
 
     // trimming
     opt.trim.front1 = cmd.get<int>("trim_front1");

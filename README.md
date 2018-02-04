@@ -184,7 +184,8 @@ options:
   
   # adapter trimming options
   -A, --disable_adapter_trimming     adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled
-  -a, --adapter_sequence             the adapter for SE data, default is auto (automatic detection). For PE data adapters can be trimmed without knowing the sequences. (string [=auto])
+  -a, --adapter_sequence               the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped. (string [=auto])
+  --adapter_sequence_r2            the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence> (string [=])
     
   # global trimming options
   -f, --trim_front1                  trimming how many bases in front for read1, default is 0 (int [=0])

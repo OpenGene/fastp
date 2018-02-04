@@ -109,10 +109,15 @@ class AdapterOptions {
 public:
     AdapterOptions() {
         enabled = true;
+        hasSeqR1 = false;
+        hasSeqR2 = false;
     }
 public:
     bool enabled;
     string sequence;
+    string sequenceR2;
+    bool hasSeqR1;
+    bool hasSeqR2;
 };
 
 class TrimmingOptions {

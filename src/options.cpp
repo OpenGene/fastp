@@ -101,18 +101,36 @@ bool Options::validate() {
             error_exit("the mean quality requirement for cutting by quality (--cut_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
     }
 
-    if(adapter.enabled && !isPaired() && !adapter.sequence.empty()) {
+    if(adapter.sequence!="auto" && !adapter.sequence.empty()) {
         // validate adapter sequence for single end adapter trimming
         if(adapter.sequence.length() < 4 || adapter.sequence.length() > 100)
-            error_exit("the adapter sequence should be 4 ~ 100 long");
+            error_exit("the sequence of <adapter_sequence> should be 4 ~ 100 long");
 
         // validate bases
         for(int i=0; i<adapter.sequence.length(); i++) {
             char c = adapter.sequence[i];
             if(c!='A' && c!='T' && c!='C' && c!='G') {
-                error_exit("the adapter sequence can only have bases in {A, T, C, G}, but the given sequence is: " + adapter.sequence);
+                error_exit("the adapter <adapter_sequence> can only have bases in {A, T, C, G}, but the given sequence is: " + adapter.sequence);
             }
         }
+
+        adapter.hasSeqR1 = true;
+    }
+
+    if(adapter.sequenceR2!="auto" && !adapter.sequenceR2.empty()) {
+        // validate adapter sequenceR2 for single end adapter trimming
+        if(adapter.sequenceR2.length() < 4 || adapter.sequenceR2.length() > 100)
+            error_exit("the sequence of <adapter_sequence_r2> should be 4 ~ 100 long");
+
+        // validate bases
+        for(int i=0; i<adapter.sequenceR2.length(); i++) {
+            char c = adapter.sequenceR2[i];
+            if(c!='A' && c!='T' && c!='C' && c!='G') {
+                error_exit("the adapter <adapter_sequence_r2> can only have bases in {A, T, C, G}, but the given sequenceR2 is: " + adapter.sequenceR2);
+            }
+        }
+
+        adapter.hasSeqR2 = true;
     }
 
     if(correction.enabled && !isPaired()) {
