@@ -21,6 +21,10 @@ int main(int argc, char* argv[]){
         tester.run();
         return 0;
     }
+    if (argc == 2 && (strcmp(argv[1], "-v")==0 || strcmp(argv[1], "--version")==0)){
+        cout << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
+        return 0;
+    }
     cmdline::parser cmd;
     // input/output
     cmd.add<string>("in1", 'i', "read1 input file name", true, "");
