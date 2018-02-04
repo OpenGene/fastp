@@ -185,7 +185,7 @@ options:
   # adapter trimming options
   -A, --disable_adapter_trimming     adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled
   -a, --adapter_sequence               the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped. (string [=auto])
-  --adapter_sequence_r2            the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence> (string [=])
+      --adapter_sequence_r2            the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence> (string [=])
     
   # global trimming options
   -f, --trim_front1                  trimming how many bases in front for read1, default is 0 (int [=0])
@@ -195,6 +195,8 @@ options:
 
   # polyG tail trimming, useful for NextSeq/NovaSeq data
   -g, --trim_poly_g                  force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data
+      --poly_g_min_len                 the minimum length to detect polyG in the read tail. 10 by default. (int [=10])
+
   -G, --disable_trim_poly_g          disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data
   
   # per read cutting by quality options

@@ -172,7 +172,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
 
         if(r1 != NULL && mOptions->polyGTrim.enabled) {
-            PolyX::trimPolyG(r1, config->getFilterResult());
+            PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen);
         }
 
         if(r1 != NULL && mOptions->adapter.enabled && mOptions->adapter.hasSeqR1){

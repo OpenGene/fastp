@@ -7,13 +7,12 @@ PolyX::PolyX(){
 PolyX::~PolyX(){
 }
 
-void PolyX::trimPolyG(Read* r1, Read* r2, FilterResult* fr) {
-    trimPolyG(r1, fr);
-    trimPolyG(r2, fr);
+void PolyX::trimPolyG(Read* r1, Read* r2, FilterResult* fr, int compareReq) {
+    trimPolyG(r1, fr, compareReq);
+    trimPolyG(r2, fr, compareReq);
 }
 
-void PolyX::trimPolyG(Read* r, FilterResult* fr) {
-    const int compareReq = 10;
+void PolyX::trimPolyG(Read* r, FilterResult* fr, int compareReq) {
     const int allowOneMismatchForEach = 8;
     const int maxMismatch = 5;
 
@@ -46,7 +45,7 @@ bool PolyX::test() {
         "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAAGGGGGGGGGGGGGGGGGAGG",
         "+",
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
-    PolyX::trimPolyG(&r, NULL);
+    PolyX::trimPolyG(&r, NULL, 10);
     r.print();
     return r.mSeq.mStr == "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAA";
 }

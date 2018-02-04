@@ -47,6 +47,7 @@ int main(int argc, char* argv[]){
 
     // polyG tail trimming
     cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
+    cmd.add<int>("poly_g_min_len", 0, "the minimum length to detect polyG in the read tail. 10 by default.", false, 10);
     cmd.add("disable_trim_poly_g", 'G', "disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
     
     // sliding window cutting for each reads
@@ -133,6 +134,7 @@ int main(int argc, char* argv[]){
     } else if(cmd.exist("disable_trim_poly_g")) {
         opt.polyGTrim.enabled = false;
     }
+    opt.polyGTrim.minLen = cmd.get<int>("poly_g_min_len");
 
     // sliding window cutting by quality
     opt.qualityCut.enabled5 = cmd.exist("cut_by_quality5");

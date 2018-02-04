@@ -32,9 +32,11 @@ class PolyGTrimmerOptions {
 public:
     PolyGTrimmerOptions() {
         enabled = false;
+        minLen = 10;
     }
 public:
     bool enabled;
+    int minLen;
 };
 
 class UMIOptions {

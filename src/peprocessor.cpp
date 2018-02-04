@@ -205,7 +205,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         Read* r2 = mFilter->trimAndCut(or2, mOptions->trim.front2, mOptions->trim.tail2);
 
         if(r1 != NULL && r2!=NULL && mOptions->polyGTrim.enabled) {
-            PolyX::trimPolyG(r1, r2, config->getFilterResult());
+            PolyX::trimPolyG(r1, r2, config->getFilterResult(), mOptions->polyGTrim.minLen);
         }
 
         if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)){
