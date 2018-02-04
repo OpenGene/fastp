@@ -214,7 +214,11 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
             }
             if(mOptions->adapter.enabled) {
-                AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
+                bool trimmed = AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
+                if(!trimmed && !mOptions->adapter.sequence.empty()){
+                    AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
+                    AdapterTrimmer::trimBySequence(r2, config->getFilterResult(), mOptions->adapter.sequence, true);
+                }
             }
         }
 

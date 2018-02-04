@@ -33,7 +33,7 @@ public:
     static FilterResult* merge(vector<FilterResult*>& list);
     void print();
     // for single end
-    void addAdapterTrimmed(string adapter);
+    void addAdapterTrimmed(string adapter, bool isR2 = false);
     // for paired end
     void addAdapterTrimmed(string adapter1, string adapter2);
     // a part of JSON report

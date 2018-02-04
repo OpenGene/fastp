@@ -20,7 +20,7 @@ OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2) {
     const char* str1 = r1.mStr.c_str();
     const char* str2 = rcr2.mStr.c_str();
 
-    int limit_distance = 3;
+    int limit_distance = 5;
     int overlap_require = 30;
     int complete_compare_require = 50;
 
