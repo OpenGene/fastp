@@ -250,6 +250,6 @@ options:
 A paper for this tool is being written, and may be soon available in bioRxiv. If you want to cite this tool before it 
 is completed, cite like this:
 ```
-Shifu Chen, fastp: A fast FASTQ preprocessor with full features, (2017), GitHub repository, https://github.com/OpenGene/fastp
+Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu. fastp: an ultra-fast all-in-one FASTQ preprocessor. bioRxiv 274100; doi: https://doi.org/10.1101/274100
 ```
 
