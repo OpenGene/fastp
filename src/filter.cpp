@@ -55,6 +55,7 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
     int w = mOptions->qualityCut.windowSize;
     int l = r->length();
     const char* qualstr = r->mQuality.c_str();
+    const char* seq = r->mSeq.mStr.c_str();
     // quality cutting forward
     if(mOptions->qualityCut.enabled5) {
         int s = front;
@@ -79,6 +80,10 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
         }
 
         // the trimming in front is forwarded and rlen is recalculated
+        if(s >0 )
+            s = s+w-1;
+        while(s<l && seq[s] == 'N')
+            s++;
         front = s;
         rlen = l - front - tail;
     }
@@ -106,6 +111,10 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
                 break;
         }
 
+        if(t < l-1)
+            t = t-w+1;
+        while(t>=0 && seq[t] == 'N')
+            t--;
         rlen = t - front + 1;
     }
 

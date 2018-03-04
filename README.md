@@ -97,8 +97,8 @@ The sequence distribution of trimmed adapters can be found at the HTML/JSON repo
 
 # per read cutting by quality score
 `fastp` supports per read sliding window cutting by evaluate the mean quality scores in the sliding window, which is similar with how `Trimmomatic` does, but `fastp` is much faster. This function is disabled by default, to enable it, you can specify either or both of:
-* `-5, --cut_by_quality5`              enable per read cutting by quality in front (5')
-* `-3, --cut_by_quality3`              enable per read cutting by quality in tail (3')
+* `-5, --cut_by_quality5`              enable per read cutting by quality in front (5'), and trim leading N bases.
+* `-3, --cut_by_quality3`              enable per read cutting by quality in tail (3'), and trim trailing N bases.
 
 Please be noted that `--cut_by_quality5` will interfere deduplication for both PE/SE data, and `--cut_by_quality3` will interfere deduplication for SE data, since the deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.
 
