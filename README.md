@@ -122,6 +122,9 @@ For Illumina NextSeq/NovaSeq data, `polyG` can happen in read tails since `G` me
 
 A minimum length can be set with `<poly_g_min_len>` for `fastp` to detect polyG. This value is 10 by default.
 
+# polyX tail trimming
+This feature is similar as polyG tail trimming, but is disabled by default. Use `-x` or `--polyX` to enable it. A minimum length can be set with `<poly_x_min_len>` for `fastp` to detect polyX. This value is 10 by default.
+
 # unique molecular identifer (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consensus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
 To enable UMI processing, you have to enable `-U` or `--umi` option in the command line, and specify `--umi_loc`  to specify the UMI location, it can be one of:
@@ -199,6 +202,10 @@ options:
   -g, --trim_poly_g                  force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data
       --poly_g_min_len                 the minimum length to detect polyG in the read tail. 10 by default. (int [=10])
   -G, --disable_trim_poly_g          disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data
+
+  # polyX tail trimming
+  -x, --trim_poly_x                    enable polyX trimming in 3' ends.
+      --poly_x_min_len                 the minimum length to detect polyX in the read tail. 10 by default. (int [=10])
   
   # per read cutting by quality options
   -5, --cut_by_quality5              enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)

@@ -17,6 +17,8 @@ public:
 
     static void trimPolyG(Read* r1, Read* r2, FilterResult* fr, int compareReq);
     static void trimPolyG(Read* r1, FilterResult* fr, int compareReq);
+    static void trimPolyX(Read* r1, Read* r2, FilterResult* fr, int compareReq);
+    static void trimPolyX(Read* r1, FilterResult* fr, int compareReq);
     static bool test();
 
 

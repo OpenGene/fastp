@@ -39,6 +39,17 @@ public:
     int minLen;
 };
 
+class PolyXTrimmerOptions {
+public:
+    PolyXTrimmerOptions() {
+        enabled = false;
+        minLen = 10;
+    }
+public:
+    bool enabled;
+    int minLen;
+};
+
 class UMIOptions {
 public:
     UMIOptions() {
@@ -219,8 +230,10 @@ public:
     CorrectionOptions correction;
     // options for UMI
     UMIOptions umi;
-    // polyG trimming for Illumina NextSeq/NovaSeq
+    // 3' end polyG trimming, default for Illumina NextSeq/NovaSeq
     PolyGTrimmerOptions polyGTrim;
+    // 3' end polyX trimming
+    PolyXTrimmerOptions polyXTrim;
     // for overrepresentation analysis
     OverrepresentedSequenceAnasysOptions overRepAnalysis;
     map<string, long> overRepSeqs1;

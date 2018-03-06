@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define FASTP_VER "0.12.4"
+#define FASTP_VER "0.12.5"
 
 #define _DEBUG false
 

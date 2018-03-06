@@ -50,6 +50,10 @@ int main(int argc, char* argv[]){
     cmd.add<int>("poly_g_min_len", 0, "the minimum length to detect polyG in the read tail. 10 by default.", false, 10);
     cmd.add("disable_trim_poly_g", 'G', "disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
     
+    // polyX tail trimming
+    cmd.add("trim_poly_x", 'x', "enable polyX trimming in 3' ends.");
+    cmd.add<int>("poly_x_min_len", 0, "the minimum length to detect polyX in the read tail. 10 by default.", false, 10);
+
     // sliding window cutting for each reads
     cmd.add("cut_by_quality5", '5', "enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)");
     cmd.add("cut_by_quality3", '3', "enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)");
@@ -135,6 +139,12 @@ int main(int argc, char* argv[]){
         opt.polyGTrim.enabled = false;
     }
     opt.polyGTrim.minLen = cmd.get<int>("poly_g_min_len");
+
+    // polyX tail trimming
+    if(cmd.exist("trim_poly_x")) {
+        opt.polyXTrim.enabled = true;
+    }
+    opt.polyXTrim.minLen = cmd.get<int>("poly_x_min_len");
 
     // sliding window cutting by quality
     opt.qualityCut.enabled5 = cmd.exist("cut_by_quality5");

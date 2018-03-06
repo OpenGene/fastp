@@ -40,12 +40,84 @@ void PolyX::trimPolyG(Read* r, FilterResult* fr, int compareReq) {
     }
 }
 
+void PolyX::trimPolyX(Read* r1, Read* r2, FilterResult* fr, int compareReq) {
+    trimPolyX(r1, fr, compareReq);
+    trimPolyX(r2, fr, compareReq);
+}
+
+void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq) {
+    const int allowOneMismatchForEach = 8;
+    const int maxMismatch = 5;
+
+    const char* data = r->mSeq.mStr.c_str();
+
+    int rlen = r->length();
+
+    int atcgNumbers[4] = {0, 0, 0, 0};
+    char atcgBases[4] = {'A', 'T', 'C', 'G'};
+    int pos = 0;
+    for(pos=0; pos<rlen; pos++) {
+        switch(data[rlen - pos - 1]) {
+            case 'A':
+                atcgNumbers[0]++;
+                break;
+            case 'T':
+                atcgNumbers[1]++;
+                break;
+            case 'C':
+                atcgNumbers[2]++;
+                break;
+            case 'G':
+                atcgNumbers[3]++;
+                break;
+            case 'N':
+                atcgNumbers[0]++;
+                atcgNumbers[1]++;
+                atcgNumbers[2]++;
+                atcgNumbers[3]++;
+                break;
+            default:
+                break;
+        }
+
+        int cmp = (pos+1);
+        int allowedMismatch = min(maxMismatch, cmp/allowOneMismatchForEach);
+
+        bool needToBreak = true;
+        for(int b=0; b<4; b++) {
+            if(cmp - atcgNumbers[b] <= allowedMismatch)
+                needToBreak = false;
+        }
+        if(needToBreak) {
+            break;
+        }
+    }
+
+    // has polyX
+    if(pos+1 >= compareReq) {
+        // find the poly
+        int poly;
+        int maxCount = -1;
+        for(int b=0; b<4; b++) {
+            if(atcgNumbers[b] > maxCount){
+                maxCount = atcgNumbers[b];
+                poly = b;
+            }
+        }
+        char polyBase = atcgBases[poly];
+        while(data[rlen - pos - 1] != polyBase && pos>=0)
+            pos--;
+
+        r->resize(rlen - pos - 1);
+    }
+}
+
 bool PolyX::test() {
     Read r("@name",
-        "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAAGGGGGGGGGGGGGGGGGAGG",
+        "ATTTTAAAAAAAAAATAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAA",
         "+",
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
-    PolyX::trimPolyG(&r, NULL, 10);
+    PolyX::trimPolyX(&r, NULL, 10);
     r.print();
-    return r.mSeq.mStr == "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAA";
+    return r.mSeq.mStr == "ATTTT";
 }
