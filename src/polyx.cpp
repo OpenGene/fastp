@@ -88,7 +88,7 @@ void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq) {
             if(cmp - atcgNumbers[b] <= allowedMismatch)
                 needToBreak = false;
         }
-        if(needToBreak) {
+        if(needToBreak && (pos >= allowOneMismatchForEach || pos+1 >= compareReq-1)) {
             break;
         }
     }
@@ -114,7 +114,7 @@ void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq) {
 
 bool PolyX::test() {
     Read r("@name",
-        "ATTTTAAAAAAAAAATAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "ATTTTAAAAAAAAAATAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAT",
         "+",
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
     PolyX::trimPolyX(&r, NULL, 10);
