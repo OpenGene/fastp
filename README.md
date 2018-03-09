@@ -123,7 +123,9 @@ For Illumina NextSeq/NovaSeq data, `polyG` can happen in read tails since `G` me
 A minimum length can be set with `<poly_g_min_len>` for `fastp` to detect polyG. This value is 10 by default.
 
 # polyX tail trimming
-This feature is similar as polyG tail trimming, but is disabled by default. Use `-x` or `--polyX` to enable it. A minimum length can be set with `<poly_x_min_len>` for `fastp` to detect polyX. This value is 10 by default.
+This feature is similar as polyG tail trimming, but is disabled by default. Use `-x` or `--polyX` to enable it. A minimum length can be set with `<poly_x_min_len>` for `fastp` to detect polyX. This value is 10 by default.   
+
+When `polyG tail trimming` and `polyX tail trimming` are both enabled, fastp will perform `polyG trimming` first, then perform `polyX trimming`. This setting is useful for trimming the tails having `polyX (i.e. polyA) ` before `polyG`. `polyG` is usually caused by sequencing artifacts, while `polyA` can be commonly found from the tails of mRNA-Seq reads.
 
 # unique molecular identifer (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consensus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
