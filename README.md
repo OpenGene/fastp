@@ -12,7 +12,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [per read cutting by quality score](#per-read-cutting-by-quality-score)
 * [base correction for paired end (PE) data](#base-correction-for-pe-data)
 * [globa trimming](#global-trimming)
-* [polyG tail trimming](#polyg-tail-trimming)
+* [polyG tail trimming](#polyg-tail-trimming) and [polyX tail trimming](#polyx-tail-trimming)
 * [unique molecular identifer (UMI) processing](#unique-molecular-identifer-umi-processing)
 * [output splitting](#output-splitting)
 * [overrepresented sequence analysis](#overrepresented-sequence-analysis)
@@ -25,12 +25,13 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 3. trim all reads in front and tail
 4. cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
 5. correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
-6. preprocess unique molecular identifer (UMI) enabled data, shift UMI to sequence name.
-7. report JSON format result for further interpreting. 
-8. visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
-9. split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
-10. support long reads (data from PacBio / Nanopore devices).
-11. ...
+6. trim polyG in 3' ends, which is common seen in NovaSeq/NextSeq data. Trim polyX in 3' ends to remove unwanted polyX tailing (i.e. polyA tailing for mRNA-Seq data)
+7. preprocess unique molecular identifer (UMI) enabled data, shift UMI to sequence name.
+8. report JSON format result for further interpreting. 
+9. visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
+10. split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
+11. support long reads (data from PacBio / Nanopore devices).
+12. ...
 
 This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
 
