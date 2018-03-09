@@ -25,7 +25,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 3. trim all reads in front and tail
 4. cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
 5. correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
-6. trim polyG in 3' ends, which is common seen in NovaSeq/NextSeq data. Trim polyX in 3' ends to remove unwanted polyX tailing (i.e. polyA tailing for mRNA-Seq data)
+6. trim polyG in 3' ends, which is commonly seen in NovaSeq/NextSeq data. Trim polyX in 3' ends to remove unwanted polyX tailing (i.e. polyA tailing for mRNA-Seq data)
 7. preprocess unique molecular identifer (UMI) enabled data, shift UMI to sequence name.
 8. report JSON format result for further interpreting. 
 9. visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
@@ -257,8 +257,8 @@ options:
 ```
 
 # citation
-You can cite `fastp` paper in bioRxiv:
-```
+You can cite fastp's bioRxiv paper:  
+
 Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu. fastp: an ultra-fast all-in-one FASTQ preprocessor. bioRxiv 274100; doi: https://doi.org/10.1101/274100
-```
+
 
