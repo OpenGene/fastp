@@ -12,7 +12,7 @@ Filter::~Filter(){
 }
 
 int Filter::passFilter(Read* r, int lowQualNum, int nBaseNum) {
-    if(r == NULL) {
+    if(r == NULL || r->length()==0) {
         return FAIL_LENGTH;
     }
 
