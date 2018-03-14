@@ -17,6 +17,17 @@ using namespace std;
 #define UMI_LOC_PER_INDEX 5
 #define UMI_LOC_PER_READ 6
 
+class LowComplexityFilterOptions {
+public:
+    LowComplexityFilterOptions() {
+        enabled = false;
+        threshold = 0.3;
+    }
+public:
+    bool enabled;
+    double threshold;
+};
+
 class OverrepresentedSequenceAnasysOptions {
 public:
     OverrepresentedSequenceAnasysOptions() {
@@ -240,6 +251,8 @@ public:
     map<string, long> overRepSeqs2;
     int seqLen1;
     int seqLen2;
+    // low complexity filtering
+    LowComplexityFilterOptions complexityFilter;
 
 };
 

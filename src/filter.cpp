@@ -28,7 +28,28 @@ int Filter::passFilter(Read* r, int lowQualNum, int nBaseNum) {
             return FAIL_LENGTH;
     }
 
+    if(mOptions->complexityFilter.enabled) {
+        if(!passLowComplexityFilter(r))
+            return FAIL_COMPLEXITY;
+    }
+
     return PASS_FILTER;
+}
+
+bool Filter::passLowComplexityFilter(Read* r) {
+    int diff = 0;
+    int length = r->length();
+    if(length <= 1)
+        return false;
+    const char* data = r->mSeq.mStr.c_str();
+    for(int i=0; i<length-1; i++) {
+        if(data[i] != data[i+1])
+            diff++;
+    }
+    if( (double)(diff-1)/(double)(length-1) >= mOptions->complexityFilter.threshold )
+        return true;
+    else
+        return false;
 }
 
 Read* Filter::trimAndCut(Read* r, int front, int tail) {

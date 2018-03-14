@@ -226,6 +226,11 @@ options:
   -L, --disable_length_filtering     length filtering is enabled by default. If this option is specified, length filtering is disabled
   -l, --length_required              reads shorter than length_required will be discarded, default is 15. (int [=15])
 
+  # low complexity filtering
+  -y, --low_complexity_filter          enable low complexity filter. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]).
+  -Y, --complexity_threshold           the threshold for low complexity filter (0~100). Default is 30, which means 30% complexity is required. (int [=30])
+
+
   # base correction by overlap analysis options
   -c, --correction                   enable base correction in overlapped regions (only for PE data), default is disabled
   

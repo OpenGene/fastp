@@ -14,6 +14,7 @@ public:
     Filter(Options* opt);
     ~Filter();
     int passFilter(Read* r, int lowQualNum, int nBaseNum);
+    bool passLowComplexityFilter(Read* r);
     Read* trimAndCut(Read* r, int front, int tail);
     static bool test();
 

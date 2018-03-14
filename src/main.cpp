@@ -69,6 +69,10 @@ int main(int argc, char* argv[]){
     // length filtering
     cmd.add("disable_length_filtering", 'L', "length filtering is enabled by default. If this option is specified, length filtering is disabled");
     cmd.add<int>("length_required", 'l', "reads shorter than length_required will be discarded, default is 15.", false, 15);
+
+    // low complexity filtering
+    cmd.add("low_complexity_filter", 'y', "enable low complexity filter. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]).");
+    cmd.add<int>("complexity_threshold", 'Y', "the threshold for low complexity filter (0~100). Default is 30, which means 30% complexity is required.", false, 30);
     
     // base correction in overlapped regions of paired end data
     cmd.add("correction", 'c', "enable base correction in overlapped regions (only for PE data), default is disabled");
@@ -167,6 +171,10 @@ int main(int argc, char* argv[]){
     // length filtering
     opt.lengthFilter.enabled = !cmd.exist("disable_length_filtering");
     opt.lengthFilter.requiredLength = cmd.get<int>("length_required");
+
+    // low complexity filter
+    opt.complexityFilter.enabled = cmd.exist("low_complexity_filter");
+    opt.complexityFilter.threshold = (min(100, max(0, cmd.get<int>("complexity_threshold")))) / 100.0;
 
     // overlap correction
     opt.correction.enabled = cmd.exist("correction");

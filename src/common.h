@@ -46,6 +46,7 @@ static const int FAIL_OVERLAP = 8;
 static const int FAIL_N_BASE = 12;
 static const int FAIL_LENGTH = 16;
 static const int FAIL_QUALITY = 20;
+static const int FAIL_COMPLEXITY = 24;
 
 // how many types in total we support
 static const int FILTER_RESULT_TYPES = 32;

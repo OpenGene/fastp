@@ -143,6 +143,9 @@ void FilterResult::print() {
     cout <<  "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
     cout <<  "reads failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
     cout <<  "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
+    if(mOptions->complexityFilter.enabled) {
+        cout <<  "reads failed due to low complexity: " << mFilterReadStats[FAIL_COMPLEXITY] << endl;
+    }
     if(mOptions->adapter.enabled) {
         cout <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
         cout <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
@@ -163,6 +166,8 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
     }
     ofs << padding << "\t" << "\"low_quality_reads\": " << mFilterReadStats[FAIL_QUALITY] << "," << endl;
     ofs << padding << "\t" << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << "," << endl;
+    if(mOptions->complexityFilter.enabled)
+        ofs << padding << "\t" << "\"low_complexity_reads\": " << mFilterReadStats[FAIL_COMPLEXITY] << "," << endl;
     ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << endl;
 
     ofs << padding << "}," << endl;
@@ -259,6 +264,8 @@ void FilterResult::reportHtml(ofstream& ofs, long totalReads, long totalBases) {
     HtmlReporter::outputRow(ofs, "reads with low quality:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_QUALITY]) + " (" + to_string(mFilterReadStats[FAIL_QUALITY] * 100.0 / total) + "%)");
     HtmlReporter::outputRow(ofs, "reads with too many N:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_N_BASE]) + " (" + to_string(mFilterReadStats[FAIL_N_BASE] * 100.0 / total) + "%)");
     HtmlReporter::outputRow(ofs, "reads too short:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_LENGTH]) + " (" + to_string(mFilterReadStats[FAIL_LENGTH] * 100.0 / total) + "%)");
+    if(mOptions->complexityFilter.enabled)
+        HtmlReporter::outputRow(ofs, "reads with low complexity:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_COMPLEXITY]) + " (" + to_string(mFilterReadStats[FAIL_COMPLEXITY] * 100.0 / total) + "%)");
     ofs << "</table>\n";
 }
 
