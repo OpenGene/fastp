@@ -81,22 +81,21 @@ sudo make install
 
 # filtering
 Multiple filters have been implemented.
-## Quality filter
+## quality filter
 Quality filtering is enabled by default, but you can disable it by `-Q` or `disable_quality_filtering`. Currently it supports filtering by limiting the N base number (`-n, --n_base_limit`),  and the percentage of unqualified bases.  
 
 To filter reads by its percentage of unqualified bases, two options should be provided:
 * `-q, --qualified_quality_phred`       the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. 
 * `-u, --unqualified_percent_limit`    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%
 
-## Length filter
+## length filter
 Length filtering is enabled by default, but you can disable it by `-L` or `--disable_length_filtering`. The minimum length requirement is specified with `-l` or `--length_required`.
 
-## Low complexity filter
+## low complexity filter
 Low complexity filter is disabled by default, and you can enable it by `-y` or `--low_complexity_filter`. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]). For example:
 ```
-# a 51-bp sequence
+# a 51-bp sequence, with 3 bases that is different from its next base
 seq = 'AAAATTTTTTTTTTTTTTTTTTTTTGGGGGGGGGGGGGGGGGGGGGGCCCC'
-diff_base = 3
 complexity = 3/(51-1) = 6%
 ```
 The threshold for low complexity filter can be specified by `-Y` or `--complexity_threshold`. It's range should be `0~100`, and its default value is 30, which means 30% complexity is required.
