@@ -79,15 +79,29 @@ sudo make install
 ```
 
 # filtering
+Multiple filters have been implemented.
+## Quality filter
 Quality filtering is enabled by default, but you can disable it by `-Q` or `disable_quality_filtering`. Currently it supports filtering by limiting the N base number (`-n, --n_base_limit`),  and the percentage of unqualified bases.  
 
 To filter reads by its percentage of unqualified bases, two options should be provided:
 * `-q, --qualified_quality_phred`       the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. 
 * `-u, --unqualified_percent_limit`    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%
 
+## Length filter
 Length filtering is enabled by default, but you can disable it by `-L` or `--disable_length_filtering`. The minimum length requirement is specified with `-l` or `--length_required`.
 
-New filters are being implemented, such like `polyX` filter and `low complexity` filter. If you have a new idea or new request, please file an issue.
+## Low complexity filter
+Low complexity filter is disabled by default, and you can enable it by `-y` or `--low_complexity_filter`. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]). For example:
+```
+# a 51-bp sequence
+seq = 'AAAATTTTTTTTTTTTTTTTTTTTTGGGGGGGGGGGGGGGGGGGGGGCCCC'
+diff_base = 3
+complexity = 3/(51-1) = 6%
+```
+The threshold for low complexity filter can be specified by `-Y` or `--complexity_threshold`. It's range should be `0~100`, and its default value is 30, which means 30% complexity is required.
+
+## Other filter
+New filters are being implemented. If you have a new idea or new request, please file an issue.
 
 # adapters
 Adapter trimming is enabled by default, but you can disable it by `-A` or `--disable_adapter_trimming`. Adapter sequences can be automatically detected for both PE/SE data, which means you don't have to input the adapter sequences to trim them.
