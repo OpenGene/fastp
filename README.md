@@ -8,6 +8,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [simple usage](#simple-usage)
 * [examples of report](#examples-of-report)
 * [download, compile and install](#get-fastp)
+* [filtering by quality, length, complexity, etc.](#filtering)
 * [adapter trimming](#adapters)
 * [per read cutting by quality score](#per-read-cutting-by-quality-score)
 * [base correction for paired end (PE) data](#base-correction-for-pe-data)
