@@ -18,8 +18,7 @@ int main(int argc, char* argv[]){
     }
     if (argc == 2 && strcmp(argv[1], "test")==0){
         UnitTest tester;
-        tester.run();
-        return 0;
+        return tester.run();
     }
     if (argc == 2 && (strcmp(argv[1], "-v")==0 || strcmp(argv[1], "--version")==0)){
         cout << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;

@@ -24,6 +24,10 @@ PairEndProcessor::PairEndProcessor(Options* opt){
 }
 
 PairEndProcessor::~PairEndProcessor() {
+    this->destroyPackRepository();
+    
+    delete mFilter;
+    delete mUmiProcessor;
 }
 
 void PairEndProcessor::initOutput() {
@@ -169,8 +173,8 @@ bool PairEndProcessor::process(){
     delete finalPostStats2;
     delete finalFilterResult;
 
-    delete threads;
-    delete configs;
+    delete[] threads;
+    delete[] configs;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -289,7 +293,7 @@ void PairEndProcessor::initPackRepository() {
 }
 
 void PairEndProcessor::destroyPackRepository() {
-    delete mRepo.packBuffer;
+    delete[] mRepo.packBuffer;
     mRepo.packBuffer = NULL;
 }
 
