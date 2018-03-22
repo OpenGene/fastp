@@ -46,7 +46,7 @@ bool Filter::passLowComplexityFilter(Read* r) {
         if(data[i] != data[i+1])
             diff++;
     }
-    if( (double)(diff-1)/(double)(length-1) >= mOptions->complexityFilter.threshold )
+    if( (double)diff/(double)(length-1) >= mOptions->complexityFilter.threshold )
         return true;
     else
         return false;
