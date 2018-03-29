@@ -150,8 +150,8 @@ To enable UMI processing, you have to enable `-U` or `--umi` option in the comma
 * `index2` the second index is used as UMI. PE data only, this UMI will be used for both read1/read2.
 * `read1` the head of read1 is used as UMI. If the data is PE, this UMI will be used for both read1/read2.
 * `read2` the head of read2 is used as UMI. PE data only, this UMI will be used for both read1/read2.
-* `per_index` read1 will use UMI extracted from index1, read2 will use UMI extracted from index2.  
-* `per_read` read1 will use UMI extracted from the head of read1, read2 will use UMI extracted from the head of read2. 
+* `per_index` `index1_index2` is used as UMI for both read1/read2.  
+* `per_read` define `umi1` as the head of read1, and `umi2` as the head of read2. `umi1_umi2` is used as UMI for both read1/read2.  
 
 If `--umi_loc` is specified with `read1`, `read2` or `per_read`, the length of UMI should specified with `--umi_len`. 
 

@@ -26,23 +26,29 @@ void UmiProcessor::process(Read* r1, Read* r2) {
         r2->trimFront(umi.length());
     }
     else if(mOptions->umi.location == UMI_LOC_PER_INDEX){
-        string umi1 = r1->firstIndex();
-        addUmiToName(r1, umi1);
-
+        string umiMerged = r1->firstIndex();
         if(r2) {
-            string umi2 = r2->lastIndex();
-            addUmiToName(r2, umi2);
+            umiMerged = umiMerged + "_" + r2->lastIndex();
+        }
+
+        addUmiToName(r1, umiMerged);
+        if(r2) {
+            addUmiToName(r2, umiMerged);
         }
     }
     else if(mOptions->umi.location == UMI_LOC_PER_READ){
         string umi1 = r1->mSeq.mStr.substr(0, min(r1->length(), mOptions->umi.length));
-        addUmiToName(r1, umi1);
+        string umiMerged = umi1;
         r1->trimFront(umi1.length());
-
         if(r2){
             string umi2 = r2->mSeq.mStr.substr(0, min(r2->length(), mOptions->umi.length));
+            umiMerged = umiMerged + "_" + umi2;
             r2->trimFront(umi2.length());
-            addUmiToName(r2, umi2);
+        }
+
+        addUmiToName(r1, umiMerged);
+        if(r2){
+            addUmiToName(r2, umiMerged);
         }
     }
 
