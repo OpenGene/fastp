@@ -32,3 +32,5 @@ fastp
 *.exe
 *.out
 *.app
+*.html
+*.json

@@ -244,9 +244,10 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
         const char* data = r->mSeq.mStr.c_str();
         bool valid = true;
         unsigned int key = 0;
+        char base;
         for(int i=0; i<keylen; i++) {
             key = (key << 2);
-            char base = data[rlen - i - 1 - shiftTail];
+            base = data[rlen - i - 1 - shiftTail];
             switch (base) {
                 case 'A':
                     key += 0;
@@ -277,7 +278,7 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
 
     // we need at least 10000 valid records to evaluate
     if(records < 10000) {
-        delete counts;
+        delete[] counts;
         return "";
     }
 

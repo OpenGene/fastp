@@ -141,8 +141,8 @@ bool SingleEndProcessor::process(){
     delete finalPostStats;
     delete finalFilterResult;
 
-    delete threads;
-    delete configs;
+    delete[] threads;
+    delete[] configs;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -212,7 +212,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     else
         config->markProcessed(pack->count);
 
-    delete pack->data;
+    delete[] pack->data;
     delete pack;
 
     return true;

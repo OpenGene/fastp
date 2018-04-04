@@ -13,7 +13,10 @@ UnitTest::UnitTest(){
 
 }
 
-void UnitTest::run(){
+/**
+ * Runs all tests and returns 1 on failure, 0 otherwise
+ */
+int UnitTest::run(){
     bool passed = true;
     passed &= report(Sequence::test(), "Sequence::test");
     passed &= report(FastqReader::test(), "FastqReader::test");
@@ -25,6 +28,8 @@ void UnitTest::run(){
     passed &= report(PolyX::test(), "PolyX::test");
     printf("\n==========================\n");
     printf("%s\n\n", passed?"ALL PASSED":"FAILED");
+    
+    return (passed ? 0 : 1);
 }
 
 bool UnitTest::report(bool result, string message) {

@@ -31,6 +31,17 @@ void ThreadConfig::cleanup() {
     if(mOptions->split.enabled && mOptions->split.byFileNumber)
         writeEmptyFilesForSplitting();
     deleteWriter();
+
+    delete mPreStats1;
+    delete mPostStats1;
+
+    if(mPreStats2 != NULL)
+    {
+        delete mPreStats2;
+        delete mPostStats2;
+    }
+    
+    delete mFilterResult;
 }
 
 void ThreadConfig::deleteWriter() {

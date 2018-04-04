@@ -10,7 +10,7 @@ using namespace std;
 class UnitTest{
 public:
     UnitTest();
-    void run();
+    int run();
     bool report(bool result, string message);
 };
 
