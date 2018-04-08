@@ -261,15 +261,15 @@ int main(int argc, char* argv[]){
 
     // using evaluator to guess how many reads in total
     if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
-        cout << "Detecting adapter for single end input..." << endl;
-        string adapt = eva.evaluateRead1AdapterAndReadNum(readNum);
-        if(adapt.length() >= 12 ) {
-            cout << "Detected adapter: " << adapt << endl << endl;
+        cout << "Detecting adapter..." << endl;
+        string adapt = eva.evalAdapterAndReadNum(readNum);
+        if(adapt.length() > 0 ) {
             opt.adapter.sequence = adapt;
         } else {
-            cout << "No adapter detected" << endl << endl;
+            cout << "No adapter detected" << endl;
             opt.adapter.sequence = "";
         }
+        cout << endl;
     }
 
     opt.validate();

@@ -2,6 +2,8 @@
 #include "fastqreader.h"
 #include <map>
 #include <memory.h>
+#include "nucleotidetree.h"
+#include "knownadapters.h"
 
 Evaluator::Evaluator(Options* opt){
     mOptions = opt;
@@ -190,19 +192,20 @@ void Evaluator::evaluateReadNum(long& readNum) {
         delete r;
     }
 
+    readNum = 0;
     if(reachedEOF){
         readNum = records;
-        return ;
+    } else if(records>0) {
+        // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
+        reader.getBytes(bytesRead, bytesTotal);
+        double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
+        // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
+        readNum = (long) (bytesTotal*1.01 / bytesPerRead);
     }
-
-    reader.getBytes(bytesRead, bytesTotal);
-
-    double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
-    // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
-    readNum = (long) (bytesTotal*1.01 / bytesPerRead);
 }
 
-string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
+// Depreciated
+string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
     FastqReader reader(mOptions->in1);
     // stat up to 1M reads
     const long READ_LIMIT = 1024*1024;
@@ -246,7 +249,7 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
         unsigned int key = 0;
         for(int i=0; i<keylen; i++) {
             key = (key << 2);
-            char base = data[rlen - i - 1 - shiftTail];
+            char base = data[rlen - keylen - shiftTail + i];
             switch (base) {
                 case 'A':
                     key += 0;
@@ -275,9 +278,20 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
         delete r;
     }
 
+    readNum = 0;
+    if(reachedEOF){
+        readNum = records;
+    } else if(records>0) {
+        // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
+        reader.getBytes(bytesRead, bytesTotal);
+        double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
+        // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
+        readNum = (long) (bytesTotal*1.01 / bytesPerRead);
+    }
+
     // we need at least 10000 valid records to evaluate
     if(records < 10000) {
-        delete counts;
+        delete[] counts;
         return "";
     }
 
@@ -377,22 +391,227 @@ string Evaluator::evaluateRead1AdapterAndReadNum(long& readNum) {
         }
     }
 
-    delete counts;
+    delete[] counts;
 
-    if(reachedEOF){
-        readNum = records;
+    string matchedAdapter = matchKnownAdapter(finalAdapter);
+    if(!matchedAdapter.empty()) {
+        map<string, string> knownAdapters = getKnownAdapter();
+        cout << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
+        return matchedAdapter;
+    } else {
+        cout << finalAdapter << endl;
         return finalAdapter;
     }
 
-    // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
-    reader.getBytes(bytesRead, bytesTotal);
+}
 
-    double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
-    // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
-    readNum = (long) (bytesTotal*1.01 / bytesPerRead);
+string Evaluator::evalAdapterAndReadNum(long& readNum) {
+    FastqReader reader(mOptions->in1);
+    // stat up to 1M reads
+    const long READ_LIMIT = 1024*1024;
+    const long BASE_LIMIT = 151 * 1024*1024;
+    long records = 0;
+    long bases = 0;
+    size_t firstReadPos = 0;
 
-    return finalAdapter;
+    size_t bytesRead;
+    size_t bytesTotal;
 
+    Read** loadedReads = new Read*[READ_LIMIT];
+    memset(loadedReads, 0, sizeof(Read*)*READ_LIMIT);
+    bool reachedEOF = false;
+    bool first = true;
+
+    while(records < READ_LIMIT && bases < BASE_LIMIT) {
+        Read* r = reader.read();
+        if(!r) {
+            reachedEOF = true;
+            break;
+        }
+        if(first) {
+            reader.getBytes(bytesRead, bytesTotal);
+            firstReadPos = bytesRead;
+            first = false;
+        }
+        int rlen = r->length();
+        bases += rlen;
+        loadedReads[records] = r;
+        records++;
+    }
+
+    readNum = 0;
+    if(reachedEOF){
+        readNum = records;
+    } else if(records>0) {
+        // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
+        reader.getBytes(bytesRead, bytesTotal);
+        double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
+        // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
+        readNum = (long) (bytesTotal*1.01 / bytesPerRead);
+    }
+
+    // we need at least 10000 valid records to evaluate
+    if(records < 10000) {
+        delete[] loadedReads;
+        return "";
+    }
+
+    // we have to shift last cycle for evaluation since it is so noisy, especially for Illumina data
+    const int shiftTail = max(1, mOptions->trim.tail1);
+
+    // why we add trim_tail here? since the last cycle are usually with low quality and should be trimmed
+    const int keylen = 10;
+    int size = 1 << (keylen*2 );
+    unsigned int* counts = new unsigned int[size];
+    memset(counts, 0, sizeof(unsigned int)*size);
+    for(int i=0; i<records; i++) {
+        Read* r = loadedReads[i];
+        const char* data = r->mSeq.mStr.c_str();
+        int key = -1;
+        for(int pos = r->length()-12; pos <= r->length()-keylen-shiftTail; pos++) {
+            key = seq2int(r->mSeq.mStr, pos, keylen, key);
+            if(key >= 0) {
+                counts[key]++;
+            }
+        }
+    }
+
+    // set AAAAAAAAAA = 0;
+    counts[0] = 0;
+
+    // get the top N
+    const int topnum = 10;
+    int topkeys[topnum] = {0};
+    long total = 0;
+    for(int k=0; k<size; k++) {
+        // skip AAAAAAAAAA/TTTTTTTTTT/...
+        int bits20 = k & 0xfffff;
+        if(bits20==0x00000 || bits20==0x55555 || bits20==0xaaaaa || bits20==0xfffff)
+            continue;
+        unsigned int val = counts[k];
+        total += val;
+        for(int t=topnum-1; t>=0; t--) {
+            // reach the middle
+            if(val < counts[topkeys[t]]){
+                if(t<topnum-1) {
+                    for(int m=topnum-1; m>t+1; m--) {
+                        topkeys[m] = topkeys[m-1];
+                    }
+                    topkeys[t+1] = k;
+                }
+                break;
+            } else if(t == 0) { // reach the top
+                for(int m=topnum-1; m>t; m--) {
+                    topkeys[m] = topkeys[m-1];
+                }
+                topkeys[t] = k;
+            }
+        }
+    }
+
+    const int FOLD_THRESHOLD = 20;
+    for(int t=0; t<topnum; t++) {
+        int key = topkeys[t];
+        string seq = int2seq(key, keylen);
+        if(key == 0)
+            continue;
+        int count = counts[key];
+        if(count*size < total * FOLD_THRESHOLD)
+            break;
+        // skip low complexity seq
+        int diff = 0;
+        for(int s=0; s<seq.length() - 1; s++) {
+            if(seq[s] != seq[s+1])
+                diff++;
+        }
+        if(diff <3){
+            continue;
+        }
+        string adapter = getAdapterWithSeed(key, loadedReads, records, keylen);
+        if(!adapter.empty()){
+            delete[] counts;
+            delete[] loadedReads;
+            return adapter;
+        }
+    }
+
+    delete[] counts;
+    delete[] loadedReads;
+    return "";
+
+}
+
+string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records, int keylen) {
+    // we have to shift last cycle for evaluation since it is so noisy, especially for Illumina data
+    const int shiftTail = max(1, mOptions->trim.tail1);
+    NucleotideTree forwardTree(mOptions);
+    // forward search
+    for(int i=0; i<records; i++) {
+        Read* r = loadedReads[i];
+        const char* data = r->mSeq.mStr.c_str();
+        int key = -1;
+        for(int pos = r->length()-40; pos <= r->length()-keylen-shiftTail; pos++) {
+            key = seq2int(r->mSeq.mStr, pos, keylen, key);
+            if(key == seed) {
+                forwardTree.addSeq(r->mSeq.mStr.substr(pos+keylen, r->length()-keylen-shiftTail-pos));
+            }
+        }
+    }
+    bool reachedLeaf = true;
+    string forwardPath = forwardTree.getDominantPath(reachedLeaf);
+
+    NucleotideTree backwardTree(mOptions);
+    // backward search
+    for(int i=0; i<records; i++) {
+        Read* r = loadedReads[i];
+        const char* data = r->mSeq.mStr.c_str();
+        int key = -1;
+        for(int pos = r->length()-40; pos <= r->length()-keylen-shiftTail; pos++) {
+            key = seq2int(r->mSeq.mStr, pos, keylen, key);
+            if(key == seed) {
+                string seq =  r->mSeq.mStr.substr(0, pos);
+                string rcseq = reverse(seq);
+                backwardTree.addSeq(rcseq);
+            }
+        }
+    }
+    string backwardPath = backwardTree.getDominantPath(reachedLeaf);
+
+    string adapter = reverse(backwardPath) + int2seq(seed, keylen) + forwardPath;
+
+    string matchedAdapter = matchKnownAdapter(adapter);
+    if(!matchedAdapter.empty()) {
+        map<string, string> knownAdapters = getKnownAdapter();
+        cout << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
+        return matchedAdapter;
+    } else {
+        if(reachedLeaf) {
+            cout << adapter << endl;
+            return adapter;
+        } else {
+            return "";
+        }
+    }
+}
+
+string Evaluator::matchKnownAdapter(string seq) {
+    map<string, string> knownAdapters = getKnownAdapter();
+    map<string, string>::iterator iter;
+    for(iter = knownAdapters.begin(); iter != knownAdapters.end(); iter++) {
+        string adapter = iter->first;
+        string desc = iter->second;
+        if(seq.length()<adapter.length()) {
+            continue;
+        }
+        int diff = 0;
+        for(int i=0; i<adapter.length() && i<seq.length(); i++) {
+            if(adapter[i] != seq[i])
+                diff++;
+        }
+        if(diff == 0)
+            return adapter;
+    }
+    return "";
 }
 
 string Evaluator::int2seq(unsigned int val, int seqlen) {
@@ -400,20 +619,19 @@ string Evaluator::int2seq(unsigned int val, int seqlen) {
     string ret(seqlen, 'N');
     int done = 0;
     while(done < seqlen) {
-        ret[done] = bases[val & 0x03];
+        ret[seqlen - done - 1] = bases[val & 0x03];
         val = (val >> 2);
         done++;
     }
     return ret;
 }
 
-unsigned int Evaluator::seq2int(string& seq, int keylen, bool& valid) {
-    valid = true;
-    unsigned int key = 0;
+int Evaluator::seq2int(string& seq, int pos, int keylen, int lastVal) {
     int rlen = seq.length();
-    for(int i=0; i<keylen; i++) {
-        key = (key << 2);
-        char base = seq[rlen - i - 1];
+    if(lastVal >= 0) {
+        const int mask = (1 << (keylen*2 )) - 1;
+        int key = (lastVal<<2) & mask;
+        char base = seq[pos + keylen - 1];
         switch (base) {
             case 'A':
                 key += 0;
@@ -429,9 +647,39 @@ unsigned int Evaluator::seq2int(string& seq, int keylen, bool& valid) {
                 break;
             default:
                 // N or anything else
-                valid = false;
-                return 0;
+                return -1;
         }
+        return key;
+    } else {
+        int key = 0;
+        for(int i=pos; i<keylen+pos; i++) {
+            key = (key << 2);
+            char base = seq[i];
+            switch (base) {
+                case 'A':
+                    key += 0;
+                    break;
+                case 'T':
+                    key += 1;
+                    break;
+                case 'C':
+                    key += 2;
+                    break;
+                case 'G':
+                    key += 3;
+                    break;
+                default:
+                    // N or anything else
+                    return -1;
+            }
+        }
+        return key;
     }
-    return key;
+}
+
+bool Evaluator::test() {
+    Evaluator eval(NULL);
+    string s = "ATCGATCGAT";
+    cout << eval.int2seq(eval.seq2int(s, 0, 10, -1), 10) << endl;
+    return eval.int2seq(eval.seq2int(s, 0, 10, -1), 10) == s;
 }

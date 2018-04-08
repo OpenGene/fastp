@@ -27,6 +27,7 @@ public:
     NucleotideTree(Options* opt);
     ~NucleotideTree();
     void addSeq(string seq);
+    string getDominantPath(bool& reachedLeaf);
 
     static bool test();
 

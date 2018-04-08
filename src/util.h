@@ -107,6 +107,14 @@ inline string replace(const string& str, const string& src, const string& dest)
     return ret;
 }
 
+inline string reverse(const string& str) {
+    string ret(str.length(), 0);
+    for(int pos=0; pos<str.length(); pos++) {
+        ret[pos] = str[str.length() - pos - 1];
+    }
+    return ret;
+}
+
 inline string basename(const string& filename){
     string::size_type pos = filename.find_last_of('/');
     if (pos == string::npos)

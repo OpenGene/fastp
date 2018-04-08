@@ -1,4 +1,5 @@
 #include "nucleotidetree.h"
+#include <sstream>
 
 NucleotideNode::NucleotideNode(){
     count = 0;
@@ -41,6 +42,8 @@ NucleotideTree::~NucleotideTree(){
 void NucleotideTree::addSeq(string seq) {
     NucleotideNode* curNode = mRoot;
     for(int i=0; i<seq.length(); i++) {
+        if(seq[i] == 'N')
+            break;
         char base = seq[i] & 0x07;
         if(curNode->children[base] == NULL) {
             curNode->children[base] = new NucleotideNode();
@@ -51,11 +54,51 @@ void NucleotideTree::addSeq(string seq) {
     }
 }
 
+string NucleotideTree::getDominantPath(bool& reachedLeaf) {
+    stringstream ss;
+    const double RATIO_THRESHOLD = 0.95;
+    const int NUM_THRESHOLD = 50;
+    NucleotideNode* curNode = mRoot;
+    while(true) {
+        int total = 0;
+        for(int i=0; i<8; i++) {
+            if(curNode->children[i] != NULL)
+                total += curNode->children[i]->count;
+        }
+        if(total < NUM_THRESHOLD)
+            break;
+        bool hasDominant = false;
+        for(int i=0; i<8; i++) {
+            if(curNode->children[i] == NULL)
+                continue;
+            if(curNode->children[i]->count / (double)total >= RATIO_THRESHOLD) {
+                hasDominant = true;
+                ss << curNode->children[i]->base;
+                curNode = curNode->children[i];
+                break;
+            }
+        }
+        if(!hasDominant) {
+            reachedLeaf = false;
+            break;
+        }
+    }
+    return ss.str();
+
+}
+
 bool NucleotideTree::test() {
     NucleotideTree tree(NULL);
-    tree.addSeq("AAAATTTTCCCCGGGG");
-    tree.addSeq("AAAATTTTGGGGCCCC");
-    tree.addSeq("AAAATTTTGGGGCCCT");
-    tree.mRoot->dfs();
-    return true;
+    for(int i=0; i<100; i++) {
+        tree.addSeq("AAAATTTT");
+        tree.addSeq("AAAATTTTGGGG");
+        tree.addSeq("AAAATTTTGGGGCCCC");
+        tree.addSeq("AAAATTTTGGGGCCAA");
+    }
+    tree.addSeq("AAAATTTTGGGACCCC");
+
+    bool reachedLeaf = true;
+    string path = tree.getDominantPath(reachedLeaf);
+    printf("%s\n", path.c_str());
+    return path == "AAAATTTTGGGGCC";
 }

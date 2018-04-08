@@ -6,6 +6,7 @@
 #include <string>
 #include "options.h"
 #include "util.h"
+#include "read.h"
 
 using namespace std;
 
@@ -15,16 +16,21 @@ public:
     ~Evaluator();
     // evaluate how many reads are stored in the input file
     void evaluateReadNum(long& readNum);
-    string evaluateRead1AdapterAndReadNum(long& readNum);
+    string evalAdapterAndReadNumDepreciated(long& readNum);
+    string evalAdapterAndReadNum(long& readNum);
     bool isTwoColorSystem();
     void evaluateSeqLen();
     void evaluateOverRepSeqs();
     void computeOverRepSeq(string filename, map<string, long>& hotseqs, int seqLen);
     int computeSeqLen(string filename);
+
+    static bool test();
+    static string matchKnownAdapter(string seq);
 private:
     Options* mOptions;
     string int2seq(unsigned int val, int seqlen);
-    unsigned int seq2int(string& seq, int seqlen, bool& valid);
+    int seq2int(string& seq, int pos, int seqlen, int lastVal = -1);
+    string getAdapterWithSeed(int seed, Read** loadedReads, long records, int keylen);
 };
 
 

@@ -160,7 +160,8 @@ bool Filter::test() {
     opt.qualityCut.quality = 20;
     Filter filter(&opt);
     Read* ret = filter.trimAndCut(&r, 0, 1);
+    ret->print();
     
-    return ret->mSeq.mStr == "TAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAAT"
-        && ret->mQuality == "//CCCCCCCCCCCC////CCCCCCCCCCCCCC//";
+    return ret->mSeq.mStr == "CCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+        && ret->mQuality == "CCCCCCCCCCC////CCCCCCCCCCCCC";
 }
