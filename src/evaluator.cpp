@@ -452,6 +452,10 @@ string Evaluator::evalAdapterAndReadNum(long& readNum) {
 
     // we need at least 10000 valid records to evaluate
     if(records < 10000) {
+        for(int r=0; r<records; r++) {
+            delete loadedReads[r];
+            loadedReads[r] = NULL;
+        }
         delete[] loadedReads;
         return "";
     }
@@ -530,12 +534,20 @@ string Evaluator::evalAdapterAndReadNum(long& readNum) {
         string adapter = getAdapterWithSeed(key, loadedReads, records, keylen);
         if(!adapter.empty()){
             delete[] counts;
+            for(int r=0; r<records; r++) {
+                delete loadedReads[r];
+                loadedReads[r] = NULL;
+            }
             delete[] loadedReads;
             return adapter;
         }
     }
 
     delete[] counts;
+    for(int r=0; r<records; r++) {
+        delete loadedReads[r];
+        loadedReads[r] = NULL;
+    }
     delete[] loadedReads;
     return "";
 
