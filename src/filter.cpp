@@ -16,15 +16,36 @@ int Filter::passFilter(Read* r, int lowQualNum, int nBaseNum) {
         return FAIL_LENGTH;
     }
 
+    int rlen = r->length();
+
+    // need to recalculate lowQualNum and nBaseNum if the corresponding filters are enabled
+    if(mOptions->qualfilter.enabled || mOptions->lengthFilter.enabled) {
+        const char* seqstr = r->mSeq.mStr.c_str();
+        const char* qualstr = r->mQuality.c_str();
+        lowQualNum = 0;
+        nBaseNum = 0;
+
+        for(int i=0; i<rlen; i++) {
+            char base = seqstr[i];
+            char qual = qualstr[i];
+
+            if(qual < mOptions->qualfilter.qualifiedQual)
+                lowQualNum ++;
+
+            if(base == 'N')
+                nBaseNum++;
+        }
+    }
+
     if(mOptions->qualfilter.enabled) {
-        if(lowQualNum > (mOptions->qualfilter.unqualifiedPercentLimit * r->length() / 100.0) )
+        if(lowQualNum > (mOptions->qualfilter.unqualifiedPercentLimit * rlen / 100.0) )
             return FAIL_QUALITY;
         else if(nBaseNum > mOptions->qualfilter.nBaseLimit )
             return FAIL_N_BASE;
     }
 
     if(mOptions->lengthFilter.enabled) {
-        if(r->length() < mOptions->lengthFilter.requiredLength)
+        if(rlen < mOptions->lengthFilter.requiredLength)
             return FAIL_LENGTH;
     }
 
