@@ -11,19 +11,19 @@ Filter::Filter(Options* opt){
 Filter::~Filter(){
 }
 
-int Filter::passFilter(Read* r, int lowQualNum, int nBaseNum) {
+int Filter::passFilter(Read* r) {
     if(r == NULL || r->length()==0) {
         return FAIL_LENGTH;
     }
 
     int rlen = r->length();
+    int lowQualNum = 0;
+    int nBaseNum = 0;
 
     // need to recalculate lowQualNum and nBaseNum if the corresponding filters are enabled
     if(mOptions->qualfilter.enabled || mOptions->lengthFilter.enabled) {
         const char* seqstr = r->mSeq.mStr.c_str();
         const char* qualstr = r->mQuality.c_str();
-        lowQualNum = 0;
-        nBaseNum = 0;
 
         for(int i=0; i<rlen; i++) {
             char base = seqstr[i];

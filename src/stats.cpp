@@ -214,9 +214,7 @@ void Stats::summarize(bool forced) {
     summarized = true;
 }
 
-void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual) {
-    lowQualNum = 0;
-    nBaseNum = 0;
+void Stats::statRead(Read* r) {
     int len = r->length();
 
     if(mBufLen < len) {
@@ -246,14 +244,10 @@ void Stats::statRead(Read* r, int& lowQualNum, int& nBaseNum, char qualifiedQual
         mCycleBaseContents[b][i]++;
         mCycleBaseQual[b][i] += (qual-33);
 
-        if(qual < qualifiedQual)
-            lowQualNum ++;
-
         mCycleTotalBase[i]++;
         mCycleTotalQual[i] += (qual-33);
 
         if(base == 'N'){
-            nBaseNum++;
             needFullCompute = true;
             continue;
         }

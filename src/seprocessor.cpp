@@ -158,11 +158,8 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         // original read1
         Read* or1 = pack->data[p];
 
-        int lowQualNum = 0;
-        int nBaseNum = 0;
-
         // stats the original read before trimming
-        config->getPreStats1()->statRead(or1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
+        config->getPreStats1()->statRead(or1);
         
         // umi processing
         if(mOptions->umi.enabled)
@@ -182,7 +179,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence);
         }
 
-        int result = mFilter->passFilter(r1, lowQualNum, nBaseNum);
+        int result = mFilter->passFilter(r1);
 
         config->addFilterResult(result);
 
@@ -190,7 +187,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             outstr += r1->toString();
 
             // stats the read after filtering
-            config->getPostStats1()->statRead(r1, lowQualNum, nBaseNum, mOptions->qualfilter.qualifiedQual);
+            config->getPostStats1()->statRead(r1);
             readPassed++;
         }
 

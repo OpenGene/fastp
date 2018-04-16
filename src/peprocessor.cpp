@@ -193,8 +193,8 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         int nBaseNum2 = 0;
 
         // stats the original read before trimming
-        config->getPreStats1()->statRead(or1, lowQualNum1, nBaseNum1, mOptions->qualfilter.qualifiedQual);
-        config->getPreStats2()->statRead(or2, lowQualNum2, nBaseNum2, mOptions->qualfilter.qualifiedQual);
+        config->getPreStats1()->statRead(or1);
+        config->getPreStats2()->statRead(or2);
 
         // umi processing
         if(mOptions->umi.enabled)
@@ -227,8 +227,8 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             }
         }
 
-        int result1 = mFilter->passFilter(r1, lowQualNum1, nBaseNum1);
-        int result2 = mFilter->passFilter(r2, lowQualNum2, nBaseNum2);
+        int result1 = mFilter->passFilter(r1);
+        int result2 = mFilter->passFilter(r2);
 
         config->addFilterResult(max(result1, result2));
 
@@ -238,8 +238,8 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             outstr2 += r2->toString();
 
             // stats the read after filtering
-            config->getPostStats1()->statRead(r1, lowQualNum1, nBaseNum1, mOptions->qualfilter.qualifiedQual);
-            config->getPostStats2()->statRead(r2, lowQualNum2, nBaseNum2, mOptions->qualfilter.qualifiedQual);
+            config->getPostStats1()->statRead(r1);
+            config->getPostStats2()->statRead(r2);
 
             readPassed++;
         }
