@@ -185,6 +185,18 @@ inline void check_file_valid(const  string& s) {
     }
 }
 
+inline void check_file_writable(const  string& s) {
+    if(is_directory(s)){
+        cerr << "ERROR: '" << s << "' is a folder, not a file, quit now" << endl;
+        exit(-1);
+    }
+    string dir = dirname(s);
+    if(!is_directory(dir)){
+        cerr << "ERROR: '" << s << "' cannot be created, please confirm the folder "<< dir << " exists. Create this folder and run this command again." << endl;
+        exit(-1);
+    }
+}
+
 // Remove non alphabetic characters from a string
 inline  string str_keep_alpha(const  string& s)
 {
