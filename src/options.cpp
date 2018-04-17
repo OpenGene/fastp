@@ -50,13 +50,13 @@ bool Options::validate() {
     }
 
     if(!out1.empty()) {
-        check_file_writable(out1);
+        //check_file_writable(out1);
         if(out1 == out2) {
             error_exit("read1 output (--out1) and read1 output (--out2) should be different");
         }
     }
     if(!out2.empty()) {
-        check_file_writable(out2);
+        //check_file_writable(out2);
     }
 
     if(compression < 1 || compression > 9)
