@@ -39,7 +39,7 @@ bool Options::validate() {
     }
 
     if(!in2.empty()) {
-        check_file_valid(in2);
+        //check_file_valid(in2);
 
         if(!out1.empty() && out2.empty()) {
             error_exit("paired-end input, read1 output should be specified together with read2 output (--out2 needed) ");
@@ -50,7 +50,7 @@ bool Options::validate() {
     }
 
     if(!out1.empty()) {
-        check_file_writable(out1);
+        //check_file_writable(out1);
         if(out1 == out2) {
             error_exit("read1 output (--out1) and read1 output (--out2) should be different");
         }
