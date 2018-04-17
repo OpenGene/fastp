@@ -39,7 +39,7 @@ bool Options::validate() {
     }
 
     if(!in2.empty()) {
-        //check_file_valid(in2);
+        check_file_valid(in2);
 
         if(!out1.empty() && out2.empty()) {
             error_exit("paired-end input, read1 output should be specified together with read2 output (--out2 needed) ");
@@ -56,7 +56,7 @@ bool Options::validate() {
         }
     }
     if(!out2.empty()) {
-        check_file_writable(out2);
+        //check_file_writable(out2);
     }
 
     if(compression < 1 || compression > 9)
