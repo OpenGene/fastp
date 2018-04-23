@@ -149,8 +149,17 @@ bool Options::validate() {
     }
 
     if(umi.enabled) {
-        if(umi.length<1 && umi.length>100)
-            error_exit("UMI length should be 1~100");
+        if(umi.location == UMI_LOC_READ1 || umi.location == UMI_LOC_READ2 || umi.location == UMI_LOC_PER_READ) {
+            if(umi.length<1 || umi.length>100)
+                error_exit("UMI length should be 1~100");
+            if(umi.skip<0 || umi.skip>100)
+                error_exit("The base number to skip after UMI <umi_skip> should be 0~100");
+        }else {
+            if(umi.skip>0)
+                error_exit("Only if the UMI location is in read1/read2/per_read, you can skip bases after UMI");
+            if(umi.length>0)
+                error_exit("Only if the UMI location is in read1/read2/per_read, you can set the UMI length");
+        }
         if(!umi.prefix.empty()) {
             if(umi.prefix.length() >= 10)
                 error_exit("UMI prefix should be shorter than 10");

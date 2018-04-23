@@ -159,6 +159,8 @@ If `--umi_loc` is specified with `read1`, `read2` or `per_read`, the length of U
 
 A prefix can be specified with `--umi_prefix`. If prefix is specified, an underline will be used to connect it and UMI. For example, UMI=AATTCCGG, prefix=UMI, then the final string presented in the name will be `UMI_AATTCCGG`.
 
+If the UMI location is read1/read2/per_read, fastp can skip some bases after UMI to trim the UMI separator and A/T tailing. Specify `--umi_skip` to enable the number of bases to skip. By default it is not enabled.
+
 ## UMI example
 The original read:
 ```
@@ -254,6 +256,7 @@ options:
       --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none (string [=])
       --umi_len                      if the UMI is in read1/read2, its length should be provided (int [=0])
       --umi_prefix                   if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default (string [=])
+      --umi_skip                       if the UMI is in read1/read2, fastp can skip several bases following UMI, default is 0 (int [=0])
 
   # overrepresented sequence analysis
   -p, --overrepresentation_analysis    enable overrepresented sequence analysis.

@@ -67,11 +67,13 @@ public:
         enabled = false;
         location = UMI_LOC_NONE;
         length = 0;
+        skip = 0;
     }
 public:
     bool enabled;
     int location;
     int length;
+    int skip;
     string prefix;
     string separator;
 };
