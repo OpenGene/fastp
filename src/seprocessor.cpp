@@ -157,6 +157,11 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         // original read1
         Read* or1 = pack->data[p];
+        // filter by index
+        if(mFilter->filterByIndex(or1)) {
+            delete or1;
+            continue;
+        }
 
         // stats the original read before trimming
         config->getPreStats1()->statRead(or1);

@@ -186,6 +186,11 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         ReadPair* pair = pack->data[p];
         Read* or1 = pair->mLeft;
         Read* or2 = pair->mRight;
+        // filter by index
+        if(mFilter->filterByIndex(or1, or2)) {
+            delete pair;
+            continue;
+        }
 
         int lowQualNum1 = 0;
         int nBaseNum1 = 0;

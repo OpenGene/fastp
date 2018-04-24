@@ -1,5 +1,7 @@
 #include "options.h"
 #include "util.h"
+#include <iostream>
+#include <fstream>
 
 Options::Options(){
     in1 = "";
@@ -188,4 +190,51 @@ bool Options::validate() {
         error_exit("overrepresentation_sampling should be 1~10000");
 
     return true;
+}
+
+void Options::initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold) {
+    if(blacklistFile1.empty() && blacklistFile2.empty())
+        return;
+
+    if(!blacklistFile1.empty())
+        check_file_valid(blacklistFile1);
+
+    if(!blacklistFile2.empty())
+        check_file_valid(blacklistFile2);
+
+    indexFilter.blacklist1 = makeListFromFileByLine(blacklistFile1);
+    indexFilter.blacklist2 = makeListFromFileByLine(blacklistFile2);
+
+    if(indexFilter.blacklist1.empty() && indexFilter.blacklist2.empty())
+        return;
+
+    indexFilter.enabled = true;
+    indexFilter.threshold = threshold;
+}
+
+vector<string> Options::makeListFromFileByLine(string blacklistFile1) {
+    vector<string> ret;
+    ifstream file;
+    file.open(blacklistFile1.c_str(), ifstream::in);
+    const int maxLine = 1000;
+    char line[maxLine];
+    while(file.getline(line, maxLine)){
+        // trim \n, \r or \r\n in the tail
+        int readed = strlen(line);
+        if(readed >=2 ){
+            if(line[readed-1] == '\n' || line[readed-1] == '\r'){
+                line[readed-1] = '\0';
+                if(line[readed-2] == '\r')
+                    line[readed-2] = '\0';
+            }
+        }
+        string linestr(line);
+        for(int i=0; i<linestr.length(); i++) {
+            if(linestr[i] != 'A' && linestr[i] != 'T' && linestr[i] != 'C' && linestr[i] != 'G') {
+                error_exit("processing " + blacklistFile1 + ", each line should be one barcode, which can only contain A/T/C/G");
+            }
+        }
+        ret.push_back(linestr);
+    }
+    return ret;
 }
