@@ -249,6 +249,12 @@ int main(int argc, char* argv[]){
     opt.overRepAnalysis.enabled = cmd.exist("overrepresentation_analysis");
     opt.overRepAnalysis.sampling = cmd.get<int>("overrepresentation_sampling");
 
+    // filtering by index
+    string blacklist1 = cmd.get<string>("filter_by_index1");
+    string blacklist2 = cmd.get<string>("filter_by_index2");
+    int indexFilterThreshold = cmd.get<int>("filter_by_index_threshold");
+    opt.initIndexFiltering(blacklist1, blacklist2, indexFilterThreshold);
+
     stringstream ss;
     for(int i=0;i<argc;i++){
         ss << argv[i] << " ";
