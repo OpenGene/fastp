@@ -2,6 +2,7 @@
 #include "util.h"
 #include <iostream>
 #include <fstream>
+#include <string.h>
 
 Options::Options(){
     in1 = "";
