@@ -186,11 +186,6 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         ReadPair* pair = pack->data[p];
         Read* or1 = pair->mLeft;
         Read* or2 = pair->mRight;
-        // filter by index
-        if(mFilter->filterByIndex(or1, or2)) {
-            delete pair;
-            continue;
-        }
 
         int lowQualNum1 = 0;
         int nBaseNum1 = 0;
@@ -200,6 +195,12 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         // stats the original read before trimming
         config->getPreStats1()->statRead(or1);
         config->getPreStats2()->statRead(or2);
+
+        // filter by index
+        if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)) {
+            delete pair;
+            continue;
+        }
 
         // umi processing
         if(mOptions->umi.enabled)

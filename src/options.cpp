@@ -197,14 +197,15 @@ void Options::initIndexFiltering(string blacklistFile1, string blacklistFile2, i
     if(blacklistFile1.empty() && blacklistFile2.empty())
         return;
 
-    if(!blacklistFile1.empty())
+    if(!blacklistFile1.empty()){
         check_file_valid(blacklistFile1);
+        indexFilter.blacklist1 = makeListFromFileByLine(blacklistFile1);
+    }
 
-    if(!blacklistFile2.empty())
+    if(!blacklistFile2.empty()){
         check_file_valid(blacklistFile2);
-
-    indexFilter.blacklist1 = makeListFromFileByLine(blacklistFile1);
-    indexFilter.blacklist2 = makeListFromFileByLine(blacklistFile2);
+        indexFilter.blacklist2 = makeListFromFileByLine(blacklistFile2);
+    }
 
     if(indexFilter.blacklist1.empty() && indexFilter.blacklist2.empty())
         return;
@@ -213,12 +214,13 @@ void Options::initIndexFiltering(string blacklistFile1, string blacklistFile2, i
     indexFilter.threshold = threshold;
 }
 
-vector<string> Options::makeListFromFileByLine(string blacklistFile1) {
+vector<string> Options::makeListFromFileByLine(string filename) {
     vector<string> ret;
     ifstream file;
-    file.open(blacklistFile1.c_str(), ifstream::in);
+    file.open(filename.c_str(), ifstream::in);
     const int maxLine = 1000;
     char line[maxLine];
+    cerr << "filter by index, loading " << filename << endl;
     while(file.getline(line, maxLine)){
         // trim \n, \r or \r\n in the tail
         int readed = strlen(line);
@@ -232,10 +234,12 @@ vector<string> Options::makeListFromFileByLine(string blacklistFile1) {
         string linestr(line);
         for(int i=0; i<linestr.length(); i++) {
             if(linestr[i] != 'A' && linestr[i] != 'T' && linestr[i] != 'C' && linestr[i] != 'G') {
-                error_exit("processing " + blacklistFile1 + ", each line should be one barcode, which can only contain A/T/C/G");
+                error_exit("processing " + filename + ", each line should be one barcode, which can only contain A/T/C/G");
             }
         }
+        cerr << linestr << endl;
         ret.push_back(linestr);
     }
+    cerr << endl;
     return ret;
 }

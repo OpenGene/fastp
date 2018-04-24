@@ -219,7 +219,7 @@ public:
     bool validate();
     bool adapterCuttingEnabled();
     void initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold = 0);
-    vector<string> makeListFromFileByLine(string blacklistFile1);
+    vector<string> makeListFromFileByLine(string filename);
 
 public:
     // file name of read1 input
