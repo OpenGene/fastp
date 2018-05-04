@@ -17,6 +17,19 @@ using namespace std;
 #define UMI_LOC_PER_INDEX 5
 #define UMI_LOC_PER_READ 6
 
+class IndexFilterOptions {
+public:
+    IndexFilterOptions() {
+        enabled = false;
+        threshold = 0;
+    }
+public:
+    vector<string> blacklist1;
+    vector<string> blacklist2;
+    bool enabled;
+    int threshold;
+};
+
 class LowComplexityFilterOptions {
 public:
     LowComplexityFilterOptions() {
@@ -205,6 +218,8 @@ public:
     bool isPaired();
     bool validate();
     bool adapterCuttingEnabled();
+    void initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold = 0);
+    vector<string> makeListFromFileByLine(string filename);
 
 public:
     // file name of read1 input
@@ -255,6 +270,8 @@ public:
     int seqLen2;
     // low complexity filtering
     LowComplexityFilterOptions complexityFilter;
+    // black lists for filtering by index
+    IndexFilterOptions indexFilter;
 
 };
 

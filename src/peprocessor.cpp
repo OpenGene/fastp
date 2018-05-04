@@ -196,6 +196,12 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         config->getPreStats1()->statRead(or1);
         config->getPreStats2()->statRead(or2);
 
+        // filter by index
+        if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)) {
+            delete pair;
+            continue;
+        }
+
         // umi processing
         if(mOptions->umi.enabled)
             mUmiProcessor->process(or1, or2);

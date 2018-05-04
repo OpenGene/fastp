@@ -159,7 +159,13 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         Read* or1 = pack->data[p];
 
         // stats the original read before trimming
+
         config->getPreStats1()->statRead(or1);
+        // filter by index
+        if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1)) {
+            delete or1;
+            continue;
+        }
         
         // umi processing
         if(mOptions->umi.enabled)

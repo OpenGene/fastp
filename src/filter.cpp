@@ -169,6 +169,42 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
     return r;
 }
 
+bool Filter::filterByIndex(Read* r) {
+    if(mOptions->indexFilter.enabled) {
+        if( match(mOptions->indexFilter.blacklist1, r->firstIndex(), mOptions->indexFilter.threshold) )
+            return true;
+    }
+    return false;
+}
+
+bool Filter::filterByIndex(Read* r1, Read* r2) {
+    if(mOptions->indexFilter.enabled) {
+        if( match(mOptions->indexFilter.blacklist1, r1->firstIndex(), mOptions->indexFilter.threshold) )
+            return true;
+        if( match(mOptions->indexFilter.blacklist2, r2->lastIndex(), mOptions->indexFilter.threshold) )
+            return true;
+    }
+    return false;
+}
+
+bool Filter::match(vector<string>& list, string target, int threshold) {
+    for(int i=0; i<list.size(); i++) {
+        int diff = 0;
+        int len1 = list[i].length();
+        int len2 = target.length();
+        for(int s=0; s<len1 && s<len2; s++) {
+            if(list[i][s] != target[s]) {
+                diff++;
+                if(diff>threshold)
+                    break;
+            }
+        }
+        if(diff <= threshold)
+            return true;
+    }
+    return false;
+}
+
 bool Filter::test() {
     Read r("@name",
         "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTT",

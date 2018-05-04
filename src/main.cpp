@@ -73,6 +73,11 @@ int main(int argc, char* argv[]){
     // low complexity filtering
     cmd.add("low_complexity_filter", 'y', "enable low complexity filter. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]).");
     cmd.add<int>("complexity_threshold", 'Y', "the threshold for low complexity filter (0~100). Default is 30, which means 30% complexity is required.", false, 30);
+
+    // filter by indexes
+    cmd.add<string>("filter_by_index1", 0, "specify a file contains a list of barcodes of index1 to be filtered out, one barcode per line", false, "");
+    cmd.add<string>("filter_by_index2", 0, "specify a file contains a list of barcodes of index2 to be filtered out, one barcode per line", false, "");
+    cmd.add<int>("filter_by_index_threshold", 0, "the allowed difference of index barcode for index filtering, default 0 means completely identical.", false, 0);
     
     // base correction in overlapped regions of paired end data
     cmd.add("correction", 'c', "enable base correction in overlapped regions (only for PE data), default is disabled");
@@ -243,6 +248,12 @@ int main(int argc, char* argv[]){
     // overrepresented sequence analysis
     opt.overRepAnalysis.enabled = cmd.exist("overrepresentation_analysis");
     opt.overRepAnalysis.sampling = cmd.get<int>("overrepresentation_sampling");
+
+    // filtering by index
+    string blacklist1 = cmd.get<string>("filter_by_index1");
+    string blacklist2 = cmd.get<string>("filter_by_index2");
+    int indexFilterThreshold = cmd.get<int>("filter_by_index_threshold");
+    opt.initIndexFiltering(blacklist1, blacklist2, indexFilterThreshold);
 
     stringstream ss;
     for(int i=0;i<argc;i++){
