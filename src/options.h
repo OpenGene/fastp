@@ -240,6 +240,8 @@ public:
     int compression;
     // the input file is using phred64 quality scoring
     bool phred64;
+    // only process first N reads
+    int readsToProcess;
     // worker thread number
     int thread;
     // trimming options

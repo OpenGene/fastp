@@ -33,6 +33,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
     cmd.add("phred64", '6', "indicates the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 2.", false, 2);
+    cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
 
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
@@ -116,6 +117,7 @@ int main(int argc, char* argv[]){
     opt.out1 = cmd.get<string>("out1");
     opt.out2 = cmd.get<string>("out2");
     opt.compression = cmd.get<int>("compression");
+    opt.readsToProcess = cmd.get<int>("reads_to_process");
     opt.phred64 = cmd.exist("phred64");
 
     // adapter cutting

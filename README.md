@@ -206,6 +206,7 @@ options:
   -O, --out2                         read2 output file name (string [=])
   -6, --phred64                      indicates the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
   -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 2. (int [=2])
+    --reads_to_process               specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
   
   # adapter trimming options
   -A, --disable_adapter_trimming     adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled
@@ -247,6 +248,10 @@ options:
   -y, --low_complexity_filter          enable low complexity filter. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]).
   -Y, --complexity_threshold           the threshold for low complexity filter (0~100). Default is 30, which means 30% complexity is required. (int [=30])
 
+  # filter reads with unwanted indexes (to remove possible contamination)
+      --filter_by_index1               specify a file contains a list of barcodes of index1 to be filtered out, one barcode per line (string [=])
+      --filter_by_index2               specify a file contains a list of barcodes of index2 to be filtered out, one barcode per line (string [=])
+      --filter_by_index_threshold      the allowed difference of index barcode for index filtering, default 0 means completely identical. (int [=0])
 
   # base correction by overlap analysis options
   -c, --correction                   enable base correction in overlapped regions (only for PE data), default is disabled
@@ -267,7 +272,7 @@ options:
   -h, --html                         the html format report file name (string [=fastp.html])
   -R, --report_title                 should be quoted with ' or ", default is "fastp report" (string [=fastp report])
   
-  # thread options
+  # threading options
   -w, --thread                       worker thread number, default is 3 (int [=3])
   
   # output splitting options

@@ -350,21 +350,31 @@ void PairEndProcessor::producerTask()
     memset(data, 0, sizeof(ReadPair*)*PACK_SIZE);
     FastqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64);
     int count=0;
+    bool needToBreak = false;
     while(true){
         ReadPair* read = reader.read();
-        if(!read){
+        // TODO: put needToBreak here is just a WAR for resolve some unidentified dead lock issue 
+        if(!read || needToBreak){
             // the last pack
             ReadPairPack* pack = new ReadPairPack;
             pack->data = data;
             pack->count = count;
             producePack(pack);
             data = NULL;
+            if(read) {
+                delete read;
+                read = NULL;
+            }
             break;
         }
         data[count] = read;
         count++;
+        // configured to process only first N reads
+        if(mOptions->readsToProcess >0 && count + readNum >= mOptions->readsToProcess) {
+            needToBreak = true;
+        }
         // a full pack
-        if(count == PACK_SIZE){
+        if(count == PACK_SIZE || needToBreak){
             ReadPairPack* pack = new ReadPairPack;
             pack->data = data;
             pack->count = count;
@@ -372,15 +382,15 @@ void PairEndProcessor::producerTask()
             //re-initialize data for next pack
             data = new ReadPair*[PACK_SIZE];
             memset(data, 0, sizeof(ReadPair*)*PACK_SIZE);
-            // reset count to 0
-            count = 0;
             // if the consumer is far behind this producer, sleep and wait to limit memory usage
             while(mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT){
                 //cout<<"sleep"<<endl;
                 slept++;
                 usleep(1000);
             }
-            readNum += PACK_SIZE;
+            readNum += count;
+            // reset count to 0
+            count = 0;
             // re-evaluate split size
             // TODO: following codes are commented since it may cause threading related conflicts in some systems
             /*if(mOptions->split.needEvaluation && !splitSizeReEvaluated && readNum >= mOptions->split.size) {

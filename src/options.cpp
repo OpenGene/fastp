@@ -13,6 +13,7 @@ Options::Options(){
     thread = 1;
     compression = 2;
     phred64 = false;
+    readsToProcess = 0;
 }
 
 void Options::init() {
@@ -64,6 +65,9 @@ bool Options::validate() {
 
     if(compression < 1 || compression > 9)
         error_exit("compression level (--compression) should be between 1 ~ 9, 1 for fastest, 9 for smallest");
+
+    if(readsToProcess < 0)
+        error_exit("the number of reads to process (--reads_to_process) cannot be negative");
 
     if(thread < 1 || thread > 16)
         error_exit("thread number (--thread) should be 1 ~ 16, suggest 1 ~ 8");
