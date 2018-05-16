@@ -24,7 +24,7 @@ typedef unsigned char uint8;
 
 // the limit of the queue to store the packs
 // error may happen if it generates more packs than this number
-static const int PACK_NUM_LIMIT  = 1000000;
+static const int PACK_NUM_LIMIT  = 5000000;
 
 // how many reads one pack has
 static const int PACK_SIZE = 1000;

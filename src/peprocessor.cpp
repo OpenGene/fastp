@@ -319,8 +319,8 @@ void PairEndProcessor::producePack(ReadPairPack* pack){
 void PairEndProcessor::consumePack(ThreadConfig* config){
     ReadPairPack* data;
     std::unique_lock<std::mutex> lock(mRepo.mtx);
-    // read buffer is empty, just wait here.
-    while(mRepo.writePos == mRepo.readPos) {
+    // buffer is empty, just wait here.
+    while(mRepo.writePos % PACK_NUM_LIMIT == mRepo.readPos % PACK_NUM_LIMIT) {
         if(mProduceFinished){
             lock.unlock();
             return;
@@ -329,16 +329,16 @@ void PairEndProcessor::consumePack(ThreadConfig* config){
     }
 
     data = mRepo.packBuffer[mRepo.readPos];
-    (mRepo.readPos)++;
-    lock.unlock();
-
-    processPairEnd(data, config);
-
+    mRepo.readPos++;
 
     if (mRepo.readPos >= PACK_NUM_LIMIT)
         mRepo.readPos = 0;
 
+    lock.unlock();
     mRepo.repoNotFull.notify_all();
+
+    processPairEnd(data, config);
+
 }
 
 void PairEndProcessor::producerTask()

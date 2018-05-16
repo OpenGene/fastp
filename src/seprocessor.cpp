@@ -255,8 +255,8 @@ void SingleEndProcessor::producePack(ReadPack* pack){
 void SingleEndProcessor::consumePack(ThreadConfig* config){
     ReadPack* data;
     std::unique_lock<std::mutex> lock(mRepo.mtx);
-    // read buffer is empty, just wait here.
-    while(mRepo.writePos == mRepo.readPos) {
+    // buffer is empty, just wait here.
+    while(mRepo.writePos % PACK_NUM_LIMIT == mRepo.readPos % PACK_NUM_LIMIT) {
         if(mProduceFinished){
             lock.unlock();
             return;
@@ -265,16 +265,16 @@ void SingleEndProcessor::consumePack(ThreadConfig* config){
     }
 
     data = mRepo.packBuffer[mRepo.readPos];
-    (mRepo.readPos)++;
-    lock.unlock();
-
-    processSingleEnd(data, config);
-
+    mRepo.readPos++;
 
     if (mRepo.readPos >= PACK_NUM_LIMIT)
         mRepo.readPos = 0;
 
+    lock.unlock();
     mRepo.repoNotFull.notify_all();
+
+    processSingleEnd(data, config);
+
 }
 
 void SingleEndProcessor::producerTask()
