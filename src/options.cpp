@@ -13,6 +13,7 @@ Options::Options(){
     thread = 1;
     compression = 2;
     phred64 = false;
+    dontOverwrite = false;
     readsToProcess = 0;
 }
 
@@ -58,9 +59,24 @@ bool Options::validate() {
         if(out1 == out2) {
             error_exit("read1 output (--out1) and read1 output (--out2) should be different");
         }
+        if(dontOverwrite && file_exists(out1)) {
+            error_exit(out1 + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
     }
     if(!out2.empty()) {
         //check_file_writable(out2);
+        if(dontOverwrite && file_exists(out2)) {
+            error_exit(out2 + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+    }
+
+    if(dontOverwrite) {
+        if(file_exists(jsonFile)) {
+            error_exit(jsonFile + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+        if(file_exists(htmlFile)) {
+            error_exit(htmlFile + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
     }
 
     if(compression < 1 || compression > 9)
