@@ -778,7 +778,7 @@ void Stats::reportHtmlQuality(ofstream& ofs, string filteringType, string readNa
     ofs << json_str;
     ofs << "</script>" << endl;
 
-    delete x;
+    delete[] x;
 }
 
 void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readName) {
@@ -865,7 +865,7 @@ void Stats::reportHtmlContents(ofstream& ofs, string filteringType, string readN
     ofs << json_str;
     ofs << "</script>" << endl;
 
-    delete x;
+    delete[] x;
 }
 
 Stats* Stats::merge(vector<Stats*>& list) {

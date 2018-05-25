@@ -141,8 +141,8 @@ bool SingleEndProcessor::process(){
     delete finalPostStats;
     delete finalFilterResult;
 
-    delete threads;
-    delete configs;
+    delete[] threads;
+    delete[] configs;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -350,7 +350,7 @@ void SingleEndProcessor::producerTask()
 
     // if the last data initialized is not used, free it
     if(data != NULL)
-        delete data;
+        delete[] data;
 }
 
 void SingleEndProcessor::consumerTask(ThreadConfig* config)

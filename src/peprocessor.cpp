@@ -169,8 +169,8 @@ bool PairEndProcessor::process(){
     delete finalPostStats2;
     delete finalFilterResult;
 
-    delete threads;
-    delete configs;
+    delete[] threads;
+    delete[] configs;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -414,7 +414,7 @@ void PairEndProcessor::producerTask()
 
     // if the last data initialized is not used, free it
     if(data != NULL)
-        delete data;
+        delete[] data;
 }
 
 void PairEndProcessor::consumerTask(ThreadConfig* config)
