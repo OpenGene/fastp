@@ -38,5 +38,5 @@ make_obj_dir:
 	fi
 
 install:
-	install -D $(TARGET) $(BINDIR)/$(TARGET)
+	install $(TARGET) $(BINDIR)/$(TARGET)
 	@echo "Installed."
