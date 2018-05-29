@@ -121,12 +121,28 @@ bool SingleEndProcessor::process(){
     cout << "Filtering result:"<<endl;
     finalFilterResult->print();
 
+    int* dupHist = NULL;
+    double dupRate = 0.0;
+    if(mOptions->duplicate.enabled) {
+        dupHist = new int[mOptions->duplicate.histSize];
+        memset(dupHist, 0, sizeof(int) * mOptions->duplicate.histSize);
+        vector<Duplicate*> dupList;
+        for(int t=0; t<mOptions->thread; t++){
+            dupList.push_back(configs[t]->getDuplicate());
+        }
+        dupRate = Duplicate::statAll(dupList, dupHist, mOptions->duplicate.histSize);
+        cout << endl;
+        cout << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
+    }
+
     // make JSON report
     JsonReporter jr(mOptions);
+    jr.setDupHist(dupHist, dupRate);
     jr.report(finalFilterResult, finalPreStats, finalPostStats);
 
     // make HTML report
     HtmlReporter hr(mOptions);
+    hr.setDupHist(dupHist, dupRate);
     hr.report(finalFilterResult, finalPreStats, finalPostStats);
 
     // clean up
@@ -140,6 +156,11 @@ bool SingleEndProcessor::process(){
     delete finalPreStats;
     delete finalPostStats;
     delete finalFilterResult;
+
+    if(dupHist) {
+        delete[] dupHist;
+        dupHist = NULL;
+    }
 
     delete[] threads;
     delete[] configs;
@@ -159,8 +180,13 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         Read* or1 = pack->data[p];
 
         // stats the original read before trimming
-
         config->getPreStats1()->statRead(or1);
+
+        // handling the duplication profiling
+        Duplicate* dup = config->getDuplicate();
+        if(dup)
+            dup->statRead(or1);
+
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1)) {
             delete or1;

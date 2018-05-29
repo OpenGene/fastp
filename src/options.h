@@ -17,6 +17,19 @@ using namespace std;
 #define UMI_LOC_PER_INDEX 5
 #define UMI_LOC_PER_READ 6
 
+class DuplicationOptions {
+public:
+    DuplicationOptions() {
+        enabled = true;
+        keylen = 12;
+        histSize = 4096;
+    }
+public:
+    bool enabled;
+    int keylen;
+    int histSize;
+};
+
 class IndexFilterOptions {
 public:
     IndexFilterOptions() {
@@ -276,6 +289,8 @@ public:
     LowComplexityFilterOptions complexityFilter;
     // black lists for filtering by index
     IndexFilterOptions indexFilter;
+    // options for duplication profiling
+    DuplicationOptions duplicate;
 
 };
 

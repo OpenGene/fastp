@@ -16,6 +16,7 @@ class HtmlReporter{
 public:
     HtmlReporter(Options* opt);
     ~HtmlReporter();
+    void setDupHist(int* dupHist, double dupRate);
     void report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2 = NULL, Stats* postStats2 = NULL);
 
     static void outputRow(ofstream& ofs, string key, long value);
@@ -32,6 +33,8 @@ private:
     
 private:
     Options* mOptions;
+    int* mDupHist;
+    double mDupRate;
 };
 
 

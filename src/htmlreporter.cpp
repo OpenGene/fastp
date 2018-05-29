@@ -5,10 +5,16 @@ extern string command;
 
 HtmlReporter::HtmlReporter(Options* opt){
     mOptions = opt;
+    mDupHist = NULL;
+    mDupRate = 0.0;
 }
 
-
 HtmlReporter::~HtmlReporter(){
+}
+
+void HtmlReporter::setDupHist(int* dupHist, double dupRate) {
+    mDupHist = dupHist;
+    mDupRate = dupRate;
 }
 
 void HtmlReporter::outputRow(ofstream& ofs, string key, long v) {
@@ -100,6 +106,8 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     ofs << "<table class='summary_table'>\n";
     outputRow(ofs, "fastp version:", FASTP_VER);
     outputRow(ofs, "sequencing:", sequencingInfo);
+    if(mOptions->duplicate.enabled)
+        outputRow(ofs, "duplication rate:", to_string(mDupRate*100) + "%");
     ofs << "</table>\n";
     ofs << "</div>\n";
 

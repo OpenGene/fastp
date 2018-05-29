@@ -147,12 +147,28 @@ bool PairEndProcessor::process(){
     cout << "Filtering result:"<<endl;
     finalFilterResult->print();
 
+    int* dupHist = NULL;
+    double dupRate = 0.0;
+    if(mOptions->duplicate.enabled) {
+        dupHist = new int[mOptions->duplicate.histSize];
+        memset(dupHist, 0, sizeof(int) * mOptions->duplicate.histSize);
+        vector<Duplicate*> dupList;
+        for(int t=0; t<mOptions->thread; t++){
+            dupList.push_back(configs[t]->getDuplicate());
+        }
+        dupRate = Duplicate::statAll(dupList, dupHist, mOptions->duplicate.histSize);
+        cout << endl;
+        cout << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
+    }
+
     // make JSON report
     JsonReporter jr(mOptions);
+    jr.setDupHist(dupHist, dupRate);
     jr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
     // make HTML report
     HtmlReporter hr(mOptions);
+    hr.setDupHist(dupHist, dupRate);
     hr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
     // clean up
@@ -195,6 +211,11 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         // stats the original read before trimming
         config->getPreStats1()->statRead(or1);
         config->getPreStats2()->statRead(or2);
+
+        // handling the duplication profiling
+        Duplicate* dup = config->getDuplicate();
+        if(dup)
+            dup->statPair(or1, or2);
 
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)) {

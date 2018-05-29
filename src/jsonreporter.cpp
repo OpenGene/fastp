@@ -2,10 +2,16 @@
 
 JsonReporter::JsonReporter(Options* opt){
     mOptions = opt;
+    mDupHist = NULL;
+    mDupRate = 0;
 }
 
-
 JsonReporter::~JsonReporter(){
+}
+
+void JsonReporter::setDupHist(int* dupHist, double dupRate) {
+    mDupHist = dupHist;
+    mDupRate = dupRate;
 }
 
 extern string command;
@@ -75,7 +81,23 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "\t\t\t" << "\"q20_rate\":" << (post_total_bases == 0?0.0:(double)post_q20_bases / (double)post_total_bases) << "," << endl; 
     ofs << "\t\t\t" << "\"q30_rate\":" << (post_total_bases == 0?0.0:(double)post_q30_bases / (double)post_total_bases) << "," << endl; 
     ofs << "\t\t\t" << "\"gc_content\":" << (post_total_bases == 0?0.0:(double)post_total_gc / (double)post_total_bases)  << endl; 
-    ofs << "\t\t" << "}" << endl;
+    ofs << "\t\t" << "}";
+
+    if(mOptions->duplicate.enabled) {
+        ofs << "," << endl;
+        ofs << "\t\t" << "\"duplication\": {" << endl;
+        ofs << "\t\t\t\"rate\": " << mDupRate << "," << endl;
+        ofs << "\t\t\t\"histogram\": [";
+        for(int d=0; d<mOptions->duplicate.histSize; d++) {
+            ofs << mDupHist[d];
+            if(d!=mOptions->duplicate.histSize-1)
+                ofs << ",";
+        }
+        ofs << "]" << endl;
+        ofs << "\t\t" << "}";
+    }
+
+    ofs << endl;
 
     ofs << "\t" << "}," << endl;
 
