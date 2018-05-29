@@ -1,4 +1,5 @@
 #include "duplicate.h"
+#include <memory.h>
 
 Duplicate::Duplicate(Options* opt) {
     mOptions = opt;
