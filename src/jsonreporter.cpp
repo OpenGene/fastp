@@ -9,8 +9,10 @@ JsonReporter::JsonReporter(Options* opt){
 JsonReporter::~JsonReporter(){
 }
 
-void JsonReporter::setDupHist(int* dupHist, double dupRate) {
+void JsonReporter::setDupHist(int* dupHist, double* dupMeanTlen, double* dupMeanGC, double dupRate) {
     mDupHist = dupHist;
+    mDupMeanTlen = dupMeanTlen;
+    mDupMeanGC = dupMeanGC;
     mDupRate = dupRate;
 }
 
@@ -83,20 +85,6 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "\t\t\t" << "\"gc_content\":" << (post_total_bases == 0?0.0:(double)post_total_gc / (double)post_total_bases)  << endl; 
     ofs << "\t\t" << "}";
 
-    if(mOptions->duplicate.enabled) {
-        ofs << "," << endl;
-        ofs << "\t\t" << "\"duplication\": {" << endl;
-        ofs << "\t\t\t\"rate\": " << mDupRate << "," << endl;
-        ofs << "\t\t\t\"histogram\": [";
-        for(int d=0; d<mOptions->duplicate.histSize; d++) {
-            ofs << mDupHist[d];
-            if(d!=mOptions->duplicate.histSize-1)
-                ofs << ",";
-        }
-        ofs << "]" << endl;
-        ofs << "\t\t" << "}";
-    }
-
     ofs << endl;
 
     ofs << "\t" << "}," << endl;
@@ -104,6 +92,34 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     if(result) {
         ofs << "\t" << "\"filtering_result\": " ;
         result -> reportJson(ofs, "\t");
+    }
+
+    if(mOptions->duplicate.enabled) {
+        ofs << "\t" << "\"duplication\": {" << endl;
+        ofs << "\t\t\"rate\": " << mDupRate << "," << endl;
+        ofs << "\t\t\"histogram\": [";
+        for(int d=1; d<mOptions->duplicate.histSize; d++) {
+            ofs << mDupHist[d];
+            if(d!=mOptions->duplicate.histSize-1)
+                ofs << ",";
+        }
+        ofs << "]," << endl;
+        ofs << "\t\t\"mean_tlen\": [";
+        for(int d=1; d<mOptions->duplicate.histSize; d++) {
+            ofs << mDupMeanTlen[d];
+            if(d!=mOptions->duplicate.histSize-1)
+                ofs << ",";
+        }
+        ofs << "]," << endl;
+        ofs << "\t\t\"mean_gc\": [";
+        for(int d=1; d<mOptions->duplicate.histSize; d++) {
+            ofs << mDupMeanGC[d];
+            if(d!=mOptions->duplicate.histSize-1)
+                ofs << ",";
+        }
+        ofs << "]" << endl;
+        ofs << "\t" << "}";
+        ofs << "," << endl;
     }
 
     if(result && mOptions->isPaired()) {

@@ -12,8 +12,10 @@ HtmlReporter::HtmlReporter(Options* opt){
 HtmlReporter::~HtmlReporter(){
 }
 
-void HtmlReporter::setDupHist(int* dupHist, double dupRate) {
+void HtmlReporter::setDupHist(int* dupHist, double* dupMeanTlen, double* dupMeanGC, double dupRate) {
     mDupHist = dupHist;
+    mDupMeanTlen = dupMeanTlen;
+    mDupMeanGC = dupMeanGC;
     mDupRate = dupRate;
 }
 
