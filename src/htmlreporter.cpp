@@ -216,7 +216,7 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
 
     json_str += "];\n";
 
-    json_str += "var layout={title:'duplication rate (" + to_string(mDupRate*100.0) + "%)', xaxis:{title:'duplication level'}, yaxis:{title:'Read percent & GC ratio}};\n";
+    json_str += "var layout={title:'duplication rate (" + to_string(mDupRate*100.0) + "%)', xaxis:{title:'duplication level'}, yaxis:{title:'Read percent & GC ratio'}};\n";
     json_str += "Plotly.newPlot('plot_duplication', data, layout);\n";
 
     ofs << json_str;
