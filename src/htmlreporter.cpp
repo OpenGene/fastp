@@ -193,7 +193,7 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
     for(int i=0; i<total; i++) {
         gc[i] = (double)mDupMeanGC[i+1] * 100.0;
         // GC ratio will be not accurate if no enough reads to average
-        if(percents[i] <= 0.05 && maxGC == 0)
+        if(percents[i] <= 0.05 && maxGC == total)
             maxGC = i;
     }
     double* tlen = mDupMeanTlen + 1;
