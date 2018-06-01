@@ -22,7 +22,7 @@ public:
     DuplicationOptions() {
         enabled = true;
         keylen = 12;
-        histSize = 256;
+        histSize = 32;
     }
 public:
     bool enabled;

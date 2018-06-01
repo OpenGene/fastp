@@ -155,6 +155,76 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
         ofs << "</div>\n";
         ofs << "</div>\n";
     }
+
+    if(mOptions->duplicate.enabled) {
+        ofs << "<div class='section_div'>\n";
+        ofs << "<div class='section_title' onclick=showOrHide('duplication')><a name='summary'>Duplication</a></div>\n";
+        ofs << "<div id='duplication'>\n";
+
+        reportDuplication(ofs);
+
+        ofs << "</div>\n";
+        ofs << "</div>\n";
+    }
+}
+
+void HtmlReporter::reportDuplication(ofstream& ofs) {
+
+    ofs << "<div id='duplication_figure'>\n";
+    ofs << "<div class='figure' id='plot_duplication' style='height:400px;'></div>\n";
+    ofs << "</div>\n";
+    
+    ofs << "\n<script type=\"text/javascript\">" << endl;
+    string json_str = "var data=[";
+
+    int total = mOptions->duplicate.histSize - 2;
+    long *x = new long[total];
+    double allCount = 0;
+    for(int i=0; i<total; i++) {
+        x[i] = i+1;
+        allCount += mDupHist[i+1];
+    }
+    double* percents = new double[total];
+    for(int i=0; i<total; i++) {
+        percents[i] = (double)mDupHist[i+1] * 100.0 / (double)allCount;
+    }
+    int maxGC = 0;
+    double* gc = new double[total];
+    for(int i=0; i<total; i++) {
+        gc[i] = (double)mDupMeanGC[i+1] * 100.0;
+        // GC ratio will be not accurate if no enough reads to average
+        if(percents[i] <= 0.003 && maxGC == 0)
+            maxGC = i-1;
+    }
+    double* tlen = mDupMeanTlen + 1;
+
+    json_str += "{";
+    json_str += "x:[" + Stats::list2string(x, total) + "],";
+    json_str += "y:[" + Stats::list2string(percents, total) + "],";
+    json_str += "name: 'Read percent (%)  ',";
+    json_str += "type:'bar',";
+    json_str += "line:{color:'rgba(128,0,128,1.0)', width:1}\n";
+    json_str += "},";
+
+    json_str += "{";
+    json_str += "x:[" + Stats::list2string(x, maxGC) + "],";
+    json_str += "y:[" + Stats::list2string(gc, maxGC) + "],";
+    json_str += "name: 'Mean GC ratio (%)  ',";
+    json_str += "mode:'lines',";
+    json_str += "line:{color:'rgba(255,0,128,1.0)', width:2}\n";
+    json_str += "}";
+
+    json_str += "];\n";
+
+    json_str += "var layout={title:'duplication rate (" + to_string(mDupRate*100.0) + "%)', xaxis:{title:'duplication level'}, yaxis:{title:'Read percent & GC ratio}};\n";
+    json_str += "Plotly.newPlot('plot_duplication', data, layout);\n";
+
+    ofs << json_str;
+    ofs << "</script>" << endl;
+
+    delete[] x;
+    delete[] percents;
+    delete[] gc;
 }
 
 void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
