@@ -106,7 +106,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     ofs << "<div class='subsection_title' onclick=showOrHide('general')>General</div>\n";
     ofs << "<div id='general'>\n";
     ofs << "<table class='summary_table'>\n";
-    outputRow(ofs, "fastp version:", FASTP_VER);
+    outputRow(ofs, "fastp version:", string(FASTP_VER)+ " (<a href='https://github.com/OpenGene/fastp'>https://github.com/OpenGene/fastp</a>)");
     outputRow(ofs, "sequencing:", sequencingInfo);
     if(mOptions->duplicate.enabled)
         outputRow(ofs, "duplication rate:", to_string(mDupRate*100) + "%");
@@ -188,13 +188,13 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
     for(int i=0; i<total; i++) {
         percents[i] = (double)mDupHist[i+1] * 100.0 / (double)allCount;
     }
-    int maxGC = 0;
+    int maxGC = total;
     double* gc = new double[total];
     for(int i=0; i<total; i++) {
         gc[i] = (double)mDupMeanGC[i+1] * 100.0;
         // GC ratio will be not accurate if no enough reads to average
-        if(percents[i] <= 0.003 && maxGC == 0)
-            maxGC = i-1;
+        if(percents[i] <= 0.05 && maxGC == 0)
+            maxGC = i;
     }
     double* tlen = mDupMeanTlen + 1;
 

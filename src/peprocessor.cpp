@@ -249,7 +249,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             if(mOptions->polyXTrim.enabled)
                 PolyX::trimPolyX(r1, r2, config->getFilterResult(), mOptions->polyXTrim.minLen);
         }
-        if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled)){
+        if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)){
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2);
             if(mOptions->correction.enabled) {
                 BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
