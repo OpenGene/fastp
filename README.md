@@ -22,6 +22,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [citation](#citation)
 
 # features
+0. comprehensive quality profiling for both data before and after filtering (quality curves, base contents, KMER, Q20/Q30, GC Ratio, duplication, adapter contents...)
 1. filter out bad reads (too low quality, too short, or too many N...)
 2. cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
 3. trim all reads in front and tail
