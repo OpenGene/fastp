@@ -9,9 +9,8 @@ JsonReporter::JsonReporter(Options* opt){
 JsonReporter::~JsonReporter(){
 }
 
-void JsonReporter::setDupHist(int* dupHist, double* dupMeanTlen, double* dupMeanGC, double dupRate) {
+void JsonReporter::setDupHist(int* dupHist, double* dupMeanGC, double dupRate) {
     mDupHist = dupHist;
-    mDupMeanTlen = dupMeanTlen;
     mDupMeanGC = dupMeanGC;
     mDupRate = dupRate;
 }
@@ -100,13 +99,6 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         ofs << "\t\t\"histogram\": [";
         for(int d=1; d<mOptions->duplicate.histSize; d++) {
             ofs << mDupHist[d];
-            if(d!=mOptions->duplicate.histSize-1)
-                ofs << ",";
-        }
-        ofs << "]," << endl;
-        ofs << "\t\t\"mean_tlen\": [";
-        for(int d=1; d<mOptions->duplicate.histSize; d++) {
-            ofs << mDupMeanTlen[d];
             if(d!=mOptions->duplicate.histSize-1)
                 ofs << ",";
         }

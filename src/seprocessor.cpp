@@ -128,27 +128,25 @@ bool SingleEndProcessor::process(){
     if(mOptions->duplicate.enabled) {
         dupHist = new int[mOptions->duplicate.histSize];
         memset(dupHist, 0, sizeof(int) * mOptions->duplicate.histSize);
-        dupMeanTlen = new double[mOptions->duplicate.histSize];
-        memset(dupMeanTlen, 0, sizeof(double) * mOptions->duplicate.histSize);
         dupMeanGC = new double[mOptions->duplicate.histSize];
         memset(dupMeanGC, 0, sizeof(double) * mOptions->duplicate.histSize);
         vector<Duplicate*> dupList;
         for(int t=0; t<mOptions->thread; t++){
             dupList.push_back(configs[t]->getDuplicate());
         }
-        dupRate = Duplicate::statAll(dupList, dupHist, dupMeanTlen, dupMeanGC, mOptions->duplicate.histSize);
+        dupRate = Duplicate::statAll(dupList, dupHist, dupMeanGC, mOptions->duplicate.histSize);
         cout << endl;
         cout << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
     }
 
     // make JSON report
     JsonReporter jr(mOptions);
-    jr.setDupHist(dupHist, dupMeanTlen, dupMeanGC, dupRate);
+    jr.setDupHist(dupHist, dupMeanGC, dupRate);
     jr.report(finalFilterResult, finalPreStats, finalPostStats);
 
     // make HTML report
     HtmlReporter hr(mOptions);
-    hr.setDupHist(dupHist, dupMeanTlen, dupMeanGC, dupRate);
+    hr.setDupHist(dupHist, dupMeanGC, dupRate);
     hr.report(finalFilterResult, finalPreStats, finalPostStats);
 
     // clean up
@@ -165,7 +163,6 @@ bool SingleEndProcessor::process(){
 
     if(mOptions->duplicate.enabled) {
         delete[] dupHist;
-        delete[] dupMeanTlen;
         delete[] dupMeanGC;
     }
 

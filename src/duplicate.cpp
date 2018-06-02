@@ -1,6 +1,7 @@
 #include "duplicate.h"
 #include "overlapanalysis.h"
 #include <memory.h>
+#include <math.h>
 
 Duplicate::Duplicate(Options* opt) {
     mOptions = opt;
@@ -10,10 +11,8 @@ Duplicate::Duplicate(Options* opt) {
     memset(mDups, 0, sizeof(uint64)*mKeyLenInBit);
     mCounts = new uint16[mKeyLenInBit];
     memset(mCounts, 0, sizeof(uint16)*mKeyLenInBit);
-    mLength = new uint16[mKeyLenInBit];
-    memset(mLength, 0, sizeof(uint16)*mKeyLenInBit);
-    mGC = new uint16[mKeyLenInBit];
-    memset(mGC, 0, sizeof(uint16)*mKeyLenInBit);
+    mGC = new uint8[mKeyLenInBit];
+    memset(mGC, 0, sizeof(uint8)*mKeyLenInBit);
 }
 
 Duplicate::~Duplicate(){
@@ -48,11 +47,10 @@ uint64 Duplicate::seq2int(const char* data, int start, int keylen, bool& valid) 
     return ret;
 }
 
-void Duplicate::addRecord(uint32 key, uint64 kmer32, int tlen, int gc) {
+void Duplicate::addRecord(uint32 key, uint64 kmer32, uint8 gc) {
     if(mCounts[key] == 0) {
         mCounts[key] = 1;
         mDups[key] = kmer32;
-        mLength[key] = tlen;
         mGC[key] = gc;
     } else {
         if(mDups[key] == kmer32)
@@ -89,7 +87,9 @@ void Duplicate::statRead(Read* r) {
         }
     }
 
-    addRecord(key, kmer32, r->length(), gc);
+    gc = round(255.0 * (double) gc / (double) r->length());
+
+    addRecord(key, kmer32, (uint8)gc);
 }
 
 void Duplicate::statPair(Read* r1, Read* r2) {
@@ -112,33 +112,27 @@ void Duplicate::statPair(Read* r1, Read* r2) {
     int gc = 0;
 
     // not calculated
-    int tlen = 0;
     if(mCounts[key] == 0) {
-        OverlapResult ov = OverlapAnalysis::analyze(r1, r2);
-        if(ov.overlap_len > 30) {
-            if(ov.offset < 0)
-                tlen = ov.overlap_len;
-            else
-                tlen = r1->length() + r2->length() - ov.overlap_len;
-        }
-        for(int i=0; i<r1->length() && i<tlen; i++) {
+        for(int i=0; i<r1->length(); i++) {
             if(data1[i] == 'G' || data1[i] == 'C')
                 gc++;
         }
-        for(int i=0; i<r2->length() && i<tlen-r1->length(); i++) {
+        for(int i=0; i<r2->length(); i++) {
             if(data2[i] == 'G' || data2[i] == 'C')
                 gc++;
         }
     }
 
-    addRecord(key, kmer32, tlen, gc);
+    gc = round(255.0 * (double) gc / (double)( r1->length() + r2->length()));
+
+    addRecord(key, kmer32, gc);
 }
 
-double Duplicate::statAll(vector<Duplicate*>& list, int* hist, double* meanTLEN, double* meanGC, int histSize) {
+double Duplicate::statAll(vector<Duplicate*>& list, int* hist, double* meanGC, int histSize) {
     long totalNum = 0;
     long dupNum = 0;
-    int* gcTlenNum = new int[histSize];
-    memset(gcTlenNum, 0, sizeof(int)*histSize);
+    int* gcStatNum = new int[histSize];
+    memset(gcStatNum, 0, sizeof(int)*histSize);
     for(int key=0; key<list[0]->mKeyLenInBit; key++) {
         bool consistent = true;
         for(int i=0; i<list.size()-1; i++) {
@@ -148,15 +142,13 @@ double Duplicate::statAll(vector<Duplicate*>& list, int* hist, double* meanTLEN,
         }
         if(consistent) {
             int count = 0;
-            int numSum = 0;
-            double tlenSum = 0;
             double gcSum = 0;
+            int num = 0;
             for(int i=0; i<list.size(); i++) {
                 count += list[i]->mCounts[key];
-                if(list[i]->mLength[key] > 0) {
-                    numSum++;
-                    tlenSum += list[i]->mLength[key];
-                    gcSum += (double)list[i]->mGC[key] / (double)list[i]->mLength[key];
+                if(list[i]->mGC[key]>0) {
+                    gcSum += (double)list[i]->mGC[key];
+                    num++;
                 }
             }
 
@@ -166,32 +158,30 @@ double Duplicate::statAll(vector<Duplicate*>& list, int* hist, double* meanTLEN,
 
                 if(count >= histSize){
                     hist[histSize-1]++;
-                    if(numSum > 0) {
-                        meanTLEN[histSize-1] += tlenSum/numSum;
-                        meanGC[histSize-1] += gcSum/numSum;
-                        gcTlenNum[histSize-1]++;
+                    if(num>0) {
+                        meanGC[histSize-1] += gcSum/num;
+                        gcStatNum[histSize-1]++;
                     }
                 }
                 else{
                     hist[count]++;
-                    if(numSum > 0) {
-                        meanTLEN[count] += tlenSum/numSum;
-                        meanGC[count] += gcSum/numSum;
-                        gcTlenNum[count]++;
+                    if(num>0) {
+                        meanGC[count] += gcSum/num;
+                        gcStatNum[count]++;
                     }
+
                 }
             }
         }
     }
 
     for(int i=0; i<histSize; i++) {
-        if(gcTlenNum[i] > 0) {
-            meanTLEN[i] = meanTLEN[i] / gcTlenNum[i];
-            meanGC[i] = meanGC[i] / gcTlenNum[i];
+        if(gcStatNum[i] > 0) {
+            meanGC[i] = meanGC[i] / 255.0 / gcStatNum[i];
         }
     }
 
-    delete[] gcTlenNum;
+    delete[] gcStatNum;
 
     if(totalNum == 0)
         return 0.0;

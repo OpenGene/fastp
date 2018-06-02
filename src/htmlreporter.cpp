@@ -1,5 +1,6 @@
 #include "htmlreporter.h"
 #include <chrono>
+#include <memory.h>
 
 extern string command;
 
@@ -12,9 +13,8 @@ HtmlReporter::HtmlReporter(Options* opt){
 HtmlReporter::~HtmlReporter(){
 }
 
-void HtmlReporter::setDupHist(int* dupHist, double* dupMeanTlen, double* dupMeanGC, double dupRate) {
+void HtmlReporter::setDupHist(int* dupHist, double* dupMeanGC, double dupRate) {
     mDupHist = dupHist;
-    mDupMeanTlen = dupMeanTlen;
     mDupMeanGC = dupMeanGC;
     mDupRate = dupRate;
 }
@@ -185,8 +185,11 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
         allCount += mDupHist[i+1];
     }
     double* percents = new double[total];
-    for(int i=0; i<total; i++) {
-        percents[i] = (double)mDupHist[i+1] * 100.0 / (double)allCount;
+    memset(percents, 0, sizeof(double)*total);
+    if(allCount > 0) {
+        for(int i=0; i<total; i++) {
+            percents[i] = (double)mDupHist[i+1] * 100.0 / (double)allCount;
+        }
     }
     int maxGC = total;
     double* gc = new double[total];
@@ -196,7 +199,6 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
         if(percents[i] <= 0.05 && maxGC == total)
             maxGC = i;
     }
-    double* tlen = mDupMeanTlen + 1;
 
     json_str += "{";
     json_str += "x:[" + Stats::list2string(x, total) + "],";
