@@ -287,7 +287,7 @@ options:
 ```
 
 # citation
-You can cite fastp's bioRxiv paper:  
+`fastp` paper has been accepted by ECCB 2018 conference and will be published in `Bioinformatics` journal. Before it's final publication, you can cite fastp's bioRxiv paper:  
 
 Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu. fastp: an ultra-fast all-in-one FASTQ preprocessor. bioRxiv 274100; doi: https://doi.org/10.1101/274100
 
