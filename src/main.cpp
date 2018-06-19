@@ -35,6 +35,7 @@ int main(int argc, char* argv[]){
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 2.", false, 2);
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
+    cmd.add("stdout", 0, "output passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input.");
 
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
@@ -121,6 +122,7 @@ int main(int argc, char* argv[]){
     opt.readsToProcess = cmd.get<int>("reads_to_process");
     opt.phred64 = cmd.exist("phred64");
     opt.dontOverwrite = cmd.exist("dont_overwrite");
+    opt.stdout = cmd.exist("stdout");
 
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");

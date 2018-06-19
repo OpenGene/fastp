@@ -14,6 +14,7 @@ Options::Options(){
     compression = 2;
     phred64 = false;
     dontOverwrite = false;
+    stdout = false;
     readsToProcess = 0;
 }
 
@@ -52,6 +53,25 @@ bool Options::validate() {
         if(out1.empty() && !out2.empty()) {
             error_exit("paired-end input, read1 output should be specified (--out1 needed) together with read2 output ");
         }
+    }
+
+    if(stdout) {
+        cerr << "Redirected output to STDOUT..." << endl;
+        if(!in1.empty() && !in2.empty())
+            cerr << "The output will be interleaved since the input is paired-end." << endl;
+        if(!out1.empty()) {
+            cerr << "Ignore argument --out1 = " << out1 << endl;
+            out1 = "";
+        }
+        if(!out2.empty()) {
+            cerr << "Ignore argument --out2 = " << out2 << endl;
+            out2 = "";
+        }
+        if(split.enabled) {
+            cerr << "Ignore split mode" << endl;
+            split.enabled = false;
+        }
+        cerr << endl;
     }
 
     if(!out1.empty()) {

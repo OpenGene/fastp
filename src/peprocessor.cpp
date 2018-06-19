@@ -206,6 +206,7 @@ bool PairEndProcessor::process(){
 bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     string outstr1;
     string outstr2;
+    string interleaved;
     int readPassed = 0;
     for(int p=0;p<pack->count;p++){
         ReadPair* pair = pack->data[p];
@@ -269,8 +270,12 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
         if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
             
-            outstr1 += r1->toString();
-            outstr2 += r2->toString();
+            if(mOptions->stdout)
+                interleaved += r1->toString() + r2->toString();
+            else {
+                outstr1 += r1->toString();
+                outstr2 += r2->toString();
+            }
 
             // stats the read after filtering
             config->getPostStats1()->statRead(r1);
@@ -291,10 +296,14 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     // if splitting output, then no lock is need since different threads write different files
     if(!mOptions->split.enabled)
         mOutputMtx.lock();
-    if(!mOptions->out1.empty())
-        config->getWriter1()->writeString(outstr1);
-    if(!mOptions->out2.empty())
-        config->getWriter2()->writeString(outstr2);
+    if(mOptions->stdout)
+        cout << interleaved;
+    else {
+        if(!mOptions->out1.empty())
+            config->getWriter1()->writeString(outstr1);
+        if(!mOptions->out2.empty())
+            config->getWriter2()->writeString(outstr2);
+    }
     if(!mOptions->split.enabled)
         mOutputMtx.unlock();
 

@@ -255,6 +255,8 @@ public:
     bool phred64;
     // do not rewrite existing files
     bool dontOverwrite;
+    // write STDOUT
+    bool stdout;
     // only process first N reads
     int readsToProcess;
     // worker thread number
