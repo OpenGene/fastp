@@ -8,7 +8,7 @@ Sequence::Sequence(string seq){
 }
 
 void Sequence::print(){
-    std::cout << mStr;
+    std::cerr << mStr;
 }
 
 int Sequence::length(){

@@ -111,14 +111,14 @@ bool SingleEndProcessor::process(){
         postStats.push_back(configs[t]->getPostStats1());
     }
 
-    cout << "Read1 before filtering:"<<endl;
+    cerr << "Read1 before filtering:"<<endl;
     finalPreStats->print();
-    cout << endl;
-    cout << "Read1 after filtering:"<<endl;
+    cerr << endl;
+    cerr << "Read1 after filtering:"<<endl;
     finalPostStats->print();
 
-    cout << endl;
-    cout << "Filtering result:"<<endl;
+    cerr << endl;
+    cerr << "Filtering result:"<<endl;
     finalFilterResult->print();
 
     int* dupHist = NULL;
@@ -135,8 +135,8 @@ bool SingleEndProcessor::process(){
             dupList.push_back(configs[t]->getDuplicate());
         }
         dupRate = Duplicate::statAll(dupList, dupHist, dupMeanGC, mOptions->duplicate.histSize);
-        cout << endl;
-        cout << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
+        cerr << endl;
+        cerr << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
     }
 
     // make JSON report
@@ -350,7 +350,7 @@ void SingleEndProcessor::producerTask()
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
             // if the consumer is far behind this producer, sleep and wait to limit memory usage
             while(mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT){
-                //cout<<"sleep"<<endl;
+                //cerr<<"sleep"<<endl;
                 slept++;
                 usleep(100);
             }

@@ -14,7 +14,7 @@ string command;
 int main(int argc, char* argv[]){
     // display version info if no argument is given
     if(argc == 1) {
-        cout << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
+        cerr << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
     }
     if (argc == 2 && strcmp(argv[1], "test")==0){
         UnitTest tester;
@@ -22,7 +22,7 @@ int main(int argc, char* argv[]){
         return 0;
     }
     if (argc == 2 && (strcmp(argv[1], "-v")==0 || strcmp(argv[1], "--version")==0)){
-        cout << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
+        cerr << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
         return 0;
     }
     cmdline::parser cmd;
@@ -277,15 +277,15 @@ int main(int argc, char* argv[]){
 
     // using evaluator to guess how many reads in total
     if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
-        cout << "Detecting adapter..." << endl;
+        cerr << "Detecting adapter..." << endl;
         string adapt = eva.evalAdapterAndReadNum(readNum);
         if(adapt.length() > 0 ) {
             opt.adapter.sequence = adapt;
         } else {
-            cout << "No adapter detected" << endl;
+            cerr << "No adapter detected" << endl;
             opt.adapter.sequence = "";
         }
-        cout << endl;
+        cerr << endl;
     }
 
     opt.validate();
@@ -317,10 +317,10 @@ int main(int argc, char* argv[]){
     
     time_t t2 = time(NULL);
 
-    cout << endl << "JSON report: " << opt.jsonFile << endl;
-    cout << "HTML report: " << opt.htmlFile << endl;
-    cout << endl << command << endl;
-    cout << "fastp v" << FASTP_VER << ", time used: " << (t2)-t1 << " seconds" << endl;
+    cerr << endl << "JSON report: " << opt.jsonFile << endl;
+    cerr << "HTML report: " << opt.htmlFile << endl;
+    cerr << endl << command << endl;
+    cerr << "fastp v" << FASTP_VER << ", time used: " << (t2)-t1 << " seconds" << endl;
 
     return 0;
 }

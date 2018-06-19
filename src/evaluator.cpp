@@ -151,7 +151,7 @@ void Evaluator::computeOverRepSeq(string filename, map<string, long>& hotseqs, i
 
     // output for test
     /*for(iter = hotseqs.begin(); iter!=hotseqs.end(); iter++) {
-        cout << iter->first << ": " << iter->second << endl;
+        cerr << iter->first << ": " << iter->second << endl;
     }*/
 }
 
@@ -310,7 +310,7 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
             }
             if(diff >=2){
                 candidates[seq] = counts[i];
-                //cout << seq << ": " << candidates[seq] << endl;
+                //cerr << seq << ": " << candidates[seq] << endl;
             }
         }
     }
@@ -352,7 +352,7 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
                 int len1 = a1.length();
                 int len2 = a2.length();
                 int overlap = keylen - 1;
-                //cout << a1 << ":" << a2 << endl;
+                //cerr << a1 << ":" << a2 << endl;
 
                 // check identidal
                 bool identical = true;
@@ -396,10 +396,10 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
     string matchedAdapter = matchKnownAdapter(finalAdapter);
     if(!matchedAdapter.empty()) {
         map<string, string> knownAdapters = getKnownAdapter();
-        cout << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
+        cerr << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
         return matchedAdapter;
     } else {
-        cout << finalAdapter << endl;
+        cerr << finalAdapter << endl;
         return finalAdapter;
     }
 
@@ -594,11 +594,11 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
     string matchedAdapter = matchKnownAdapter(adapter);
     if(!matchedAdapter.empty()) {
         map<string, string> knownAdapters = getKnownAdapter();
-        cout << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
+        cerr << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
         return matchedAdapter;
     } else {
         if(reachedLeaf) {
-            cout << adapter << endl;
+            cerr << adapter << endl;
             return adapter;
         } else {
             return "";
@@ -692,6 +692,6 @@ int Evaluator::seq2int(string& seq, int pos, int keylen, int lastVal) {
 bool Evaluator::test() {
     Evaluator eval(NULL);
     string s = "ATCGATCGAT";
-    cout << eval.int2seq(eval.seq2int(s, 0, 10, -1), 10) << endl;
+    cerr << eval.int2seq(eval.seq2int(s, 0, 10, -1), 10) << endl;
     return eval.int2seq(eval.seq2int(s, 0, 10, -1), 10) == s;
 }

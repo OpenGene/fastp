@@ -51,11 +51,11 @@ Read::Read(Read &r) {
 }
 
 void Read::print(){
-	std::cout << mName << endl;
-	std::cout << mSeq.mStr << endl;
-	std::cout << mStrand << endl;
+	std::cerr << mName << endl;
+	std::cerr << mSeq.mStr << endl;
+	std::cerr << mStrand << endl;
 	if(mHasQuality)
-		std::cout << mQuality << endl;
+		std::cerr << mQuality << endl;
 }
 
 void Read::printFile(ofstream& file){

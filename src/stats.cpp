@@ -367,10 +367,10 @@ void Stats::print() {
     if(!summarized) {
         summarize();
     }
-    cout << "total reads: " << mReads << endl;
-    cout << "total bases: " << mBases << endl;
-    cout << "Q20 bases: " << mQ20Total << "(" << (mQ20Total*100.0)/mBases << "%)" << endl;
-    cout << "Q30 bases: " << mQ30Total << "(" << (mQ30Total*100.0)/mBases << "%)" << endl;
+    cerr << "total reads: " << mReads << endl;
+    cerr << "total bases: " << mBases << endl;
+    cerr << "Q20 bases: " << mQ20Total << "(" << (mQ20Total*100.0)/mBases << "%)" << endl;
+    cerr << "Q30 bases: " << mQ30Total << "(" << (mQ30Total*100.0)/mBases << "%)" << endl;
 }
 
 void Stats::reportJson(ofstream& ofs, string padding) {
@@ -915,7 +915,7 @@ Stats* Stats::merge(vector<Stats*>& list) {
             string seq = iter->first;
             s->mOverRepSeq[seq] += list[t]->mOverRepSeq[seq];
             if(s->mIsRead2 != list[t]->mIsRead2 || list[t]->mOverRepSeqDist[seq] == NULL)
-                cout << t <<seq<< ":" << (s->mIsRead2?2:1 ) << "," << (list[t]->mIsRead2?2:1 ) <<endl;
+                cerr << t <<seq<< ":" << (s->mIsRead2?2:1 ) << "," << (list[t]->mIsRead2?2:1 ) <<endl;
             for(int i=0; i<s->mEvaluatedSeqLen; i++) {
                 s->mOverRepSeqDist[seq][i] += list[t]->mOverRepSeqDist[seq][i];
             }

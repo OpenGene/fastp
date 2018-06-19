@@ -139,20 +139,20 @@ void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
 }
 
 void FilterResult::print() {
-    cout <<  "reads passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
-    cout <<  "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
-    cout <<  "reads failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
-    cout <<  "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
+    cerr <<  "reads passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
+    cerr <<  "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
+    cerr <<  "reads failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
+    cerr <<  "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
     if(mOptions->complexityFilter.enabled) {
-        cout <<  "reads failed due to low complexity: " << mFilterReadStats[FAIL_COMPLEXITY] << endl;
+        cerr <<  "reads failed due to low complexity: " << mFilterReadStats[FAIL_COMPLEXITY] << endl;
     }
     if(mOptions->adapter.enabled) {
-        cout <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
-        cout <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
+        cerr <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
+        cerr <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
     }
     if(mOptions->correction.enabled) {
-        cout <<  "reads corrected by overlap analysis: " << mCorrectedReads << endl;
-        cout <<  "bases corrected by overlap analysis: " << getTotalCorrectedBases() << endl;
+        cerr <<  "reads corrected by overlap analysis: " << mCorrectedReads << endl;
+        cerr <<  "bases corrected by overlap analysis: " << getTotalCorrectedBases() << endl;
     }
 }
 

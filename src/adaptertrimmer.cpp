@@ -19,12 +19,12 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr,
         string adapter2 = r2->mSeq.mStr.substr(ol, r2->length() - ol);
 
         if(_DEBUG) {
-            cout << adapter1 << endl;
-            cout << adapter2 << endl;
-            cout << "overlap:" << ov.offset << "," << ov.overlap_len << ", " << ov.diff << endl;
+            cerr << adapter1 << endl;
+            cerr << adapter2 << endl;
+            cerr << "overlap:" << ov.offset << "," << ov.overlap_len << ", " << ov.diff << endl;
             r1->print();
             r2->reverseComplement()->print();
-            cout <<endl;
+            cerr <<endl;
         }
 
         r1->mSeq.mStr = r1->mSeq.mStr.substr(0, ol);
