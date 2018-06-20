@@ -33,9 +33,10 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 2.", false, 2);
+    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.");
+    cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
-    cmd.add("stdout", 0, "output passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input.");
 
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
@@ -123,6 +124,7 @@ int main(int argc, char* argv[]){
     opt.phred64 = cmd.exist("phred64");
     opt.dontOverwrite = cmd.exist("dont_overwrite");
     opt.stdout = cmd.exist("stdout");
+    opt.interleavedInput = cmd.exist("interleaved_in");
 
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");

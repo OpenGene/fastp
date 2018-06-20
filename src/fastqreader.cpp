@@ -234,9 +234,13 @@ FastqReaderPair::FastqReaderPair(FastqReader* left, FastqReader* right){
 	mRight = right;
 }
 
-FastqReaderPair::FastqReaderPair(string leftName, string rightName, bool hasQuality, bool phred64){
+FastqReaderPair::FastqReaderPair(string leftName, string rightName, bool hasQuality, bool phred64, bool interleaved){
+	mInterleaved = interleaved;
 	mLeft = new FastqReader(leftName, hasQuality, phred64);
-	mRight = new FastqReader(rightName, hasQuality, phred64);
+	if(mInterleaved)
+		mRight = NULL;
+	else
+		mRight = new FastqReader(rightName, hasQuality, phred64);
 }
 
 FastqReaderPair::~FastqReaderPair(){
@@ -252,7 +256,11 @@ FastqReaderPair::~FastqReaderPair(){
 
 ReadPair* FastqReaderPair::read(){
 	Read* l = mLeft->read();
-	Read* r = mRight->read();
+	Read* r = NULL;
+	if(mInterleaved)
+		r = mLeft->read();
+	else
+		r = mRight->read();
 	if(!l || !r){
 		return NULL;
 	} else {

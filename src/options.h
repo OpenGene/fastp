@@ -257,6 +257,8 @@ public:
     bool dontOverwrite;
     // write STDOUT
     bool stdout;
+    // the input R1 file is interleaved
+    bool interleavedInput;
     // only process first N reads
     int readsToProcess;
     // worker thread number

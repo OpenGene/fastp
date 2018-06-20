@@ -16,13 +16,14 @@ Options::Options(){
     dontOverwrite = false;
     stdout = false;
     readsToProcess = 0;
+    interleavedInput = false;
 }
 
 void Options::init() {
 }
 
 bool Options::isPaired() {
-    return in2.length() > 0;
+    return in2.length() > 0 || interleavedInput;
 }
 
 bool Options::adapterCuttingEnabled() {
@@ -40,23 +41,13 @@ bool Options::validate() {
         check_file_valid(in1);
     }
 
-    if(in2.empty() && !out2.empty()) {
-        error_exit("read2 output is specified (--out2), but read2 input is not specified (--in2)");
-    }
-
     if(!in2.empty()) {
         check_file_valid(in2);
-
-        if(!out1.empty() && out2.empty()) {
-            error_exit("paired-end input, read1 output should be specified together with read2 output (--out2 needed) ");
-        }
-        if(out1.empty() && !out2.empty()) {
-            error_exit("paired-end input, read1 output should be specified (--out1 needed) together with read2 output ");
-        }
     }
 
+    // if output to STDOUT, then...
     if(stdout) {
-        cerr << "Redirected output to STDOUT..." << endl;
+        cerr << "Streaming uncompressed output to STDOUT..." << endl;
         if(!in1.empty() && !in2.empty())
             cerr << "Enable interleaved output mode since the for paired-end input." << endl;
         if(!out1.empty()) {
@@ -72,6 +63,23 @@ bool Options::validate() {
             split.enabled = false;
         }
         cerr << endl;
+    }
+
+    if(in2.empty() && !interleavedInput && !out2.empty()) {
+        error_exit("read2 output is specified (--out2), but neighter read2 input is not specified (--in2), nor read1 is interleaved.");
+    }
+
+    if(!in2.empty() || interleavedInput) {
+        if(!out1.empty() && out2.empty()) {
+            error_exit("paired-end input, read1 output should be specified together with read2 output (--out2 needed) ");
+        }
+        if(out1.empty() && !out2.empty()) {
+            error_exit("paired-end input, read1 output should be specified (--out1 needed) together with read2 output ");
+        }
+    }
+
+    if(!in2.empty() && interleavedInput) {
+        error_exit("<in2> is not allowed when <in1> is specified as interleaved mode by (--interleaved_in)");
     }
 
     if(!out1.empty()) {
