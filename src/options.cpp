@@ -58,7 +58,7 @@ bool Options::validate() {
     if(stdout) {
         cerr << "Redirected output to STDOUT..." << endl;
         if(!in1.empty() && !in2.empty())
-            cerr << "The output will be interleaved since the input is paired-end." << endl;
+            cerr << "Enable interleaved output mode since the for paired-end input." << endl;
         if(!out1.empty()) {
             cerr << "Ignore argument --out1 = " << out1 << endl;
             out1 = "";

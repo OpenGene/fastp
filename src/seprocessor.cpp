@@ -235,8 +235,9 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     // if splitting output, then no lock is need since different threads write different files
     if(!mOptions->split.enabled)
         mOutputMtx.lock();
-    if(mOptions->stdout)
-        cout << outstr;
+    if(mOptions->stdout) {
+        fwrite(outstr.c_str(), 1, outstr.length(), stdout);
+    }
     else if(!mOptions->out1.empty())
         config->getWriter1()->writeString(outstr);
     if(!mOptions->split.enabled)
