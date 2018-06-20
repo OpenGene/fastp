@@ -53,16 +53,21 @@ bool Writer::writeLine(string& linestr){
 	const char* line = linestr.c_str();
 	int size = linestr.length();
 	int written;
-	bool status;
+	bool status = true;
 	if(mZipped){
 		written = gzwrite(mZipFile, line, size);
 		gzputc(mZipFile, '\n');
-		status = size == written;
+		if(size > 0 && written == 0)
+			status = false;
 	}
 	else{
 		mOutStream->write(line, size);
 		mOutStream->put('\n');
-		status = !mOutStream->fail();
+		status = !mOutStream->bad();
+	}
+
+	if(!status) {
+		error_exit( "Failed to write " + mFilename + ", exiting...");
 	}
 
 	return status;
@@ -72,14 +77,19 @@ bool Writer::writeString(string& str){
 	const char* strdata = str.c_str();
 	int size = str.length();
 	int written;
-	bool status;
+	bool status = true;
 	if(mZipped){
 		written = gzwrite(mZipFile, strdata, size);
-		status = size == written;
+		if(size > 0 && written == 0)
+			status = false;
 	}
 	else{
 		mOutStream->write(strdata, size);
-		status = !mOutStream->fail();
+		status = !mOutStream->bad();
+	}
+
+	if(!status) {
+		error_exit( "Failed to write " + mFilename + ", exiting...");
 	}
 
 	return status;
