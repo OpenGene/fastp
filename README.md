@@ -93,7 +93,7 @@ sudo make install
 ## output to STDOUT
 `fastp` supports streaming the passing-filter reads to STDOUT, so that it can be passed to other compressors like `bzip2`, or be passed to aligners like `bwa` and `bowtie2`. 
 * specify `--stdout` to enable this mode to stream output to STDOUT
-* for PE data, the output will be interleaved FASTQ, which means the files will contain records like `record1-R1 -> record1-R2 --> record2-R1 -> record2-R2 --> record3-R1 -> record1-R3 ... ` 
+* for PE data, the output will be interleaved FASTQ, which means the output will contain records like `record1-R1 -> record1-R2 -> record2-R1 -> record2-R2 -> record3-R1 -> record3-R2 ... ` 
 ## interleaved input
 `fastp` also supports interleaved FASTQ input. You can specify `--interleaved_in` to indicate that the read1 file you specified by `-i` or `--in1` is interleaved. In the interleaved input mode, read2 file is not needed (and not allowed).
 ## process only part of the data
