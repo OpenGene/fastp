@@ -9,6 +9,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [simple usage](#simple-usage)
 * [examples of report](#examples-of-report)
 * [download, compile and install](#get-fastp)
+* [input and output](#input-and-output)
 * [filtering by quality, length, complexity, etc.](#filtering)
 * [adapter trimming](#adapters)
 * [per read cutting by quality score](#per-read-cutting-by-quality-score)
@@ -34,7 +35,9 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 9. visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
 10. split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
 11. support long reads (data from PacBio / Nanopore devices).
-12. ...
+12. support streaming to STDOUT
+13. support interleaved input
+14. ...
 
 This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
 
@@ -80,6 +83,25 @@ make
 # Install
 sudo make install
 ```
+
+# input and output
+`fastp` supports both single-end (SE) and paired-end (PE) input/output.
+* for SE data, you only have to specify read1 input by `-i` or `--in1`, and specify read1 output by `-o` or `--out1`.
+* for PE data, you should also specify read2 input by `-I` or `--in2`, and specify read2 output by `-O` or `--out2`.
+* if you don't specify the output file names, no output files will be written, but the QC will still be done for both data before and after filtering.
+* the output will be gzip-compressed if its file name ends with `.gz`
+## output to STDOUT
+`fastp` supports streaming the passing-filter reads to STDOUT, so that it can be passed to other compressors like `bzip2`, or be passed to aligners like `bwa` and `bowtie2`. 
+* specify `--stdout` to enable this mode to stream output to STDOUT
+* for PE data, the output will be interleaved FASTQ, which means the files will contain records like `record1-R1 -> record1-R2 --> record2-R1 -> record2-R2 --> record3-R1 -> record1-R3 ... ` 
+## interleaved input
+`fastp` also supports interleaved FASTQ input. You can specify `--interleaved_in` to indicate that the read1 file you specified by `-i` or `--in1` is interleaved. In the interleaved input mode, read2 file is not needed (and not allowed).
+## process only part of the data
+If you don't want to process all the data, you can specify `--reads_to_process` to limit the reads to be processed. This is useful if you want to have a fast preview of the data quality, or you want to create a subset of the filtered data.
+## do not overwrite exiting files
+You can enable the option `--dont_overwrite` to protect the existing files not to be overwritten by `fastp`. In this case, `fastp` will report an error and quit if it finds any of the output files (read1, read2, json report, html report) already exists before.
+## split the output to multiple files for parallel processing
+See [output splitting](#output-splitting)
 
 # filtering
 Multiple filters have been implemented.
