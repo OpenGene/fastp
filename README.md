@@ -207,8 +207,9 @@ options:
   -O, --out2                         read2 output file name (string [=])
   -6, --phred64                      indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
   -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 2. (int [=2])
-    --reads_to_process               specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
-    --dont_overwrite                 don't overwrite existing files. Overwritting is allowed by default.
+      --reads_to_process             specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
+      --dont_overwrite               don't overwrite existing files. Overwritting is allowed by default.
+      --stdout                       output passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input.
   
   # adapter trimming options
   -A, --disable_adapter_trimming     adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled
