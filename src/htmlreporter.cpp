@@ -108,8 +108,12 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     ofs << "<table class='summary_table'>\n";
     outputRow(ofs, "fastp version:", string(FASTP_VER)+ " (<a href='https://github.com/OpenGene/fastp'>https://github.com/OpenGene/fastp</a>)");
     outputRow(ofs, "sequencing:", sequencingInfo);
-    if(mOptions->duplicate.enabled)
-        outputRow(ofs, "duplication rate:", to_string(mDupRate*100) + "%");
+    if(mOptions->duplicate.enabled) {
+        string dupStr = to_string(mDupRate*100) + "%";
+        if(!mOptions->isPaired())
+            dupStr += " (may be overestimated since this is SE data)";
+        outputRow(ofs, "duplication rate:", dupStr);
+    }
     ofs << "</table>\n";
     ofs << "</div>\n";
 

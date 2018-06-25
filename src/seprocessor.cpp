@@ -136,7 +136,7 @@ bool SingleEndProcessor::process(){
         }
         dupRate = Duplicate::statAll(dupList, dupHist, dupMeanGC, mOptions->duplicate.histSize);
         cerr << endl;
-        cerr << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
+        cerr << "Duplication rate (may be overestimated since this is SE data): " << dupRate * 100.0 << "%" << endl;
     }
 
     // make JSON report
