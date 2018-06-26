@@ -165,8 +165,8 @@ void Evaluator::evaluateOverRepSeqs() {
 void Evaluator::evaluateReadNum(long& readNum) {
     FastqReader reader(mOptions->in1);
 
-    const long READ_LIMIT = 1024*1024;
-    const long BASE_LIMIT = 151 * 1024*1024;
+    const long READ_LIMIT = 512*1024;
+    const long BASE_LIMIT = 151 * 512*1024;
     long records = 0;
     long bases = 0;
     size_t firstReadPos = 0;
@@ -209,7 +209,7 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
     FastqReader reader(mOptions->in1);
     // stat up to 1M reads
     const long READ_LIMIT = 1024*1024;
-    const long BASE_LIMIT = 151 * 1024*1024;
+    const long BASE_LIMIT = 151 * READ_LIMIT;
     long records = 0;
     long bases = 0;
     size_t firstReadPos = 0;
@@ -407,9 +407,9 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
 
 string Evaluator::evalAdapterAndReadNum(long& readNum) {
     FastqReader reader(mOptions->in1);
-    // stat up to 1M reads
-    const long READ_LIMIT = 1024*1024;
-    const long BASE_LIMIT = 151 * 1024*1024;
+    // stat up to 256K reads
+    const long READ_LIMIT = 256*1024;
+    const long BASE_LIMIT = 151 * READ_LIMIT;
     long records = 0;
     long bases = 0;
     size_t firstReadPos = 0;
@@ -472,7 +472,7 @@ string Evaluator::evalAdapterAndReadNum(long& readNum) {
         Read* r = loadedReads[i];
         const char* data = r->mSeq.mStr.c_str();
         int key = -1;
-        for(int pos = r->length()-12; pos <= r->length()-keylen-shiftTail; pos++) {
+        for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
             key = seq2int(r->mSeq.mStr, pos, keylen, key);
             if(key >= 0) {
                 counts[key]++;
@@ -488,10 +488,26 @@ string Evaluator::evalAdapterAndReadNum(long& readNum) {
     int topkeys[topnum] = {0};
     long total = 0;
     for(int k=0; k<size; k++) {
-        // skip AAAAAAAAAA/TTTTTTTTTT/...
-        int bits20 = k & 0xfffff;
-        if(bits20==0x00000 || bits20==0x55555 || bits20==0xaaaaa || bits20==0xfffff)
+        int atcg[4] = {0};
+        for(int i=0; i<keylen; i++) {
+            int baseOfBit = (k >> (i*2)) & 0x03;
+            atcg[baseOfBit]++;
+        }
+        bool lowComplexity = false;
+        for(int b=0; b<4; b++) {
+            if(atcg[b] >= keylen-4)
+                lowComplexity=true;
+        }
+        if(lowComplexity)
             continue;
+        // too many GC
+        if(atcg[2] + atcg[3] >= keylen-2)
+            continue;
+
+        // starts with GGGG
+        if( k>>12 == 0xff)
+            continue;
+
         unsigned int val = counts[k];
         total += val;
         for(int t=topnum-1; t>=0; t--) {
@@ -520,7 +536,7 @@ string Evaluator::evalAdapterAndReadNum(long& readNum) {
         if(key == 0)
             continue;
         int count = counts[key];
-        if(count*size < total * FOLD_THRESHOLD)
+        if(count<10 || count*size < total * FOLD_THRESHOLD)
             break;
         // skip low complexity seq
         int diff = 0;
@@ -562,7 +578,7 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
         Read* r = loadedReads[i];
         const char* data = r->mSeq.mStr.c_str();
         int key = -1;
-        for(int pos = r->length()-40; pos <= r->length()-keylen-shiftTail; pos++) {
+        for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
             key = seq2int(r->mSeq.mStr, pos, keylen, key);
             if(key == seed) {
                 forwardTree.addSeq(r->mSeq.mStr.substr(pos+keylen, r->length()-keylen-shiftTail-pos));
@@ -578,7 +594,7 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
         Read* r = loadedReads[i];
         const char* data = r->mSeq.mStr.c_str();
         int key = -1;
-        for(int pos = r->length()-40; pos <= r->length()-keylen-shiftTail; pos++) {
+        for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
             key = seq2int(r->mSeq.mStr, pos, keylen, key);
             if(key == seed) {
                 string seq =  r->mSeq.mStr.substr(0, pos);
