@@ -215,10 +215,10 @@ void HtmlReporter::reportInsertSize(ofstream& ofs, int isizeLimit) {
     ofs << "<div class='figure' id='plot_insert_size' style='height:400px;'></div>\n";
     ofs << "</div>\n";
 
-    ofs << "<div class='sub_section_tips'>This estimation is based on paired-end overlap analysis, ";
+    ofs << "<div class='sub_section_tips'>This estimation is based on paired-end overlap analysis, and there are ";
     ofs << to_string(unknownPercents);
-    ofs << "% reads are found not overlapped. <br /> The overlapped reads may have insert size less than " << mOptions->overlapRequire;
-    ofs << " or greater than " << isizeLimit;
+    ofs << "% reads found not overlapped. <br /> The nonoverlapped read pairs may have insert size &lt;" << mOptions->overlapRequire;
+    ofs << " or &gt;" << isizeLimit;
     ofs << ", or contain too much sequencing errors to be detected as overlapped.";
     ofs <<"</div>\n";
     

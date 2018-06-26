@@ -124,7 +124,7 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         ofs << "\t\t\"peak\": " << mInsertSizePeak << "," << endl;
         ofs << "\t\t\"unknown\": " << mInsertHist[mOptions->insertSizeMax] << "," << endl;
         ofs << "\t\t\"histogram\": [";
-        for(int d=1; d<mOptions->insertSizeMax; d++) {
+        for(int d=0; d<mOptions->insertSizeMax; d++) {
             ofs << mInsertHist[d];
             if(d!=mOptions->insertSizeMax-1)
                 ofs << ",";
