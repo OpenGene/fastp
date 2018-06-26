@@ -122,6 +122,12 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     if(mOptions->isPaired()) {
         outputRow(ofs, "Insert size peak:", mInsertSizePeak);
     }
+    if(mOptions->adapterCuttingEnabled()) {
+        if(!mOptions->adapter.detectedAdapter1.empty())
+            outputRow(ofs, "Detected read1 adapter:", mOptions->adapter.detectedAdapter1);
+        if(!mOptions->adapter.detectedAdapter2.empty())
+            outputRow(ofs, "Detected read2 adapter:", mOptions->adapter.detectedAdapter2);
+    }
     ofs << "</table>\n";
     ofs << "</div>\n";
 

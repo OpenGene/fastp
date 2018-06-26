@@ -134,7 +134,7 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         ofs << "," << endl;
     }
 
-    if(result && mOptions->isPaired()) {
+    if(result && mOptions->adapterCuttingEnabled()) {
         ofs << "\t" << "\"adapter_cutting\": " ;
         result -> reportAdapterJson(ofs, "\t");
     }

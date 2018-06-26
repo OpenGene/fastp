@@ -215,6 +215,10 @@ void FilterResult::reportAdapterJson(ofstream& ofs, string padding) {
 
     ofs << padding << "\t" << "\"adapter_trimmed_reads\": " << mTrimmedAdapterRead << "," << endl;
     ofs << padding << "\t" << "\"adapter_trimmed_bases\": " << mTrimmedAdapterBases << "," << endl;
+    ofs << padding << "\t" << "\"read1_adapter_sequence\": \"" << mOptions->getAdapter1() << "\"," << endl;
+    if(mOptions->isPaired()) {
+        ofs << padding << "\t" << "\"read2_adapter_sequence\": \"" << mOptions->getAdapter2() << "\"," << endl;
+    }
 
     ofs << padding << "\t" << "\"read1_adapter_counts\": " << "{";
         outputAdaptersJson(ofs, mAdapter1);
@@ -305,7 +309,7 @@ void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp
         return ;
 
     ofs << "<table class='summary_table'>\n";
-    ofs << "<tr><td class='adapter_col' style='font-size:14px;color:#ffffff;background:#556699'>" << "Sequence" << "</td><td class='col2' style='font-size:14px;color:#ffffff;background:#556699'>" << "Count" << "</td></tr>\n";
+    ofs << "<tr><td class='adapter_col' style='font-size:14px;color:#ffffff;background:#556699'>" << "Sequence" << "</td><td class='col2' style='font-size:14px;color:#ffffff;background:#556699'>" << "Occurrences" << "</td></tr>\n";
 
     const double reportThreshold = 0.01;
     const double dTotal = (double)total;
@@ -322,7 +326,10 @@ void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp
     long unreported = total - reported;
 
     if(unreported > 0) {
-        ofs << "<tr><td class='adapter_col'>" << "others" << "</td><td class='col2'>" << unreported << "</td></tr>\n";
+        string tag = "other adapter sequences";
+        if(reported == 0)
+            tag = "all adapter sequences";
+        ofs << "<tr><td class='adapter_col'>" << tag << "</td><td class='col2'>" << unreported << "</td></tr>\n";
     }
     ofs << "</table>\n";
 }

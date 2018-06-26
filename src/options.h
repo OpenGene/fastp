@@ -168,6 +168,8 @@ public:
     bool enabled;
     string sequence;
     string sequenceR2;
+    string detectedAdapter1;
+    string detectedAdapter2;
     bool hasSeqR1;
     bool hasSeqR2;
 };
@@ -231,6 +233,8 @@ public:
     bool isPaired();
     bool validate();
     bool adapterCuttingEnabled();
+    string getAdapter1();
+    string getAdapter2();
     void initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold = 0);
     vector<string> makeListFromFileByLine(string filename);
 

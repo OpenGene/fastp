@@ -289,6 +289,7 @@ int main(int argc, char* argv[]){
         string adapt = eva.evalAdapterAndReadNum(readNum);
         if(adapt.length() > 0 ) {
             opt.adapter.sequence = adapt;
+            opt.adapter.detectedAdapter1 = adapt;
         } else {
             cerr << "No adapter detected" << endl;
             opt.adapter.sequence = "";

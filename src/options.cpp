@@ -294,3 +294,17 @@ vector<string> Options::makeListFromFileByLine(string filename) {
     cerr << endl;
     return ret;
 }
+
+string Options::getAdapter1(){
+    if(adapter.sequence == "" || adapter.sequence == "auto")
+        return "unspecified";
+    else
+        return adapter.sequence;
+}
+
+string Options::getAdapter2(){
+    if(adapter.sequenceR2 == "" || adapter.sequenceR2 == "auto")
+        return "unspecified";
+    else
+        return adapter.sequenceR2;
+}
