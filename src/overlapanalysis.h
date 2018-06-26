@@ -25,8 +25,8 @@ public:
     OverlapAnalysis();
     ~OverlapAnalysis();
 
-    static OverlapResult analyze(Sequence&  r1, Sequence&  r2);
-    static OverlapResult analyze(Read* r1, Read* r2);
+    static OverlapResult analyze(Sequence&  r1, Sequence&  r2, int overlapDiffLimit = 5, int overlapRequire=30);
+    static OverlapResult analyze(Read* r1, Read* r2, int overlapDiffLimit = 5, int overlapRequire=30);
 
 public:
     static bool test();

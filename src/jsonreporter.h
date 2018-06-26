@@ -18,6 +18,7 @@ public:
     ~JsonReporter();
 
     void setDupHist(int* dupHist, double* dupMeanGC, double dupRate);
+    void setInsertHist(long* insertHist, int insertSizePeak);
     void report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2 = NULL, Stats* postStats2 = NULL);
 
 private:
@@ -25,6 +26,8 @@ private:
     int* mDupHist;
     double* mDupMeanGC;
     double mDupRate;
+    long* mInsertHist;
+    int mInsertSizePeak;
 };
 
 

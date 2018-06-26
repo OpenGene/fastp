@@ -13,6 +13,7 @@
 #include "threadconfig.h"
 #include "filter.h"
 #include "umiprocessor.h"
+#include "overlapanalysis.h"
 
 
 using namespace std;
@@ -55,6 +56,8 @@ private:
     void initConfig(ThreadConfig* config);
     void initOutput();
     void closeOutput();
+    void statInsertSize(Read* r1, Read* r2, OverlapResult& ov);
+    int getPeakInsertSize();
 
 private:
     ReadPairRepository mRepo;
@@ -67,6 +70,7 @@ private:
     ofstream* mOutStream1;
     ofstream* mOutStream2;
     UmiProcessor* mUmiProcessor;
+    long* mInsertSizeHist;
 };
 
 

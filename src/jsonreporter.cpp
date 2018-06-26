@@ -15,6 +15,11 @@ void JsonReporter::setDupHist(int* dupHist, double* dupMeanGC, double dupRate) {
     mDupRate = dupRate;
 }
 
+void JsonReporter::setInsertHist(long* insertHist, int insertSizePeak) {
+    mInsertHist = insertHist;
+    mInsertSizePeak = insertSizePeak;
+}
+
 extern string command;
 void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
     ofstream ofs;
@@ -107,6 +112,21 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         for(int d=1; d<mOptions->duplicate.histSize; d++) {
             ofs << mDupMeanGC[d];
             if(d!=mOptions->duplicate.histSize-1)
+                ofs << ",";
+        }
+        ofs << "]" << endl;
+        ofs << "\t" << "}";
+        ofs << "," << endl;
+    }
+
+    if(mOptions->isPaired()) {
+        ofs << "\t" << "\"insert_size\": {" << endl;
+        ofs << "\t\t\"peak\": " << mInsertSizePeak << "," << endl;
+        ofs << "\t\t\"unknown\": " << mInsertHist[mOptions->insertSizeMax] << "," << endl;
+        ofs << "\t\t\"histogram\": [";
+        for(int d=1; d<mOptions->insertSizeMax; d++) {
+            ofs << mInsertHist[d];
+            if(d!=mOptions->insertSizeMax-1)
                 ofs << ",";
         }
         ofs << "]" << endl;

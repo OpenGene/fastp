@@ -295,6 +295,11 @@ public:
     IndexFilterOptions indexFilter;
     // options for duplication profiling
     DuplicationOptions duplicate;
+    // max value of insert size
+    int insertSizeMax;
+    // overlap analysis threshold
+    int overlapRequire;
+    int overlapDiffLimit;
 
 };
 

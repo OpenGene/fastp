@@ -17,6 +17,9 @@ Options::Options(){
     stdout = false;
     readsToProcess = 0;
     interleavedInput = false;
+    insertSizeMax = 512;
+    overlapRequire = 30;
+    overlapDiffLimit = 5;
 }
 
 void Options::init() {

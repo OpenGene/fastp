@@ -21,9 +21,14 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mOutStream2 = NULL;
     mZipFile2 = NULL;
     mUmiProcessor = new UmiProcessor(opt);
+
+    int isizeBufLen = mOptions->insertSizeMax + 1;
+    mInsertSizeHist = new long[isizeBufLen];
+    memset(mInsertSizeHist, 0, sizeof(long)*isizeBufLen);
 }
 
 PairEndProcessor::~PairEndProcessor() {
+    delete mInsertSizeHist;
 }
 
 void PairEndProcessor::initOutput() {
@@ -165,14 +170,21 @@ bool PairEndProcessor::process(){
         cerr << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
     }
 
+    // insert size distribution
+    int peakInsertSize = getPeakInsertSize();
+    cerr << endl;
+    cerr << "Insert size peak (evaluated by paired-end reads): " << peakInsertSize << endl;
+
     // make JSON report
     JsonReporter jr(mOptions);
     jr.setDupHist(dupHist, dupMeanGC, dupRate);
+    jr.setInsertHist(mInsertSizeHist, peakInsertSize);
     jr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
     // make HTML report
     HtmlReporter hr(mOptions);
     hr.setDupHist(dupHist, dupMeanGC, dupRate);
+    hr.setInsertHist(mInsertSizeHist, peakInsertSize);
     hr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
     // clean up
@@ -201,6 +213,18 @@ bool PairEndProcessor::process(){
         closeOutput();
 
     return true;
+}
+
+int PairEndProcessor::getPeakInsertSize() {
+    int peak = 0;
+    long maxCount = -1;
+    for(int i=0; i<mOptions->insertSizeMax; i++) {
+        if(mInsertSizeHist[i] > maxCount) {
+            peak = i;
+            maxCount = mInsertSizeHist[i];
+        }
+    }
+    return peak;
 }
 
 bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
@@ -247,8 +271,14 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             if(mOptions->polyXTrim.enabled)
                 PolyX::trimPolyX(r1, r2, config->getFilterResult(), mOptions->polyXTrim.minLen);
         }
+        bool isizeEvaluated = false;
         if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)){
-            OverlapResult ov = OverlapAnalysis::analyze(r1, r2);
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+            // we only use thread 0 to evaluae ISIZE
+            if(config->getThreadId() == 0) {
+                statInsertSize(r1, r2, ov);
+                isizeEvaluated = true;
+            }
             if(mOptions->correction.enabled) {
                 BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
             }
@@ -261,6 +291,12 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                         AdapterTrimmer::trimBySequence(r2, config->getFilterResult(), mOptions->adapter.sequenceR2, true);
                 }
             }
+        }
+
+        if(config->getThreadId() == 0 && !isizeEvaluated && r1 != NULL && r2!=NULL) {
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+            statInsertSize(r1, r2, ov);
+            isizeEvaluated = true;
         }
 
         int result1 = mFilter->passFilter(r1);
@@ -283,7 +319,6 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
             readPassed++;
         }
-
 
         delete pair;
         // if no trimming applied, r1 should be identical to or1
@@ -317,6 +352,21 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     delete pack;
 
     return true;
+}
+    
+void PairEndProcessor::statInsertSize(Read* r1, Read* r2, OverlapResult& ov) {
+    int isize = mOptions->insertSizeMax;
+    if(ov.overlapped) {
+        if(ov.offset > 0)
+            isize = r1->length() + r2->length() - ov.overlap_len;
+        else
+            isize = ov.overlap_len;
+    }
+
+    if(isize > mOptions->insertSizeMax)
+        isize = mOptions->insertSizeMax;
+
+    mInsertSizeHist[isize]++;
 }
 
 bool PairEndProcessor::processRead(Read* r, ReadPair* originalPair, bool reversed) {

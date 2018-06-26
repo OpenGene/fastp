@@ -19,6 +19,11 @@ void HtmlReporter::setDupHist(int* dupHist, double* dupMeanGC, double dupRate) {
     mDupRate = dupRate;
 }
 
+void HtmlReporter::setInsertHist(long* insertHist, int insertSizePeak) {
+    mInsertHist = insertHist;
+    mInsertSizePeak = insertSizePeak;
+}
+
 void HtmlReporter::outputRow(ofstream& ofs, string key, long v) {
     ofs << "<tr><td class='col1'>" + key + "</td><td class='col2'>" + to_string(v) + "</td></tr>\n";
 }
@@ -114,6 +119,9 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
             dupStr += " (may be overestimated since this is SE data)";
         outputRow(ofs, "duplication rate:", dupStr);
     }
+    if(mOptions->isPaired()) {
+        outputRow(ofs, "Insert size peak:", mInsertSizePeak);
+    }
     ofs << "</table>\n";
     ofs << "</div>\n";
 
@@ -170,6 +178,71 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
         ofs << "</div>\n";
         ofs << "</div>\n";
     }
+
+    if(mOptions->isPaired()) {
+        ofs << "<div class='section_div'>\n";
+        ofs << "<div class='section_title' onclick=showOrHide('insert_size')><a name='summary'>Insert size estimation</a></div>\n";
+        ofs << "<div id='insert_size'>\n";
+
+        reportInsertSize(ofs, preStats1->getCycles() + preStats2->getCycles() - mOptions->overlapRequire);
+
+        ofs << "</div>\n";
+        ofs << "</div>\n";
+    }
+}
+
+void HtmlReporter::reportInsertSize(ofstream& ofs, int isizeLimit) {
+
+    int total = min(mOptions->insertSizeMax, isizeLimit);
+    long *x = new long[total];
+    double allCount = 0;
+    for(int i=0; i<total; i++) {
+        x[i] = i;
+        allCount += mInsertHist[i];
+    }
+    allCount += mInsertHist[mOptions->insertSizeMax];
+    double* percents = new double[total];
+    memset(percents, 0, sizeof(double)*total);
+    if(allCount > 0) {
+        for(int i=0; i<total; i++) {
+            percents[i] = (double)mInsertHist[i] * 100.0 / (double)allCount;
+        }
+    }
+
+    double unknownPercents = (double)mInsertHist[mOptions->insertSizeMax] * 100.0 / (double)allCount;
+
+    ofs << "<div id='insert_size_figure'>\n";
+    ofs << "<div class='figure' id='plot_insert_size' style='height:400px;'></div>\n";
+    ofs << "</div>\n";
+
+    ofs << "<div class='sub_section_tips'>This estimation is based on paired-end overlap analysis, ";
+    ofs << to_string(unknownPercents);
+    ofs << "% reads are found not overlapped. <br /> The overlapped reads may have insert size less than " << mOptions->overlapRequire;
+    ofs << " or greater than " << isizeLimit;
+    ofs << ", or contain too much sequencing errors to be detected as overlapped.";
+    ofs <<"</div>\n";
+    
+    ofs << "\n<script type=\"text/javascript\">" << endl;
+    string json_str = "var data=[";
+
+    json_str += "{";
+    json_str += "x:[" + Stats::list2string(x, total) + "],";
+    json_str += "y:[" + Stats::list2string(percents, total) + "],";
+    json_str += "name: 'Percent (%)  ',";
+    json_str += "type:'bar',";
+    json_str += "line:{color:'rgba(128,0,128,1.0)', width:1}\n";
+    json_str += "}";
+
+    json_str += "];\n";
+
+    json_str += "var layout={title:'Insert size distribution (" + to_string(unknownPercents) + "% reads are with unknown length)', xaxis:{title:'Insert size'}, yaxis:{title:'Read percent (%)'}};\n";
+    json_str += "Plotly.newPlot('plot_insert_size', data, layout);\n";
+
+    ofs << json_str;
+    ofs << "</script>" << endl;
+
+    delete[] x;
+    delete[] percents;
 }
 
 void HtmlReporter::reportDuplication(ofstream& ofs) {
@@ -222,7 +295,7 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
 
     json_str += "];\n";
 
-    json_str += "var layout={title:'duplication rate (" + to_string(mDupRate*100.0) + "%)', xaxis:{title:'duplication level'}, yaxis:{title:'Read percent & GC ratio'}};\n";
+    json_str += "var layout={title:'duplication rate (" + to_string(mDupRate*100.0) + "%)', xaxis:{title:'duplication level'}, yaxis:{title:'Read percent (%) & GC ratio'}};\n";
     json_str += "Plotly.newPlot('plot_duplication', data, layout);\n";
 
     ofs << json_str;
