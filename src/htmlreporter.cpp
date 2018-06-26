@@ -113,6 +113,16 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     ofs << "<table class='summary_table'>\n";
     outputRow(ofs, "fastp version:", string(FASTP_VER)+ " (<a href='https://github.com/OpenGene/fastp'>https://github.com/OpenGene/fastp</a>)");
     outputRow(ofs, "sequencing:", sequencingInfo);
+
+    // report read length change
+    if(mOptions->isPaired()) {
+        outputRow(ofs, "mean length before filtering:", to_string(preStats1->getMeanLength()) + "bp, " + to_string(preStats2->getMeanLength()) + "bp");
+        outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp, " + to_string(postStats2->getMeanLength()) + "bp");
+    } else  {
+        outputRow(ofs, "mean length before filtering:", to_string(preStats1->getMeanLength()) + "bp");
+        outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp");
+    }
+
     if(mOptions->duplicate.enabled) {
         string dupStr = to_string(mDupRate*100) + "%";
         if(!mOptions->isPaired())
@@ -367,7 +377,7 @@ void HtmlReporter::printCSS(ofstream& ofs){
     ofs << "<style type=\"text/css\">" << endl;
     ofs << "td {border:1px solid #dddddd;padding:5px;font-size:12px;}" << endl;
     ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}" << endl;
-    ofs << ".col1 {width:200px; font-weight:bold;}" << endl;
+    ofs << ".col1 {width:240px; font-weight:bold;}" << endl;
     ofs << ".adapter_col {width:500px; font-size:10px;}" << endl;
     ofs << "img {padding:30px;}" << endl;
     ofs << "#menu {font-family:Consolas, 'Liberation Mono', Menlo, Courier, monospace;}" << endl;

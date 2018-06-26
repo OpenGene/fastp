@@ -38,6 +38,7 @@ public:
     void reportHtmlORA(ofstream& ofs, string filteringType, string readName);
     bool isLongRead();
     void initOverRepSeq();
+    int getMeanLength();
 
 public:
     static string list2string(double* list, int size);
@@ -93,6 +94,7 @@ private:
     long mKmerMax;
     long mKmerMin;
     int mKmerBufLen;
+    int mLengthSum;
 };
 
 #endif

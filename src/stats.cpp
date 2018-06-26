@@ -9,6 +9,7 @@ Stats::Stats(Options* opt, bool isRead2, int guessedCycles, int bufferMargin){
     mOptions = opt;
     mIsRead2 = isRead2;
     mReads = 0;
+    mLengthSum = 0;
 
     mEvaluatedSeqLen = mOptions->seqLen1;
     if(mIsRead2)
@@ -214,8 +215,17 @@ void Stats::summarize(bool forced) {
     summarized = true;
 }
 
+int Stats::getMeanLength() {
+    if(mReads == 0)
+        return 0.0;
+    else
+        return mLengthSum/mReads;
+}
+
 void Stats::statRead(Read* r) {
     int len = r->length();
+
+    mLengthSum += len;
 
     if(mBufLen < len) {
         extendBuffer(max(len + 100, (int)(len * 1.5)));
@@ -888,6 +898,7 @@ Stats* Stats::merge(vector<Stats*>& list) {
         int curCycles =  list[t]->getCycles();
         // merge read number
         s->mReads += list[t]->mReads;
+        s->mLengthSum += list[t]->mLengthSum;
 
         // merge per cycle counting for different bases
         for(int i=0; i<8; i++){
