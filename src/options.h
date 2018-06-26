@@ -218,12 +218,15 @@ public:
     ReadLengthFilteringOptions() {
         enabled = false;
         requiredLength = 15;
+        maxLength = 0;
     }
 public:
     // length filter enabled
     bool enabled;
     // if read_length < requiredLength, then this read is discard
     int requiredLength;
+    // length limit, 0 for no limitation
+    int maxLength;
 };
 
 class Options{

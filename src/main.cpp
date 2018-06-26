@@ -73,6 +73,7 @@ int main(int argc, char* argv[]){
     // length filtering
     cmd.add("disable_length_filtering", 'L', "length filtering is enabled by default. If this option is specified, length filtering is disabled");
     cmd.add<int>("length_required", 'l', "reads shorter than length_required will be discarded, default is 15.", false, 15);
+    cmd.add<int>("length_limit", 0, "reads longer than length_limit will be discarded, default 0 means no limitation.", false, 0);
 
     // low complexity filtering
     cmd.add("low_complexity_filter", 'y', "enable low complexity filter. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]).");
@@ -186,6 +187,7 @@ int main(int argc, char* argv[]){
     // length filtering
     opt.lengthFilter.enabled = !cmd.exist("disable_length_filtering");
     opt.lengthFilter.requiredLength = cmd.get<int>("length_required");
+    opt.lengthFilter.maxLength = cmd.get<int>("length_limit");
 
     // low complexity filter
     opt.complexityFilter.enabled = cmd.exist("low_complexity_filter");

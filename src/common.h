@@ -45,6 +45,7 @@ static const int FAIL_POLY_X = 4;
 static const int FAIL_OVERLAP = 8;
 static const int FAIL_N_BASE = 12;
 static const int FAIL_LENGTH = 16;
+static const int FAIL_TOO_LONG = 17;
 static const int FAIL_QUALITY = 20;
 static const int FAIL_COMPLEXITY = 24;
 

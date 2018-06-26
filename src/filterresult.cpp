@@ -142,7 +142,11 @@ void FilterResult::print() {
     cerr <<  "reads passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
     cerr <<  "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
     cerr <<  "reads failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
-    cerr <<  "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
+    if(mOptions->lengthFilter.enabled) {
+        cerr <<  "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
+        if(mOptions->lengthFilter.maxLength > 0)
+            cerr <<  "reads failed due to too long: " << mFilterReadStats[FAIL_TOO_LONG] << endl;
+    }
     if(mOptions->complexityFilter.enabled) {
         cerr <<  "reads failed due to low complexity: " << mFilterReadStats[FAIL_COMPLEXITY] << endl;
     }
@@ -168,7 +172,8 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << "," << endl;
     if(mOptions->complexityFilter.enabled)
         ofs << padding << "\t" << "\"low_complexity_reads\": " << mFilterReadStats[FAIL_COMPLEXITY] << "," << endl;
-    ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << endl;
+    ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << "," << endl;
+    ofs << padding << "\t" << "\"too_long_reads\": " << mFilterReadStats[FAIL_TOO_LONG] << endl;
 
     ofs << padding << "}," << endl;
 }
@@ -267,7 +272,11 @@ void FilterResult::reportHtml(ofstream& ofs, long totalReads, long totalBases) {
     }
     HtmlReporter::outputRow(ofs, "reads with low quality:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_QUALITY]) + " (" + to_string(mFilterReadStats[FAIL_QUALITY] * 100.0 / total) + "%)");
     HtmlReporter::outputRow(ofs, "reads with too many N:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_N_BASE]) + " (" + to_string(mFilterReadStats[FAIL_N_BASE] * 100.0 / total) + "%)");
-    HtmlReporter::outputRow(ofs, "reads too short:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_LENGTH]) + " (" + to_string(mFilterReadStats[FAIL_LENGTH] * 100.0 / total) + "%)");
+    if(mOptions->lengthFilter.enabled) {
+        HtmlReporter::outputRow(ofs, "reads too short:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_LENGTH]) + " (" + to_string(mFilterReadStats[FAIL_LENGTH] * 100.0 / total) + "%)");
+        if(mOptions->lengthFilter.maxLength > 0)
+            HtmlReporter::outputRow(ofs, "reads too long:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_TOO_LONG]) + " (" + to_string(mFilterReadStats[FAIL_TOO_LONG] * 100.0 / total) + "%)");
+    }
     if(mOptions->complexityFilter.enabled)
         HtmlReporter::outputRow(ofs, "reads with low complexity:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_COMPLEXITY]) + " (" + to_string(mFilterReadStats[FAIL_COMPLEXITY] * 100.0 / total) + "%)");
     ofs << "</table>\n";

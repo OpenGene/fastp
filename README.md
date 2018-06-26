@@ -269,6 +269,7 @@ options:
   # length filtering options
   -L, --disable_length_filtering     length filtering is enabled by default. If this option is specified, length filtering is disabled
   -l, --length_required              reads shorter than length_required will be discarded, default is 15. (int [=15])
+      --length_limit                 reads longer than length_limit will be discarded, default 0 means no limitation. (int [=0])
 
   # low complexity filtering
   -y, --low_complexity_filter          enable low complexity filter. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]).

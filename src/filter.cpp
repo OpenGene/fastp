@@ -47,6 +47,8 @@ int Filter::passFilter(Read* r) {
     if(mOptions->lengthFilter.enabled) {
         if(rlen < mOptions->lengthFilter.requiredLength)
             return FAIL_LENGTH;
+        if(mOptions->lengthFilter.maxLength > 0 && rlen > mOptions->lengthFilter.maxLength)
+            return FAIL_TOO_LONG;
     }
 
     if(mOptions->complexityFilter.enabled) {
