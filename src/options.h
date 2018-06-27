@@ -263,7 +263,7 @@ public:
     // do not rewrite existing files
     bool dontOverwrite;
     // write STDOUT
-    bool stdout;
+    bool outputToSTDOUT;
     // the input R1 file is interleaved
     bool interleavedInput;
     // only process first N reads

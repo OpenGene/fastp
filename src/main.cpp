@@ -126,7 +126,7 @@ int main(int argc, char* argv[]){
     opt.readsToProcess = cmd.get<int>("reads_to_process");
     opt.phred64 = cmd.exist("phred64");
     opt.dontOverwrite = cmd.exist("dont_overwrite");
-    opt.stdout = cmd.exist("stdout");
+    opt.outputToSTDOUT = cmd.exist("stdout");
     opt.interleavedInput = cmd.exist("interleaved_in");
 
     // adapter cutting

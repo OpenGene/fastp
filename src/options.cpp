@@ -14,7 +14,7 @@ Options::Options(){
     compression = 2;
     phred64 = false;
     dontOverwrite = false;
-    stdout = false;
+    outputToSTDOUT = false;
     readsToProcess = 0;
     interleavedInput = false;
     insertSizeMax = 512;
@@ -49,7 +49,7 @@ bool Options::validate() {
     }
 
     // if output to STDOUT, then...
-    if(stdout) {
+    if(outputToSTDOUT) {
         cerr << "Streaming uncompressed output to STDOUT..." << endl;
         if(!in1.empty() && !in2.empty())
             cerr << "Enable interleaved output mode since the for paired-end input." << endl;

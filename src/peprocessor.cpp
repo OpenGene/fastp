@@ -306,7 +306,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
         if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
             
-            if(mOptions->stdout) {
+            if(mOptions->outputToSTDOUT) {
                 interleaved += r1->toString() + r2->toString();
             } else {
                 outstr1 += r1->toString();
@@ -331,7 +331,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     // if splitting output, then no lock is need since different threads write different files
     if(!mOptions->split.enabled)
         mOutputMtx.lock();
-    if(mOptions->stdout) {
+    if(mOptions->outputToSTDOUT) {
         fwrite(interleaved.c_str(), 1, interleaved.length(), stdout);
     }
     else {
