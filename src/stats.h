@@ -94,7 +94,7 @@ private:
     long mKmerMax;
     long mKmerMin;
     int mKmerBufLen;
-    int mLengthSum;
+    long mLengthSum;
 };
 
 #endif
