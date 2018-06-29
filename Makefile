@@ -2,10 +2,10 @@ DIR_INC := ./inc
 DIR_SRC := ./src
 DIR_OBJ := ./obj
 
-PREFIX := /usr/local
-BINDIR := $(PREFIX)/bin
-INCLUDE_DIRS :=
-LIBRARY_DIRS :=
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+INCLUDE_DIRS ?=
+LIBRARY_DIRS ?=
 
 SRC := $(wildcard ${DIR_SRC}/*.cpp)
 OBJ := $(patsubst %.cpp,${DIR_OBJ}/%.o,$(notdir ${SRC}))
