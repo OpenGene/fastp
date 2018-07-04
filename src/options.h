@@ -21,7 +21,7 @@ class DuplicationOptions {
 public:
     DuplicationOptions() {
         enabled = true;
-        keylen = 13;
+        keylen = 12;
         histSize = 32;
     }
 public:

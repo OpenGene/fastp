@@ -9,8 +9,6 @@ Duplicate::Duplicate(Options* opt) {
     mKeyLenInBit = 1<<(2*mKeyLenInBase);
     mDups = new uint64[mKeyLenInBit];
     memset(mDups, 0, sizeof(uint64)*mKeyLenInBit);
-    mDups2 = new uint32[mKeyLenInBit];
-    memset(mDups2, 0, sizeof(uint32)*mKeyLenInBit);
     mCounts = new uint16[mKeyLenInBit];
     memset(mCounts, 0, sizeof(uint16)*mKeyLenInBit);
     mGC = new uint8[mKeyLenInBit];
@@ -49,15 +47,19 @@ uint64 Duplicate::seq2int(const char* data, int start, int keylen, bool& valid) 
     return ret;
 }
 
-void Duplicate::addRecord(uint32 key, uint64 kmer32, uint32 kmer16, uint8 gc) {
+void Duplicate::addRecord(uint32 key, uint64 kmer32, uint8 gc) {
     if(mCounts[key] == 0) {
         mCounts[key] = 1;
         mDups[key] = kmer32;
-        mDups2[key] = kmer16;
         mGC[key] = gc;
     } else {
-        if(mDups[key] == kmer32 && mDups2[key]==kmer16)
+        if(mDups[key] == kmer32)
             mCounts[key]++;
+        else if(mDups[key] > kmer32) {
+            mDups[key] = kmer32;
+            mCounts[key] = 1;
+            mGC[key] = gc;
+        }
     }
 }
 
@@ -80,12 +82,6 @@ void Duplicate::statRead(Read* r) {
     if(!valid)
         return;
 
-    uint64 ret2 = seq2int(data, mKeyLenInBase, 16, valid);
-    if(!valid)
-        return;
-
-    uint32 kmer16 = (uint32)ret2;
-
     int gc = 0;
 
     // not calculated
@@ -98,7 +94,7 @@ void Duplicate::statRead(Read* r) {
 
     gc = round(255.0 * (double) gc / (double) r->length());
 
-    addRecord(key, kmer32, kmer16, (uint8)gc);
+    addRecord(key, kmer32, (uint8)gc);
 }
 
 void Duplicate::statPair(Read* r1, Read* r2) {
@@ -118,12 +114,6 @@ void Duplicate::statPair(Read* r1, Read* r2) {
     if(!valid)
         return;
 
-    uint64 ret2 = seq2int(data1, mKeyLenInBase, 15, valid);
-    if(!valid)
-        return;
-
-    uint32 kmer16 = (uint32)ret2;
-
     int gc = 0;
 
     // not calculated
@@ -140,7 +130,7 @@ void Duplicate::statPair(Read* r1, Read* r2) {
 
     gc = round(255.0 * (double) gc / (double)( r1->length() + r2->length()));
 
-    addRecord(key, kmer32, kmer16, gc);
+    addRecord(key, kmer32, gc);
 }
 
 double Duplicate::statAll(int* hist, double* meanGC, int histSize) {
