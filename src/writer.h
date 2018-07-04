@@ -19,6 +19,7 @@ public:
 	bool isZipped();
 	bool writeString(string& s);
 	bool writeLine(string& linestr);
+	bool write(char* strdata, size_t size);
 	string filename();
 
 public:

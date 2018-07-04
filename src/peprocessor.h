@@ -14,6 +14,7 @@
 #include "filter.h"
 #include "umiprocessor.h"
 #include "overlapanalysis.h"
+#include "writerthread.h"
 
 
 using namespace std;
@@ -58,6 +59,7 @@ private:
     void closeOutput();
     void statInsertSize(Read* r1, Read* r2, OverlapResult& ov);
     int getPeakInsertSize();
+    void writeTask(WriterThread* config);
 
 private:
     ReadPairRepository mRepo;
@@ -71,6 +73,8 @@ private:
     ofstream* mOutStream2;
     UmiProcessor* mUmiProcessor;
     long* mInsertSizeHist;
+    WriterThread* mLeftWriter;
+    WriterThread* mRightWriter;
 };
 
 

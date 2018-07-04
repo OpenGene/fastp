@@ -18,6 +18,7 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOutStream = NULL;
     mZipFile = NULL;
     mUmiProcessor = new UmiProcessor(opt);
+    mLeftWriter =  NULL;
 }
 
 SingleEndProcessor::~SingleEndProcessor() {
@@ -27,28 +28,13 @@ SingleEndProcessor::~SingleEndProcessor() {
 void SingleEndProcessor::initOutput() {
     if(mOptions->out1.empty())
         return;
-    if (ends_with(mOptions->out1, ".gz")){
-        mZipFile = gzopen(mOptions->out1.c_str(), "w");
-        gzsetparams(mZipFile, mOptions->compression, Z_DEFAULT_STRATEGY);
-    }
-    else {
-        mOutStream = new ofstream();
-        mOutStream->open(mOptions->out1.c_str(), ifstream::out);
-    }
+    mLeftWriter = new WriterThread(mOptions, mOptions->out1);
 }
 
 void SingleEndProcessor::closeOutput() {
-    if (mZipFile){
-        gzflush(mZipFile, Z_FINISH);
-        gzclose(mZipFile);
-        mZipFile = NULL;
-    }
-    if (mOutStream) {
-        if (mOutStream->is_open()){
-            mOutStream->flush();
-            mOutStream->close();
-        }
-        delete mOutStream;
+    if(mLeftWriter) {
+        delete mLeftWriter;
+        mLeftWriter = NULL;
     }
 }
 
@@ -56,13 +42,7 @@ void SingleEndProcessor::initConfig(ThreadConfig* config) {
     if(mOptions->out1.empty())
         return;
 
-    if(!mOptions->split.enabled) {
-        if(mOutStream != NULL) {
-            config->initWriter(mOutStream);
-        } else if(mZipFile != NULL) {
-            config->initWriter(mZipFile);
-        }
-    } else {
+    if(mOptions->split.enabled) {
         config->initWriterForSplit();
     }
 }
@@ -87,9 +67,18 @@ bool SingleEndProcessor::process(){
         threads[t] = new std::thread(std::bind(&SingleEndProcessor::consumerTask, this, configs[t]));
     }
 
+    std::thread* leftWriterThread = NULL;
+    if(mLeftWriter)
+        leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mLeftWriter));
+
     producer.join();
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
+    }
+
+    if(!mOptions->split.enabled) {
+        if(leftWriterThread)
+            leftWriterThread->join();
     }
 
     // merge stats and read filter results
@@ -169,6 +158,9 @@ bool SingleEndProcessor::process(){
     delete[] threads;
     delete[] configs;
 
+    if(leftWriterThread)
+        delete leftWriterThread;
+
     if(!mOptions->split.enabled)
         closeOutput();
 
@@ -238,8 +230,13 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     if(mOptions->outputToSTDOUT) {
         fwrite(outstr.c_str(), 1, outstr.length(), stdout);
     }
-    else if(!mOptions->out1.empty())
-        config->getWriter1()->writeString(outstr);
+    else {
+        if(mLeftWriter) {
+            char* ldata = new char[outstr.size()];
+            memcpy(ldata, outstr.c_str(), outstr.size());
+            mLeftWriter->input(ldata, outstr.size());
+        }
+    }
     if(!mOptions->split.enabled)
         mOutputMtx.unlock();
 
@@ -358,6 +355,14 @@ void SingleEndProcessor::producerTask()
                 usleep(100);
             }
             readNum += count;
+            // if the writer threads are far behind this producer, sleep and wait
+            // check this only when necessary
+            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
+                while(mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
+                    slept++;
+                    usleep(1000);
+                }
+            }
             // reset count to 0
             count = 0;
             // re-evaluate split size
@@ -404,5 +409,17 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
             lock.unlock();
             consumePack(config);
         }
+    }
+    if(mLeftWriter)
+        mLeftWriter->setInputCompleted();
+}
+
+void SingleEndProcessor::writeTask(WriterThread* config)
+{
+    while(true) {
+        if(config->isCompleted()){
+            break;
+        }
+        config->output();
     }
 }

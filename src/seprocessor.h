@@ -13,6 +13,7 @@
 #include "threadconfig.h"
 #include "filter.h"
 #include "umiprocessor.h"
+#include "writerthread.h"
 
 using namespace std;
 
@@ -53,6 +54,7 @@ private:
     void initConfig(ThreadConfig* config);
     void initOutput();
     void closeOutput();
+    void writeTask(WriterThread* config);
 
 private:
     Options* mOptions;
@@ -63,6 +65,7 @@ private:
     gzFile mZipFile;
     ofstream* mOutStream;
     UmiProcessor* mUmiProcessor;
+    WriterThread* mLeftWriter;
 };
 
 

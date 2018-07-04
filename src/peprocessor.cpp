@@ -25,6 +25,8 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     int isizeBufLen = mOptions->insertSizeMax + 1;
     mInsertSizeHist = new long[isizeBufLen];
     memset(mInsertSizeHist, 0, sizeof(long)*isizeBufLen);
+    mLeftWriter =  NULL;
+    mRightWriter = NULL;
 }
 
 PairEndProcessor::~PairEndProcessor() {
@@ -34,59 +36,26 @@ PairEndProcessor::~PairEndProcessor() {
 void PairEndProcessor::initOutput() {
     if(mOptions->out1.empty() || mOptions->out2.empty())
         return;
-    if (ends_with(mOptions->out1, ".gz")){
-        mZipFile1 = gzopen(mOptions->out1.c_str(), "w");
-        gzsetparams(mZipFile1, mOptions->compression, Z_DEFAULT_STRATEGY);
-        gzbuffer(mZipFile1, 1024*1024);
-        mZipFile2 = gzopen(mOptions->out2.c_str(), "w");
-        gzsetparams(mZipFile2, mOptions->compression, Z_DEFAULT_STRATEGY);
-        gzbuffer(mZipFile2, 1024*1024);
-    }
-    else {
-        mOutStream1 = new ofstream();
-        mOutStream1->open(mOptions->out1.c_str(), ifstream::out);
-        mOutStream2 = new ofstream();
-        mOutStream2->open(mOptions->out2.c_str(), ifstream::out);
-    }
+    
+    mLeftWriter = new WriterThread(mOptions, mOptions->out1);
+    mRightWriter = new WriterThread(mOptions, mOptions->out2);
 }
 
 void PairEndProcessor::closeOutput() {
-    if (mZipFile1){
-        gzflush(mZipFile1, Z_FINISH);
-        gzclose(mZipFile1);
-        mZipFile1 = NULL;
+    if(mLeftWriter) {
+        delete mLeftWriter;
+        mLeftWriter = NULL;
     }
-    if (mZipFile2){
-        gzflush(mZipFile2, Z_FINISH);
-        gzclose(mZipFile2);
-        mZipFile2 = NULL;
-    }
-    if (mOutStream1) {
-        if (mOutStream1->is_open()){
-            mOutStream1->flush();
-            mOutStream1->close();
-        }
-        delete mOutStream1;
-    }
-    if (mOutStream2) {
-        if (mOutStream2->is_open()){
-            mOutStream2->flush();
-            mOutStream2->close();
-        }
-        delete mOutStream2;
+    if(mRightWriter) {
+        delete mRightWriter;
+        mRightWriter = NULL;
     }
 }
 
 void PairEndProcessor::initConfig(ThreadConfig* config) {
     if(mOptions->out1.empty())
         return;
-    if(!mOptions->split.enabled) {
-        if(mOutStream1 != NULL && mOutStream2 != NULL) {
-            config->initWriter(mOutStream1, mOutStream2);
-        } else if(mZipFile1 != NULL && mZipFile2 != NULL) {
-            config->initWriter(mZipFile1, mZipFile2);
-        }
-    } else {
+    if(mOptions->split.enabled) {
         config->initWriterForSplit();
     }
 }
@@ -112,9 +81,23 @@ bool PairEndProcessor::process(){
         threads[t] = new std::thread(std::bind(&PairEndProcessor::consumerTask, this, configs[t]));
     }
 
+    std::thread* leftWriterThread = NULL;
+    std::thread* rightWriterThread = NULL;
+    if(mLeftWriter)
+        leftWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mLeftWriter));
+    if(mRightWriter)
+        rightWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mRightWriter));
+
     producer.join();
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
+    }
+
+    if(!mOptions->split.enabled) {
+        if(leftWriterThread)
+            leftWriterThread->join();
+        if(rightWriterThread)
+            rightWriterThread->join();
     }
 
     // merge stats and filter results
@@ -208,6 +191,11 @@ bool PairEndProcessor::process(){
 
     delete[] threads;
     delete[] configs;
+
+    if(leftWriterThread)
+        delete leftWriterThread;
+    if(rightWriterThread)
+        delete rightWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -332,13 +320,31 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     if(!mOptions->split.enabled)
         mOutputMtx.lock();
     if(mOptions->outputToSTDOUT) {
+        // STDOUT output
         fwrite(interleaved.c_str(), 1, interleaved.length(), stdout);
-    }
-    else {
+    } else if(mOptions->split.enabled) {
+        // split output by each worker thread
         if(!mOptions->out1.empty())
             config->getWriter1()->writeString(outstr1);
         if(!mOptions->out2.empty())
             config->getWriter2()->writeString(outstr2);
+    } else {
+        // normal output by left/right writer thread
+        if(mRightWriter && mLeftWriter) {
+            // write PE
+            char* ldata = new char[outstr1.size()];
+            memcpy(ldata, outstr1.c_str(), outstr1.size());
+            mLeftWriter->input(ldata, outstr1.size());
+
+            char* rdata = new char[outstr2.size()];
+            memcpy(rdata, outstr2.c_str(), outstr2.size());
+            mRightWriter->input(rdata, outstr2.size());
+        } else if(mLeftWriter) {
+            // write interleaved
+            char* ldata = new char[interleaved.size()];
+            memcpy(ldata, interleaved.c_str(), interleaved.size());
+            mLeftWriter->input(ldata, interleaved.size());
+        }
     }
     if(!mOptions->split.enabled)
         mOutputMtx.unlock();
@@ -473,11 +479,18 @@ void PairEndProcessor::producerTask()
             memset(data, 0, sizeof(ReadPair*)*PACK_SIZE);
             // if the consumer is far behind this producer, sleep and wait to limit memory usage
             while(mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT){
-                //cerr<<"sleep"<<endl;
                 slept++;
                 usleep(1000);
             }
             readNum += count;
+            // if the writer threads are far behind this producer, sleep and wait
+            // check this only when necessary
+            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
+                while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
+                    slept++;
+                    usleep(1000);
+                }
+            }
             // reset count to 0
             count = 0;
             // re-evaluate split size
@@ -524,5 +537,19 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
             lock.unlock();
             consumePack(config);
         }
+    }
+    if(mLeftWriter)
+        mLeftWriter->setInputCompleted();
+    if(mRightWriter)
+        mRightWriter->setInputCompleted();
+}
+
+void PairEndProcessor::writeTask(WriterThread* config)
+{
+    while(true) {
+        if(config->isCompleted()){
+            break;
+        }
+        config->output();
     }
 }
