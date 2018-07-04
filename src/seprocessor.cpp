@@ -19,10 +19,19 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
     mZipFile = NULL;
     mUmiProcessor = new UmiProcessor(opt);
     mLeftWriter =  NULL;
+
+    mDuplicate = NULL;
+    if(mOptions->duplicate.enabled) {
+        mDuplicate = new Duplicate(mOptions);
+    }
 }
 
 SingleEndProcessor::~SingleEndProcessor() {
     delete mFilter;
+    if(mDuplicate) {
+        delete mDuplicate;
+        mDuplicate = NULL;
+    }
 }
 
 void SingleEndProcessor::initOutput() {
@@ -119,11 +128,7 @@ bool SingleEndProcessor::process(){
         memset(dupHist, 0, sizeof(int) * mOptions->duplicate.histSize);
         dupMeanGC = new double[mOptions->duplicate.histSize];
         memset(dupMeanGC, 0, sizeof(double) * mOptions->duplicate.histSize);
-        vector<Duplicate*> dupList;
-        for(int t=0; t<mOptions->thread; t++){
-            dupList.push_back(configs[t]->getDuplicate());
-        }
-        dupRate = Duplicate::statAll(dupList, dupHist, dupMeanGC, mOptions->duplicate.histSize);
+        dupRate = mDuplicate->statAll(dupHist, dupMeanGC, mOptions->duplicate.histSize);
         cerr << endl;
         cerr << "Duplication rate (may be overestimated since this is SE data): " << dupRate * 100.0 << "%" << endl;
     }
@@ -179,9 +184,8 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         config->getPreStats1()->statRead(or1);
 
         // handling the duplication profiling
-        Duplicate* dup = config->getDuplicate();
-        if(dup)
-            dup->statRead(or1);
+        if(mDuplicate)
+            mDuplicate->statRead(or1);
 
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1)) {

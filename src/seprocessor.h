@@ -14,6 +14,7 @@
 #include "filter.h"
 #include "umiprocessor.h"
 #include "writerthread.h"
+#include "duplicate.h"
 
 using namespace std;
 
@@ -66,6 +67,7 @@ private:
     ofstream* mOutStream;
     UmiProcessor* mUmiProcessor;
     WriterThread* mLeftWriter;
+    Duplicate* mDuplicate;
 };
 
 

@@ -9,7 +9,6 @@
 #include "writer.h"
 #include "options.h"
 #include "filterresult.h"
-#include "duplicate.h"
 
 using namespace std;
 
@@ -24,7 +23,6 @@ public:
     inline Writer* getWriter1() {return mWriter1;}
     inline Writer* getWriter2() {return mWriter2;}
     inline FilterResult* getFilterResult() {return mFilterResult;}
-    inline Duplicate* getDuplicate() {return mDuplicate;}
 
     void initWriter(string filename1);
     void initWriter(string filename1, string filename2);
@@ -56,7 +54,6 @@ private:
     Writer* mWriter2;
     Options* mOptions;
     FilterResult* mFilterResult;
-    Duplicate* mDuplicate;
 
     // for spliting output
     int mThreadId;

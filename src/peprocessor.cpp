@@ -27,10 +27,19 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     memset(mInsertSizeHist, 0, sizeof(long)*isizeBufLen);
     mLeftWriter =  NULL;
     mRightWriter = NULL;
+
+    mDuplicate = NULL;
+    if(mOptions->duplicate.enabled) {
+        mDuplicate = new Duplicate(mOptions);
+    }
 }
 
 PairEndProcessor::~PairEndProcessor() {
     delete mInsertSizeHist;
+    if(mDuplicate) {
+        delete mDuplicate;
+        mDuplicate = NULL;
+    }
 }
 
 void PairEndProcessor::initOutput() {
@@ -144,11 +153,7 @@ bool PairEndProcessor::process(){
         memset(dupHist, 0, sizeof(int) * mOptions->duplicate.histSize);
         dupMeanGC = new double[mOptions->duplicate.histSize];
         memset(dupMeanGC, 0, sizeof(double) * mOptions->duplicate.histSize);
-        vector<Duplicate*> dupList;
-        for(int t=0; t<mOptions->thread; t++){
-            dupList.push_back(configs[t]->getDuplicate());
-        }
-        dupRate = Duplicate::statAll(dupList, dupHist, dupMeanGC, mOptions->duplicate.histSize);
+        dupRate = mDuplicate->statAll(dupHist, dupMeanGC, mOptions->duplicate.histSize);
         cerr << endl;
         cerr << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
     }
@@ -235,9 +240,8 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         config->getPreStats2()->statRead(or2);
 
         // handling the duplication profiling
-        Duplicate* dup = config->getDuplicate();
-        if(dup)
-            dup->statPair(or1, or2);
+        if(mDuplicate)
+            mDuplicate->statPair(or1, or2);
 
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)) {

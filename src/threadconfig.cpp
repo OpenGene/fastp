@@ -21,11 +21,6 @@ ThreadConfig::ThreadConfig(Options* opt, int threadId, bool paired){
 
     mFilterResult = new FilterResult(opt, paired);
     mCanBeStopped = false;
-
-    mDuplicate = NULL;
-    if(mOptions->duplicate.enabled) {
-        mDuplicate = new Duplicate(mOptions);
-    }
 }
 
 ThreadConfig::~ThreadConfig() {

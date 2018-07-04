@@ -9,6 +9,8 @@ Duplicate::Duplicate(Options* opt) {
     mKeyLenInBit = 1<<(2*mKeyLenInBase);
     mDups = new uint64[mKeyLenInBit];
     memset(mDups, 0, sizeof(uint64)*mKeyLenInBit);
+    mDups2 = new uint32[mKeyLenInBit];
+    memset(mDups2, 0, sizeof(uint32)*mKeyLenInBit);
     mCounts = new uint16[mKeyLenInBit];
     memset(mCounts, 0, sizeof(uint16)*mKeyLenInBit);
     mGC = new uint8[mKeyLenInBit];
@@ -23,7 +25,7 @@ Duplicate::~Duplicate(){
 uint64 Duplicate::seq2int(const char* data, int start, int keylen, bool& valid) {
     uint64 ret = 0;
     for(int i=0; i<keylen; i++) {
-        switch(data[i]) {
+        switch(data[start + i]) {
             case 'A':
                 ret += 0;
                 break;
@@ -47,13 +49,14 @@ uint64 Duplicate::seq2int(const char* data, int start, int keylen, bool& valid) 
     return ret;
 }
 
-void Duplicate::addRecord(uint32 key, uint64 kmer32, uint8 gc) {
+void Duplicate::addRecord(uint32 key, uint64 kmer32, uint32 kmer16, uint8 gc) {
     if(mCounts[key] == 0) {
         mCounts[key] = 1;
         mDups[key] = kmer32;
+        mDups2[key] = kmer16;
         mGC[key] = gc;
     } else {
-        if(mDups[key] == kmer32)
+        if(mDups[key] == kmer32 && mDups2[key]==kmer16)
             mCounts[key]++;
     }
 }
@@ -77,19 +80,25 @@ void Duplicate::statRead(Read* r) {
     if(!valid)
         return;
 
+    uint64 ret2 = seq2int(data, mKeyLenInBase, 16, valid);
+    if(!valid)
+        return;
+
+    uint32 kmer16 = (uint32)ret2;
+
     int gc = 0;
 
     // not calculated
     if(mCounts[key] == 0) {
         for(int i=0; i<r->length(); i++) {
-            if(data[i] == 'G' || data[i] == 'C')
+            if(data[i] == 'C' || data[i] == 'T')
                 gc++;
         }
     }
 
     gc = round(255.0 * (double) gc / (double) r->length());
 
-    addRecord(key, kmer32, (uint8)gc);
+    addRecord(key, kmer32, kmer16, (uint8)gc);
 }
 
 void Duplicate::statPair(Read* r1, Read* r2) {
@@ -109,6 +118,12 @@ void Duplicate::statPair(Read* r1, Read* r2) {
     if(!valid)
         return;
 
+    uint64 ret2 = seq2int(data1, mKeyLenInBase, 15, valid);
+    if(!valid)
+        return;
+
+    uint32 kmer16 = (uint32)ret2;
+
     int gc = 0;
 
     // not calculated
@@ -125,52 +140,31 @@ void Duplicate::statPair(Read* r1, Read* r2) {
 
     gc = round(255.0 * (double) gc / (double)( r1->length() + r2->length()));
 
-    addRecord(key, kmer32, gc);
+    addRecord(key, kmer32, kmer16, gc);
 }
 
-double Duplicate::statAll(vector<Duplicate*>& list, int* hist, double* meanGC, int histSize) {
+double Duplicate::statAll(int* hist, double* meanGC, int histSize) {
     long totalNum = 0;
     long dupNum = 0;
     int* gcStatNum = new int[histSize];
     memset(gcStatNum, 0, sizeof(int)*histSize);
-    for(int key=0; key<list[0]->mKeyLenInBit; key++) {
-        bool consistent = true;
-        for(int i=0; i<list.size()-1; i++) {
-            if(list[i]->mDups[key] != list[i+1]->mDups[key] && list[i]->mCounts[key]>0 && list[i+1]->mCounts[key]>0) {
-                consistent = false;
+    for(int key=0; key<mKeyLenInBit; key++) {
+        int count = mCounts[key];
+        double gc = mGC[key];
+
+        if(count > 0) {
+            totalNum += count;
+            dupNum += count - 1;
+
+            if(count >= histSize){
+                hist[histSize-1]++;
+                meanGC[histSize-1] += gc;
+                gcStatNum[histSize-1]++;
             }
-        }
-        if(consistent) {
-            int count = 0;
-            double gcSum = 0;
-            int num = 0;
-            for(int i=0; i<list.size(); i++) {
-                count += list[i]->mCounts[key];
-                if(list[i]->mGC[key]>0) {
-                    gcSum += (double)list[i]->mGC[key];
-                    num++;
-                }
-            }
-
-            if(count > 0) {
-                totalNum += count;
-                dupNum += count - 1;
-
-                if(count >= histSize){
-                    hist[histSize-1]++;
-                    if(num>0) {
-                        meanGC[histSize-1] += gcSum/num;
-                        gcStatNum[histSize-1]++;
-                    }
-                }
-                else{
-                    hist[count]++;
-                    if(num>0) {
-                        meanGC[count] += gcSum/num;
-                        gcStatNum[count]++;
-                    }
-
-                }
+            else{
+                hist[count]++;
+                meanGC[count] += gc;
+                gcStatNum[count]++;
             }
         }
     }

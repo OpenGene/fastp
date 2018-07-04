@@ -15,6 +15,7 @@
 #include "umiprocessor.h"
 #include "overlapanalysis.h"
 #include "writerthread.h"
+#include "duplicate.h"
 
 
 using namespace std;
@@ -75,6 +76,7 @@ private:
     long* mInsertSizeHist;
     WriterThread* mLeftWriter;
     WriterThread* mRightWriter;
+    Duplicate* mDuplicate;
 };
 
 

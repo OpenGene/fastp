@@ -18,16 +18,17 @@ public:
     void statRead(Read* r1);
     void statPair(Read* r1, Read* r2);
     uint64 seq2int(const char* data, int start, int keylen, bool& valid);
-    void addRecord(uint32 key, uint64 kmer32, uint8 gc);
+    void addRecord(uint32 key, uint64 kmer32, uint32 kmer16, uint8 gc);
 
     // make histogram and get duplication rate
-    static double statAll(vector<Duplicate*>& list, int* hist, double* meanGC, int histSize);
+    double statAll(int* hist, double* meanGC, int histSize);
 
 private:
     Options* mOptions;
     int mKeyLenInBase;
     int mKeyLenInBit;
     uint64* mDups;
+    uint32* mDups2;
     uint16* mCounts;
     uint8* mGC;
     
