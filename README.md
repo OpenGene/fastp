@@ -228,7 +228,7 @@ options:
   -I, --in2                          read2 input file name (string [=])
   -O, --out2                         read2 output file name (string [=])
   -6, --phred64                      indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
-  -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 2. (int [=2])
+  -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4. (int [=4])
       --stdout                         output passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.
       --interleaved_in                 indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.
       --reads_to_process             specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
@@ -302,7 +302,7 @@ options:
   -R, --report_title                 should be quoted with ' or ", default is "fastp report" (string [=fastp report])
   
   # threading options
-  -w, --thread                       worker thread number, default is 3 (int [=3])
+  -w, --thread                       worker thread number, default is 2 (int [=2])
   
   # output splitting options
   -s, --split                        split output by limiting total split file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (int [=0])
