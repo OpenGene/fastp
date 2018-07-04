@@ -229,7 +229,11 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         mOutputMtx.lock();
     if(mOptions->outputToSTDOUT) {
         fwrite(outstr.c_str(), 1, outstr.length(), stdout);
-    }
+    } else if(mOptions->split.enabled) {
+        // split output by each worker thread
+        if(!mOptions->out1.empty())
+            config->getWriter1()->writeString(outstr);
+    } 
     else {
         if(mLeftWriter) {
             char* ldata = new char[outstr.size()];

@@ -150,6 +150,9 @@ bool Options::validate() {
         if(split.byFileNumber) {
             if(split.number < 2 || split.number >= 1000)
                 error_exit("you have enabled splitting output by file number, the number of files (--split) should be 2 ~ 999.");
+            // thread number cannot be more than the number of file to split
+            if(thread > split.number)
+                thread = split.number;
         }
 
         if(split.byFileLines) {
