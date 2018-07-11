@@ -393,6 +393,8 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
 
     delete[] counts;
 
+    if(finalAdapter.length() > 60)
+        finalAdapter = finalAdapter.substr(0, 60);
     string matchedAdapter = matchKnownAdapter(finalAdapter);
     if(!matchedAdapter.empty()) {
         map<string, string> knownAdapters = getKnownAdapter();

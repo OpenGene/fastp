@@ -170,8 +170,8 @@ bool Options::validate() {
 
     if(adapter.sequence!="auto" && !adapter.sequence.empty()) {
         // validate adapter sequence for single end adapter trimming
-        if(adapter.sequence.length() < 4 || adapter.sequence.length() > 100)
-            error_exit("the sequence of <adapter_sequence> should be 4 ~ 100 long");
+        if(adapter.sequence.length() <= 3)
+            error_exit("the sequence of <adapter_sequence> should be longer than 3");
 
         // validate bases
         for(int i=0; i<adapter.sequence.length(); i++) {
@@ -186,8 +186,8 @@ bool Options::validate() {
 
     if(adapter.sequenceR2!="auto" && !adapter.sequenceR2.empty()) {
         // validate adapter sequenceR2 for single end adapter trimming
-        if(adapter.sequenceR2.length() < 4 || adapter.sequenceR2.length() > 100)
-            error_exit("the sequence of <adapter_sequence_r2> should be 4 ~ 100 long");
+        if(adapter.sequenceR2.length() <= 3)
+            error_exit("the sequence of <adapter_sequence_r2> should be longer than 3");
 
         // validate bases
         for(int i=0; i<adapter.sequenceR2.length(); i++) {
