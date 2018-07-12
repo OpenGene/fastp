@@ -289,6 +289,8 @@ int main(int argc, char* argv[]){
     if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
         cerr << "Detecting adapter..." << endl;
         string adapt = eva.evalAdapterAndReadNum(readNum);
+        if(adapt.length() > 60 )
+            adapt.resize(0, 60);
         if(adapt.length() > 0 ) {
             opt.adapter.sequence = adapt;
             opt.adapter.detectedAdapter1 = adapt;

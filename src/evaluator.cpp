@@ -394,7 +394,7 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
     delete[] counts;
 
     if(finalAdapter.length() > 60)
-        finalAdapter = finalAdapter.substr(0, 60);
+        finalAdapter.resize(60);
     string matchedAdapter = matchKnownAdapter(finalAdapter);
     if(!matchedAdapter.empty()) {
         map<string, string> knownAdapters = getKnownAdapter();
@@ -608,6 +608,8 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
     string backwardPath = backwardTree.getDominantPath(reachedLeaf);
 
     string adapter = reverse(backwardPath) + int2seq(seed, keylen) + forwardPath;
+    if(adapter.length()>60)
+        adapter.resize(60);
 
     string matchedAdapter = matchKnownAdapter(adapter);
     if(!matchedAdapter.empty()) {
