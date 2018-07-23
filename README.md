@@ -115,6 +115,8 @@ To filter reads by its percentage of unqualified bases, two options should be pr
 ## length filter
 Length filtering is enabled by default, but you can disable it by `-L` or `--disable_length_filtering`. The minimum length requirement is specified with `-l` or `--length_required`.
 
+For some applications like small RNA sequencing, you may want to discard the long reads. You can specify `--length_limit` to discard the reads longer than `length_limit`. The default value 0 means no limitation.
+
 ## low complexity filter
 Low complexity filter is disabled by default, and you can enable it by `-y` or `--low_complexity_filter`. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]). For example:
 ```
