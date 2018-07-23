@@ -9,7 +9,9 @@
 #include "processor.h"
 #include "evaluator.h"
 
+// TODO: code refactoring to remove these global variables
 string command;
+mutex logmtx;
 
 int main(int argc, char* argv[]){
     // display version info if no argument is given
@@ -37,6 +39,7 @@ int main(int argc, char* argv[]){
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
+    cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
 
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
@@ -128,6 +131,7 @@ int main(int argc, char* argv[]){
     opt.dontOverwrite = cmd.exist("dont_overwrite");
     opt.outputToSTDOUT = cmd.exist("stdout");
     opt.interleavedInput = cmd.exist("interleaved_in");
+    opt.verbose = cmd.exist("verbose");
 
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");

@@ -20,6 +20,7 @@ Options::Options(){
     insertSizeMax = 512;
     overlapRequire = 30;
     overlapDiffLimit = 5;
+    verbose = false;
 }
 
 void Options::init() {
@@ -52,7 +53,7 @@ bool Options::validate() {
     if(outputToSTDOUT) {
         cerr << "Streaming uncompressed output to STDOUT..." << endl;
         if(!in1.empty() && !in2.empty())
-            cerr << "Enable interleaved output mode since the for paired-end input." << endl;
+            cerr << "Enable interleaved output mode for paired-end input." << endl;
         if(!out1.empty()) {
             cerr << "Ignore argument --out1 = " << out1 << endl;
             out1 = "";

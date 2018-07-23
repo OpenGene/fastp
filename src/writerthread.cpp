@@ -11,6 +11,7 @@ WriterThread::WriterThread(Options* opt, string filename){
     mInputCounter = 0;
     mOutputCounter = 0;
     mInputCompleted = false;
+    mFilename = filename;
 
     mRingBuffer = new char*[PACK_NUM_LIMIT];
     memset(mRingBuffer, 0, sizeof(char*) * PACK_NUM_LIMIT);

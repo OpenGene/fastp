@@ -109,6 +109,9 @@ bool PairEndProcessor::process(){
             rightWriterThread->join();
     }
 
+    if(mOptions->verbose)
+        loginfo("starting to generate reports\n");
+
     // merge stats and filter results
     vector<Stats*> preStats1;
     vector<Stats*> postStats1;
@@ -442,6 +445,9 @@ void PairEndProcessor::consumePack(ThreadConfig* config){
 
 void PairEndProcessor::producerTask()
 {
+    if(mOptions->verbose)
+        loginfo("start to load data");
+    long lastReported = 0;
     int slept = 0;
     long readNum = 0;
     bool splitSizeReEvaluated = false;
@@ -471,6 +477,11 @@ void PairEndProcessor::producerTask()
         // configured to process only first N reads
         if(mOptions->readsToProcess >0 && count + readNum >= mOptions->readsToProcess) {
             needToBreak = true;
+        }
+        if(mOptions->verbose && count + readNum >= lastReported + 1000000) {
+            lastReported = count + readNum;
+            string msg = "loaded " + to_string((lastReported/1000000)) + "M read pairs";
+            loginfo(msg);
         }
         // a full pack
         if(count == PACK_SIZE || needToBreak){
@@ -516,6 +527,8 @@ void PairEndProcessor::producerTask()
 
     std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
     mProduceFinished = true;
+    if(mOptions->verbose)
+        loginfo("all reads loaded");
     lock.unlock();
 
     // if the last data initialized is not used, free it
@@ -531,6 +544,10 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
         }
         std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
+            if(mOptions->verbose) {
+                string msg = "thread " + to_string(config->getThreadId()) + " data processing completed";
+                loginfo(msg);
+            }
             lock.unlock();
             break;
         }
@@ -546,6 +563,11 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
         mLeftWriter->setInputCompleted();
     if(mRightWriter)
         mRightWriter->setInputCompleted();
+    
+    if(mOptions->verbose) {
+        string msg = "thread " + to_string(config->getThreadId()) + " finished";
+        loginfo(msg);
+    }
 }
 
 void PairEndProcessor::writeTask(WriterThread* config)
@@ -555,5 +577,10 @@ void PairEndProcessor::writeTask(WriterThread* config)
             break;
         }
         config->output();
+    }
+
+    if(mOptions->verbose) {
+        string msg = config->getFilename() + " writer finished";
+        loginfo(msg);
     }
 }

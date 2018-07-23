@@ -7,6 +7,8 @@
 #include <vector>
 #include <sys/stat.h>
 #include <algorithm>
+#include <time.h>
+#include <mutex>
 
 using namespace std;
 
@@ -251,6 +253,15 @@ inline char num2qual(int num) {
 inline void error_exit(const string& msg) {
     cerr << "ERROR: " << msg << endl;
     exit(-1);
+}
+
+extern mutex logmtx;
+inline void loginfo(const string s){
+    logmtx.lock();
+    time_t tt = time(NULL);
+    tm* t= localtime(&tt);
+    cerr<<"["<<t->tm_hour<<":"<<t->tm_min<<":"<<t->tm_sec<<"] "<<s<<endl;
+    logmtx.unlock();
 }
 
 #endif /* UTIL_H */

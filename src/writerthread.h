@@ -28,6 +28,7 @@ public:
     bool setInputCompleted();
 
     long bufferLength();
+    string getFilename() {return mFilename;}
 
 private:
     void deleteWriter();
@@ -35,6 +36,7 @@ private:
 private:
     Writer* mWriter1;
     Options* mOptions;
+    string mFilename;
 
     // for spliting output
     bool mInputCompleted;

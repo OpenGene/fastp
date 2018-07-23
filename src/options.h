@@ -307,6 +307,8 @@ public:
     // overlap analysis threshold
     int overlapRequire;
     int overlapDiffLimit;
+    // output debug information
+    bool verbose;
 
 };
 

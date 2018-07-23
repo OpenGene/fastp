@@ -90,6 +90,9 @@ bool SingleEndProcessor::process(){
             leftWriterThread->join();
     }
 
+    if(mOptions->verbose)
+        loginfo("starting to generate reports\n");
+
     // merge stats and read filter results
     vector<Stats*> preStats;
     vector<Stats*> postStats;
@@ -317,6 +320,9 @@ void SingleEndProcessor::consumePack(ThreadConfig* config){
 
 void SingleEndProcessor::producerTask()
 {
+    if(mOptions->verbose)
+        loginfo("start to load data");
+    long lastReported = 0;
     int slept = 0;
     long readNum = 0;
     bool splitSizeReEvaluated = false;
@@ -346,6 +352,11 @@ void SingleEndProcessor::producerTask()
         // configured to process only first N reads
         if(mOptions->readsToProcess >0 && count + readNum >= mOptions->readsToProcess) {
             needToBreak = true;
+        }
+        if(mOptions->verbose && count + readNum >= lastReported + 1000000) {
+            lastReported = count + readNum;
+            string msg = "loaded " + to_string((lastReported/1000000)) + "M reads";
+            loginfo(msg);
         }
         // a full pack
         if(count == PACK_SIZE || needToBreak){
@@ -392,6 +403,8 @@ void SingleEndProcessor::producerTask()
 
     std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
     mProduceFinished = true;
+    if(mOptions->verbose)
+        loginfo("all reads loaded");
     lock.unlock();
 
     // if the last data initialized is not used, free it
@@ -407,6 +420,10 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
         }
         std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
+            if(mOptions->verbose) {
+                string msg = "thread " + to_string(config->getThreadId()) + " data processing completed";
+                loginfo(msg);
+            }
             lock.unlock();
             break;
         }
@@ -419,7 +436,12 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
         }
     }
     if(mLeftWriter)
-        mLeftWriter->setInputCompleted();
+        mLeftWriter->setInputCompleted();    
+
+    if(mOptions->verbose) {
+        string msg = "thread " + to_string(config->getThreadId()) + " finished";
+        loginfo(msg);
+    }
 }
 
 void SingleEndProcessor::writeTask(WriterThread* config)
@@ -429,5 +451,10 @@ void SingleEndProcessor::writeTask(WriterThread* config)
             break;
         }
         config->output();
+    }
+
+    if(mOptions->verbose) {
+        string msg = config->getFilename() + " writer finished";
+        loginfo(msg);
     }
 }
