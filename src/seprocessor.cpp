@@ -91,7 +91,7 @@ bool SingleEndProcessor::process(){
     }
 
     if(mOptions->verbose)
-        loginfo("starting to generate reports\n");
+        loginfo("start to generate reports\n");
 
     // merge stats and read filter results
     vector<Stats*> preStats;
@@ -404,7 +404,7 @@ void SingleEndProcessor::producerTask()
     std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
     mProduceFinished = true;
     if(mOptions->verbose)
-        loginfo("all reads loaded");
+        loginfo("all reads loaded, start to monitor thread status");
     lock.unlock();
 
     // if the last data initialized is not used, free it
@@ -421,13 +421,17 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
         std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
             if(mOptions->verbose) {
-                string msg = "thread " + to_string(config->getThreadId()) + " data processing completed";
+                string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
                 loginfo(msg);
             }
             lock.unlock();
             break;
         }
         if(mProduceFinished){
+            if(mOptions->verbose) {
+                string msg = "thread " + to_string(config->getThreadId() + 1) + " is processing the " + to_string(mRepo.readPos) + " / " + to_string(mRepo.writePos) + " pack";
+                loginfo(msg);
+            }
             consumePack(config);
             lock.unlock();
         } else {
@@ -439,7 +443,7 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
         mLeftWriter->setInputCompleted();    
 
     if(mOptions->verbose) {
-        string msg = "thread " + to_string(config->getThreadId()) + " finished";
+        string msg = "thread " + to_string(config->getThreadId() + 1) + " finished";
         loginfo(msg);
     }
 }
