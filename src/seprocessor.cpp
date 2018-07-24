@@ -278,16 +278,16 @@ void SingleEndProcessor::destroyPackRepository() {
 
 void SingleEndProcessor::producePack(ReadPack* pack){
     //std::unique_lock<std::mutex> lock(mRepo.mtx);
-    while(((mRepo.writePos + 1) % PACK_NUM_LIMIT)
+    /*while(((mRepo.writePos + 1) % PACK_NUM_LIMIT)
         == mRepo.readPos) {
         //mRepo.repoNotFull.wait(lock);
-    }
+    }*/
 
     mRepo.packBuffer[mRepo.writePos] = pack;
     mRepo.writePos++;
 
-    if (mRepo.writePos == PACK_NUM_LIMIT)
-        mRepo.writePos = 0;
+    /*if (mRepo.writePos == PACK_NUM_LIMIT)
+        mRepo.writePos = 0;*/
 
     //mRepo.repoNotEmpty.notify_all();
     //lock.unlock();
@@ -297,13 +297,13 @@ void SingleEndProcessor::consumePack(ThreadConfig* config){
     ReadPack* data;
     //std::unique_lock<std::mutex> lock(mRepo.mtx);
     // buffer is empty, just wait here.
-    while(mRepo.writePos % PACK_NUM_LIMIT == mRepo.readPos % PACK_NUM_LIMIT) {
+    /*while(mRepo.writePos % PACK_NUM_LIMIT == mRepo.readPos % PACK_NUM_LIMIT) {
         if(mProduceFinished){
             //lock.unlock();
             return;
         }
         //mRepo.repoNotEmpty.wait(lock);
-    }
+    }*/
 
     mInputMtx.lock();
     while(mRepo.writePos <= mRepo.readPos) {
@@ -316,8 +316,8 @@ void SingleEndProcessor::consumePack(ThreadConfig* config){
     data = mRepo.packBuffer[mRepo.readPos];
     mRepo.readPos++;
 
-    if (mRepo.readPos >= PACK_NUM_LIMIT)
-        mRepo.readPos = 0;
+    /*if (mRepo.readPos >= PACK_NUM_LIMIT)
+        mRepo.readPos = 0;*/
     mInputMtx.unlock();
 
     //lock.unlock();
