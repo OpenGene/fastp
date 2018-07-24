@@ -29,13 +29,12 @@ typedef struct ReadPairPack ReadPairPack;
 
 struct ReadPairRepository {
     ReadPairPack** packBuffer;
-    size_t readPos;
-    size_t writePos;
-    size_t readCounter;
-    std::mutex mtx;
-    std::mutex readCounterMtx;
-    std::condition_variable repoNotFull;
-    std::condition_variable repoNotEmpty;
+    atomic_long readPos;
+    atomic_long writePos;
+    //std::mutex mtx;
+    //std::mutex readCounterMtx;
+    //std::condition_variable repoNotFull;
+    //std::condition_variable repoNotEmpty;
 };
 
 typedef struct ReadPairRepository ReadPairRepository;
@@ -64,8 +63,9 @@ private:
 
 private:
     ReadPairRepository mRepo;
-    bool mProduceFinished;
+    atomic_bool mProduceFinished;
     std::mutex mOutputMtx;
+    std::mutex mInputMtx;
     Options* mOptions;
     Filter* mFilter;
     gzFile mZipFile1;

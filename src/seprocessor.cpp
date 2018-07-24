@@ -267,7 +267,7 @@ void SingleEndProcessor::initPackRepository() {
     memset(mRepo.packBuffer, 0, sizeof(ReadPack*)*PACK_NUM_LIMIT);
     mRepo.writePos = 0;
     mRepo.readPos = 0;
-    mRepo.readCounter = 0;
+    //mRepo.readCounter = 0;
     
 }
 
@@ -277,10 +277,10 @@ void SingleEndProcessor::destroyPackRepository() {
 }
 
 void SingleEndProcessor::producePack(ReadPack* pack){
-    std::unique_lock<std::mutex> lock(mRepo.mtx);
+    //std::unique_lock<std::mutex> lock(mRepo.mtx);
     while(((mRepo.writePos + 1) % PACK_NUM_LIMIT)
         == mRepo.readPos) {
-        mRepo.repoNotFull.wait(lock);
+        //mRepo.repoNotFull.wait(lock);
     }
 
     mRepo.packBuffer[mRepo.writePos] = pack;
@@ -289,30 +289,39 @@ void SingleEndProcessor::producePack(ReadPack* pack){
     if (mRepo.writePos == PACK_NUM_LIMIT)
         mRepo.writePos = 0;
 
-    mRepo.repoNotEmpty.notify_all();
-    lock.unlock();
+    //mRepo.repoNotEmpty.notify_all();
+    //lock.unlock();
 }
 
 void SingleEndProcessor::consumePack(ThreadConfig* config){
     ReadPack* data;
-    std::unique_lock<std::mutex> lock(mRepo.mtx);
+    //std::unique_lock<std::mutex> lock(mRepo.mtx);
     // buffer is empty, just wait here.
     while(mRepo.writePos % PACK_NUM_LIMIT == mRepo.readPos % PACK_NUM_LIMIT) {
         if(mProduceFinished){
-            lock.unlock();
+            //lock.unlock();
             return;
         }
-        mRepo.repoNotEmpty.wait(lock);
+        //mRepo.repoNotEmpty.wait(lock);
     }
 
+    mInputMtx.lock();
+    while(mRepo.writePos <= mRepo.readPos) {
+        usleep(1000);
+        if(mProduceFinished) {
+            mInputMtx.unlock();
+            return;
+        }
+    }
     data = mRepo.packBuffer[mRepo.readPos];
     mRepo.readPos++;
 
     if (mRepo.readPos >= PACK_NUM_LIMIT)
         mRepo.readPos = 0;
+    mInputMtx.unlock();
 
-    lock.unlock();
-    mRepo.repoNotFull.notify_all();
+    //lock.unlock();
+    //mRepo.repoNotFull.notify_all();
 
     processSingleEnd(data, config);
 
@@ -401,11 +410,11 @@ void SingleEndProcessor::producerTask()
         }
     }
 
-    std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
+    //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
     mProduceFinished = true;
     if(mOptions->verbose)
         loginfo("all reads loaded, start to monitor thread status");
-    lock.unlock();
+    //lock.unlock();
 
     // if the last data initialized is not used, free it
     if(data != NULL)
@@ -418,13 +427,18 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
         if(config->canBeStopped()){
             break;
         }
-        std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
+        while(mRepo.writePos <= mRepo.readPos) {
+            if(mProduceFinished)
+                break;
+            usleep(1000);
+        }
+        //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
             if(mOptions->verbose) {
                 string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
                 loginfo(msg);
             }
-            lock.unlock();
+            //lock.unlock();
             break;
         }
         if(mProduceFinished){
@@ -433,9 +447,9 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
                 loginfo(msg);
             }
             consumePack(config);
-            lock.unlock();
+            //lock.unlock();
         } else {
-            lock.unlock();
+            //lock.unlock();
             consumePack(config);
         }
     }

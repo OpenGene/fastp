@@ -27,13 +27,12 @@ typedef struct ReadPack ReadPack;
 
 struct ReadRepository {
     ReadPack** packBuffer;
-    size_t readPos;
-    size_t writePos;
-    size_t readCounter;
-    std::mutex mtx;
-    std::mutex readCounterMtx;
-    std::condition_variable repoNotFull;
-    std::condition_variable repoNotEmpty;
+    atomic_long readPos;
+    atomic_long writePos;
+    //std::mutex mtx;
+    //std::mutex readCounterMtx;
+    //std::condition_variable repoNotFull;
+    //std::condition_variable repoNotEmpty;
 };
 
 typedef struct ReadRepository ReadRepository;
@@ -60,7 +59,8 @@ private:
 private:
     Options* mOptions;
     ReadRepository mRepo;
-    bool mProduceFinished;
+    atomic_bool mProduceFinished;
+    std::mutex mInputMtx;
     std::mutex mOutputMtx;
     Filter* mFilter;
     gzFile mZipFile;
