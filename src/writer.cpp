@@ -16,14 +16,14 @@ Writer::Writer(ofstream* stream) {
 	mZipFile = NULL;
 	mZipped = false;
 	mOutStream = stream;
-	haveToClose = false;
+	haveToClose = true;
 }
 
 Writer::Writer(gzFile gzfile) {
 	mOutStream = NULL;
 	mZipFile = gzfile;
 	mZipped = true;
-	haveToClose = false;
+	haveToClose = true;
 }
 
 Writer::~Writer(){
