@@ -64,6 +64,7 @@ private:
 private:
     ReadPairRepository mRepo;
     atomic_bool mProduceFinished;
+    atomic_int mFinishedThreads;
     std::mutex mOutputMtx;
     std::mutex mInputMtx;
     Options* mOptions;

@@ -41,18 +41,16 @@ void WriterThread::output(){
     }
     while( mOutputCounter < mInputCounter) 
     {
-        long target = mOutputCounter % PACK_NUM_LIMIT;
-        mWriter1->write(mRingBuffer[target], mRingBufferSizes[target]);
-        delete mRingBuffer[target];
-        mRingBuffer[target] = NULL;
+        mWriter1->write(mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]);
+        delete mRingBuffer[mOutputCounter];
+        mRingBuffer[mOutputCounter] = NULL;
         mOutputCounter++;
     }
 }
 
 void  WriterThread::input(char* data, size_t size){
-    long target = mInputCounter % PACK_NUM_LIMIT;
-    mRingBuffer[target] = data;
-    mRingBufferSizes[target] = size;
+    mRingBuffer[mInputCounter] = data;
+    mRingBufferSizes[mInputCounter] = size;
     mInputCounter++;
 }
 

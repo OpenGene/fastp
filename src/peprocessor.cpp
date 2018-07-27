@@ -15,6 +15,7 @@
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
     mProduceFinished = false;
+    mFinishedThreads = 0;
     mFilter = new Filter(opt);
     mOutStream1 = NULL;
     mZipFile1 = NULL;
@@ -549,6 +550,7 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
 {
     while(true) {
         if(config->canBeStopped()){
+            mFinishedThreads++;
             break;
         }
         while(mRepo.writePos <= mRepo.readPos) {
@@ -558,6 +560,7 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
         }
         //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
+            mFinishedThreads++;
             if(mOptions->verbose) {
                 string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
                 loginfo(msg);
@@ -577,10 +580,13 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
             consumePack(config);
         }
     }
-    if(mLeftWriter)
-        mLeftWriter->setInputCompleted();
-    if(mRightWriter)
-        mRightWriter->setInputCompleted();
+
+    if(mFinishedThreads == mOptions->thread) {
+        if(mLeftWriter)
+            mLeftWriter->setInputCompleted();
+        if(mRightWriter)
+            mRightWriter->setInputCompleted();
+    }
     
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " finished";
@@ -592,6 +598,8 @@ void PairEndProcessor::writeTask(WriterThread* config)
 {
     while(true) {
         if(config->isCompleted()){
+            // last check for possible threading related issue
+            config->output();
             break;
         }
         config->output();

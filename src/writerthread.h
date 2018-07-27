@@ -8,6 +8,7 @@
 #include "writer.h"
 #include "options.h"
 #include <atomic>
+#include <mutex>
 
 using namespace std;
 
@@ -44,6 +45,8 @@ private:
     atomic_long mOutputCounter;
     char** mRingBuffer;
     size_t* mRingBufferSizes;
+
+    mutex mtx;
 
 };
 

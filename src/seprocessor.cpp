@@ -14,6 +14,7 @@
 SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOptions = opt;
     mProduceFinished = false;
+    mFinishedThreads = 0;
     mFilter = new Filter(opt);
     mOutStream = NULL;
     mZipFile = NULL;
@@ -425,6 +426,7 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
 {
     while(true) {
         if(config->canBeStopped()){
+            mFinishedThreads++;
             break;
         }
         while(mRepo.writePos <= mRepo.readPos) {
@@ -434,6 +436,7 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
         }
         //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
+            mFinishedThreads++;
             if(mOptions->verbose) {
                 string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
                 loginfo(msg);
@@ -453,8 +456,11 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
             consumePack(config);
         }
     }
-    if(mLeftWriter)
-        mLeftWriter->setInputCompleted();    
+
+    if(mFinishedThreads == mOptions->thread) {
+        if(mLeftWriter)
+            mLeftWriter->setInputCompleted();
+    }
 
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " finished";
@@ -466,6 +472,8 @@ void SingleEndProcessor::writeTask(WriterThread* config)
 {
     while(true) {
         if(config->isCompleted()){
+            // last check for possible threading related issue
+            config->output();
             break;
         }
         config->output();

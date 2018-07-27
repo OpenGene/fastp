@@ -60,6 +60,7 @@ private:
     Options* mOptions;
     ReadRepository mRepo;
     atomic_bool mProduceFinished;
+    atomic_int mFinishedThreads;
     std::mutex mInputMtx;
     std::mutex mOutputMtx;
     Filter* mFilter;

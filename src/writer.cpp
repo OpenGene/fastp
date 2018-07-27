@@ -16,14 +16,14 @@ Writer::Writer(ofstream* stream) {
 	mZipFile = NULL;
 	mZipped = false;
 	mOutStream = stream;
-	haveToClose = true;
+	haveToClose = false;
 }
 
 Writer::Writer(gzFile gzfile) {
 	mOutStream = NULL;
 	mZipFile = gzfile;
 	mZipped = true;
-	haveToClose = true;
+	haveToClose = false;
 }
 
 Writer::~Writer(){
@@ -113,8 +113,8 @@ void Writer::close(){
 		if (mOutStream->is_open()){
 			mOutStream->flush();
 			//TODO: following two lines will cause crash
-			//mOutStream->close();
-			//delete mOutStream;
+			mOutStream->close();
+			delete mOutStream;
 			mOutStream = NULL;
 		}
 	}
