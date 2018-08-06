@@ -21,6 +21,7 @@ public:
 	//do not call read() of a same FastqReader object from different threads concurrently
 	Read* read();
 	bool eof();
+	bool hasNoLineBreakAtEnd();
 
 public:
 	static bool isZipFastq(string filename);
@@ -32,14 +33,20 @@ private:
 	void close();
 	string getLine();
 	void clearLineBreaks(char* line);
+	void readToBuf();
 
 private:
 	string mFilename;
 	gzFile mZipFile;
-	ifstream mFile;
+	FILE* mFile;
 	bool mZipped;
 	bool mHasQuality;
 	bool mPhred64;
+	char* mBuf;
+	int mBufDataLen;
+	int mBufUsedLen;
+	bool mStdinMode;
+	bool mHasNoLineBreakAtEnd;
 
 };
 

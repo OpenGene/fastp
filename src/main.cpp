@@ -17,6 +17,8 @@ int main(int argc, char* argv[]){
     // display version info if no argument is given
     if(argc == 1) {
         cerr << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
+        //cerr << "fastp --help to see the help"<<endl;
+        //return 0;
     }
     if (argc == 2 && strcmp(argv[1], "test")==0){
         UnitTest tester;
@@ -29,12 +31,13 @@ int main(int argc, char* argv[]){
     }
     cmdline::parser cmd;
     // input/output
-    cmd.add<string>("in1", 'i', "read1 input file name", true, "");
+    cmd.add<string>("in1", 'i', "read1 input file name", false, "");
     cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4.", false, 4);
+    cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
     cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.");
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
@@ -118,6 +121,11 @@ int main(int argc, char* argv[]){
 
     cmd.parse_check(argc, argv);
 
+    if(argc == 1) {
+        cerr << cmd.usage() <<endl;
+        return 0;
+    }
+
     Options opt;
 
     // I/O
@@ -129,6 +137,7 @@ int main(int argc, char* argv[]){
     opt.readsToProcess = cmd.get<int>("reads_to_process");
     opt.phred64 = cmd.exist("phred64");
     opt.dontOverwrite = cmd.exist("dont_overwrite");
+    opt.inputFromSTDIN = cmd.exist("stdin");
     opt.outputToSTDOUT = cmd.exist("stdout");
     opt.interleavedInput = cmd.exist("interleaved_in");
     opt.verbose = cmd.exist("verbose");
@@ -231,6 +240,12 @@ int main(int argc, char* argv[]){
         opt.split.byFileLines = true;
     }
 
+    if(opt.inputFromSTDIN || opt.in1=="/dev/stdin") {
+        if(opt.split.needEvaluation) {
+            error_exit("Splitting by file number is not supported in STDIN mode");
+        }
+    }
+
     // umi
     opt.umi.enabled = cmd.exist("umi");
     opt.umi.length = cmd.get<int>("umi_len");
@@ -281,34 +296,42 @@ int main(int argc, char* argv[]){
 
     time_t t1 = time(NULL);
 
-    Evaluator eva(&opt);
-    eva.evaluateSeqLen();
+    bool supportEvaluation = !opt.inputFromSTDIN && opt.in1!="/dev/stdin";
 
-    if(opt.overRepAnalysis.enabled)
-        eva.evaluateOverRepSeqs();
+    Evaluator eva(&opt);
+    if(supportEvaluation) {
+        eva.evaluateSeqLen();
+
+        if(opt.overRepAnalysis.enabled)
+            eva.evaluateOverRepSeqs();
+    }
 
     long readNum = 0;
 
     // using evaluator to guess how many reads in total
     if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
-        cerr << "Detecting adapter..." << endl;
-        string adapt = eva.evalAdapterAndReadNum(readNum);
-        if(adapt.length() > 60 )
-            adapt.resize(0, 60);
-        if(adapt.length() > 0 ) {
-            opt.adapter.sequence = adapt;
-            opt.adapter.detectedAdapter1 = adapt;
-        } else {
-            cerr << "No adapter detected" << endl;
-            opt.adapter.sequence = "";
+        if(!supportEvaluation)
+            cerr << "Adapter auto-detection is disabled for STDIN mode" << endl;
+        else {
+            cerr << "Detecting adapter..." << endl;
+            string adapt = eva.evalAdapterAndReadNum(readNum);
+            if(adapt.length() > 60 )
+                adapt.resize(0, 60);
+            if(adapt.length() > 0 ) {
+                opt.adapter.sequence = adapt;
+                opt.adapter.detectedAdapter1 = adapt;
+            } else {
+                cerr << "No adapter detected" << endl;
+                opt.adapter.sequence = "";
+            }
+            cerr << endl;
         }
-        cerr << endl;
     }
 
     opt.validate();
 
     // using evaluator to guess how many reads in total
-    if(opt.split.needEvaluation) {
+    if(opt.split.needEvaluation && supportEvaluation) {
         // if readNum is not 0, means it is already evaluated by other functions
         if(readNum == 0) {
             eva.evaluateReadNum(readNum);
@@ -322,7 +345,7 @@ int main(int argc, char* argv[]){
     }
 
     // using evaluator to check if it's two color system
-    if(!cmd.exist("trim_poly_g") && !cmd.exist("disable_trim_poly_g")) {
+    if(!cmd.exist("trim_poly_g") && !cmd.exist("disable_trim_poly_g") && supportEvaluation) {
         bool twoColorSystem = eva.isTwoColorSystem();
         if(twoColorSystem){
             opt.polyGTrim.enabled = true;

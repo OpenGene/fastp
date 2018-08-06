@@ -2,17 +2,47 @@
 #include "util.h"
 #include <string.h>
 
+#define FQ_BUF_SIZE (1<<20)
+
 FastqReader::FastqReader(string filename, bool hasQuality, bool phred64){
 	mFilename = filename;
 	mZipFile = NULL;
 	mZipped = false;
+	mFile = NULL;
+	mStdinMode = false;
 	mPhred64 = phred64;
 	mHasQuality = hasQuality;
+	mBuf = new char[FQ_BUF_SIZE];
+	mBufDataLen = 0;
+	mBufUsedLen = 0;
+	mHasNoLineBreakAtEnd = false;
 	init();
 }
 
 FastqReader::~FastqReader(){
 	close();
+	delete mBuf;
+}
+
+bool FastqReader::hasNoLineBreakAtEnd() {
+	return mHasNoLineBreakAtEnd;
+}
+
+void FastqReader::readToBuf() {
+	if(mZipped) {
+		mBufDataLen = gzread(mZipFile, mBuf, FQ_BUF_SIZE);
+		if(mBufDataLen == -1) {
+			cerr << "Error to read gzip file" << endl;
+		}
+	} else {
+		mBufDataLen = fread(mBuf, 1, FQ_BUF_SIZE, mFile);
+	}
+	mBufUsedLen = 0;
+
+	if(mBufDataLen < FQ_BUF_SIZE) {
+		if(mBuf[mBufDataLen-1] != '\n')
+			mHasNoLineBreakAtEnd = true;
+	}
 }
 
 void FastqReader::init(){
@@ -21,17 +51,25 @@ void FastqReader::init(){
 		mZipped = true;
 		gzrewind(mZipFile);
 	}
-	else if (isFastq(mFilename)){
-		mFile.open(mFilename.c_str(), ifstream::in);
+	else {
+		if(mFilename == "/dev/stdin") {
+			mFile = stdin;
+		}
+		else
+			mFile = fopen(mFilename.c_str(), "rb");
+		if(mFile == NULL) {
+			error_exit("Failed to open file: " + mFilename);
+		}
 		mZipped = false;
 	}
+	readToBuf();
 }
 
 void FastqReader::getBytes(size_t& bytesRead, size_t& bytesTotal) {
 	if(mZipped) {
 		bytesRead = gzoffset(mZipFile);
 	} else {
-		bytesRead = mFile.tellg();
+		bytesRead = ftell(mFile);//mFile.tellg();
 	}
 
 	// use another ifstream to not affect current reader
@@ -54,73 +92,64 @@ void FastqReader::clearLineBreaks(char* line) {
 }
 
 string FastqReader::getLine(){
-	const int maxLine = 1024;
-	char line[maxLine];
+	int copied = 0;
 
-	if(mZipped) {
-		char* buf = NULL;
-		memset(line, 0, maxLine);
-		buf = gzgets(mZipFile, line, maxLine);
+	int start = mBufUsedLen;
+	int end = start;
 
-		// EOF or error, return an empty string
-		if(!buf)
-			return string();
-
-		// optimize for short reads
-		// reached end of line
-		if(line[maxLine-2] == '\0' || line[maxLine-2] == '\n') {
-			clearLineBreaks(line);
-			return string(line);
-		} else {
-			string s(buf);
-			while(buf) {
-				memset(line, 0, maxLine);
-				buf = gzgets(mZipFile, line, maxLine);
-				//eof or error
-				if(!buf)
-					break;
-				//reached end of line
-				if(line[maxLine-2] == '\0' || line[maxLine-2] == '\n') {
-					clearLineBreaks(buf);
-					s.append(buf);
-					break;
-				} else {
-					s.append(buf);
-				}
-			}
-			return s;
-		}
+	while(end < mBufDataLen) {
+		if(mBuf[end] != '\r' && mBuf[end] != '\n')
+			end++;
+		else
+			break;
 	}
-	else {
-		mFile.getline(line, maxLine);
-		// optimize for short reads
-		// reached end of line
-		if(mFile.eof() || mFile.good()) {
-			clearLineBreaks(line);
-			return string(line);
-		} else {
-			string s(line);
-			while(true) {
-				if(mFile.eof())
-					break;
-				//clear fail bit
-				mFile.clear();
-				memset(line, 0, maxLine);
-				mFile.getline(line, maxLine);
-				if(mFile.eof() || mFile.good()) {
-					clearLineBreaks(line);
-					s.append(line);
-					break;
-				} else {
-					// in case of some error happened, break it
-					if(line[0] == '\0'){
-						break;
-					}
-					s.append(line);
-				}
-			}
-			return s;
+
+	// this line well contained in this buf, or this is the last buf
+	if(end < mBufDataLen || mBufDataLen < FQ_BUF_SIZE) {
+		int len = end - start;
+		string line(mBuf+start, len);
+
+		// skip \n or \r
+		end++;
+		// handle \r\n
+		if(end < mBufDataLen-1 && mBuf[end] == '\n')
+			end++;
+
+		mBufUsedLen = end;
+
+		return line;
+	}
+
+	// this line is not contained in this buf, we need to read new buf
+	string str(mBuf+start, mBufDataLen - start);
+
+	while(true) {
+		readToBuf();
+		start = 0;
+		end = 0;
+		while(end < mBufDataLen) {
+			if(mBuf[end] != '\r' && mBuf[end] != '\n')
+				end++;
+			else
+				break;
 		}
+		// this line well contained in this buf, we need to read new buf
+		if(end < mBufDataLen || mBufDataLen < FQ_BUF_SIZE) {
+			int len = end - start;
+			str.append(mBuf+start, len);
+
+			// skip \n or \r
+			end++;
+			// handle \r\n
+			if(end < mBufDataLen-1 && mBuf[end] == '\n')
+				end++;
+
+			mBufUsedLen = end;
+
+			return str;
+		}
+		// even this new buf is not enough, although impossible
+		str.append(mBuf+start, mBufDataLen);
 	}
 
 	return string();
@@ -130,7 +159,7 @@ bool FastqReader::eof() {
 	if (mZipped) {
 		return gzeof(mZipFile);
 	} else {
-		return mFile.eof();
+		return feof(mFile);//mFile.eof();
 	}
 }
 
@@ -140,7 +169,7 @@ Read* FastqReader::read(){
 			return NULL;
 	}
 
-	if(eof()) {
+	if(mBufUsedLen >= mBufDataLen && eof()) {
 		return NULL;
 	}
 
@@ -174,8 +203,9 @@ void FastqReader::close(){
 		}
 	}
 	else {
-		if (mFile.is_open()){
-			mFile.close();
+		if (mFile){
+			fclose(mFile);//mFile.close();
+			mFile = NULL;
 		}
 	}
 }

@@ -262,6 +262,8 @@ public:
     bool phred64;
     // do not rewrite existing files
     bool dontOverwrite;
+    // read STDIN
+    bool inputFromSTDIN;
     // write STDOUT
     bool outputToSTDOUT;
     // the input R1 file is interleaved

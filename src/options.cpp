@@ -14,6 +14,7 @@ Options::Options(){
     compression = 2;
     phred64 = false;
     dontOverwrite = false;
+    inputFromSTDIN = false;
     outputToSTDOUT = false;
     readsToProcess = 0;
     interleavedInput = false;
@@ -21,6 +22,8 @@ Options::Options(){
     overlapRequire = 30;
     overlapDiffLimit = 5;
     verbose = false;
+    seqLen1 = 151;
+    seqLen2 = 151;
 }
 
 void Options::init() {
@@ -40,7 +43,12 @@ bool Options::adapterCuttingEnabled() {
 
 bool Options::validate() {
     if(in1.empty()) {
-        error_exit("read1 input should be specified by --in1");
+        if(!in2.empty())
+            error_exit("read2 input is specified by <in2>, but read1 input is not specified by <in1>");
+        if(inputFromSTDIN)
+            in1 = "/dev/stdin";
+        else
+            error_exit("read1 input should be specified by --in1, or enable --stdin if you want to read STDIN");
     } else {
         check_file_valid(in1);
     }
