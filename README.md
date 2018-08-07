@@ -35,7 +35,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 9. visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
 10. split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
 11. support long reads (data from PacBio / Nanopore devices).
-12. support streaming to STDOUT
+12. support reading from STDIN and writing to STDOUT
 13. support interleaved input
 14. ...
 
@@ -94,8 +94,9 @@ sudo make install
 `fastp` supports streaming the passing-filter reads to STDOUT, so that it can be passed to other compressors like `bzip2`, or be passed to aligners like `bwa` and `bowtie2`. 
 * specify `--stdout` to enable this mode to stream output to STDOUT
 * for PE data, the output will be interleaved FASTQ, which means the output will contain records like `record1-R1 -> record1-R2 -> record2-R1 -> record2-R2 -> record3-R1 -> record3-R2 ... ` 
-## interleaved input
-`fastp` also supports interleaved FASTQ input. You can specify `--interleaved_in` to indicate that the read1 file you specified by `-i` or `--in1` is interleaved. In the interleaved input mode, read2 file is not needed (and not allowed).
+## input from STDIN
+* specify `--stdin` if you want to read the STDIN for processing.
+* if the STDIN is an interleaved paired-end stream, specify `--interleaved_in` to indicate that.
 ## process only part of the data
 If you don't want to process all the data, you can specify `--reads_to_process` to limit the reads to be processed. This is useful if you want to have a fast preview of the data quality, or you want to create a subset of the filtered data.
 ## do not overwrite exiting files
@@ -231,6 +232,7 @@ options:
   -O, --out2                         read2 output file name (string [=])
   -6, --phred64                      indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
   -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4. (int [=4])
+      --stdin                          input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
       --stdout                         output passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.
       --interleaved_in                 indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.
       --reads_to_process             specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
