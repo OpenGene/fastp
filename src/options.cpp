@@ -140,8 +140,8 @@ bool Options::validate() {
     if(trim.tail2 < 0 || trim.tail2 > 100)
         error_exit("trim_tail2 (--trim_tail2) should be 0 ~ 100, suggest 0 ~ 4");
 
-    if(qualfilter.qualifiedQual - 33 < 0 || qualfilter.qualifiedQual - 33 > 50)
-        error_exit("qualitified phred (--qualified_quality_phred) should be 0 ~ 50, suggest 10 ~ 20");
+    if(qualfilter.qualifiedQual - 33 < 0 || qualfilter.qualifiedQual - 33 > 93)
+        error_exit("qualitified phred (--qualified_quality_phred) should be 0 ~ 93, suggest 10 ~ 20");
 
     if(qualfilter.unqualifiedPercentLimit < 0 || qualfilter.unqualifiedPercentLimit > 100)
         error_exit("unqualified percent limit (--unqualified_percent_limit) should be 0 ~ 100, suggest 20 ~ 60");
