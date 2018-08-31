@@ -33,3 +33,7 @@ fastp
 *.exe
 *.out
 *.app
+
+bin/
+build/
+.kdev4/

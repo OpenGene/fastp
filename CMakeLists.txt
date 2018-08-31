@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.6)
+
+project(fastp VERSION 0.19.3 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/cmake")
+
+find_package(Threads REQUIRED)
+find_package(ZLIB REQUIRED)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+
+add_subdirectory(src)

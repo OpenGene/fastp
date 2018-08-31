@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "zlib/zlib.h"
+#include <zlib.h>
 #include "common.h"
 #include <iostream>
 #include <fstream>
