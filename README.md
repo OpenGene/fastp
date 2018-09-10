@@ -83,6 +83,7 @@ make
 # Install
 sudo make install
 ```
+`fastp` only relies on `zlib`, which is already available on most Linux-like systems. If you get an error like `undefined reference to gzbuffer` when compiling `fastp`, you may have to update the `zlib` (http://zlib.net)
 
 # input and output
 `fastp` supports both single-end (SE) and paired-end (PE) input/output.
