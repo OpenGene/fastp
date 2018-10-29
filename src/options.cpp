@@ -125,8 +125,12 @@ bool Options::validate() {
     if(readsToProcess < 0)
         error_exit("the number of reads to process (--reads_to_process) cannot be negative");
 
-    if(thread < 1 || thread > 16)
-        error_exit("thread number (--thread) should be 1 ~ 16, suggest 1 ~ 8");
+    if(thread < 1) {
+        thread = 1;
+    } else if(thread > 16) {
+        cerr << "WARNING: fastp uses up to 16 threads although you specified " << thread << endl;
+        thread = 16;
+    }
 
     if(trim.front1 < 0 || trim.front1 > 30)
         error_exit("trim_front1 (--trim_front1) should be 0 ~ 30, suggest 0 ~ 4");
