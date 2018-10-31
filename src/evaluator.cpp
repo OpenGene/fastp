@@ -407,8 +407,11 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
 
 }
 
-string Evaluator::evalAdapterAndReadNum(long& readNum) {
-    FastqReader reader(mOptions->in1);
+string Evaluator::evalAdapterAndReadNum(long& readNum, bool isR2) {
+    string filename = mOptions->in1;
+    if(isR2)
+        filename = mOptions->in2;
+    FastqReader reader(filename);
     // stat up to 256K reads
     const long READ_LIMIT = 256*1024;
     const long BASE_LIMIT = 151 * READ_LIMIT;

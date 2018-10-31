@@ -260,6 +260,20 @@ bool Options::validate() {
     return true;
 }
 
+bool Options::shallDetectAdapter(bool isR2) {
+    if(!adapter.enabled)
+        return false;
+
+    if(isR2) {
+        return isPaired() && adapter.detectAdapterForPE && adapter.sequenceR2 == "auto";
+    } else {
+        if(isPaired())
+            return adapter.detectAdapterForPE && adapter.sequence == "auto";
+        else
+            return adapter.sequence == "auto";
+    }
+}
+
 void Options::initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold) {
     if(blacklistFile1.empty() && blacklistFile2.empty())
         return;

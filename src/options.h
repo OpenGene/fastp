@@ -163,6 +163,7 @@ public:
         enabled = true;
         hasSeqR1 = false;
         hasSeqR2 = false;
+        detectAdapterForPE = false;
     }
 public:
     bool enabled;
@@ -172,6 +173,7 @@ public:
     string detectedAdapter2;
     bool hasSeqR1;
     bool hasSeqR2;
+    bool detectAdapterForPE;
 };
 
 class TrimmingOptions {
@@ -240,6 +242,7 @@ public:
     string getAdapter2();
     void initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold = 0);
     vector<string> makeListFromFileByLine(string filename);
+    bool shallDetectAdapter(bool isR2 = false);
 
 public:
     // file name of read1 input

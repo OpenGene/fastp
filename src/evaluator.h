@@ -17,7 +17,7 @@ public:
     // evaluate how many reads are stored in the input file
     void evaluateReadNum(long& readNum);
     string evalAdapterAndReadNumDepreciated(long& readNum);
-    string evalAdapterAndReadNum(long& readNum);
+    string evalAdapterAndReadNum(long& readNum, bool isR2);
     bool isTwoColorSystem();
     void evaluateSeqLen();
     void evaluateOverRepSeqs();

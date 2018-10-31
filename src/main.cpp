@@ -47,7 +47,8 @@ int main(int argc, char* argv[]){
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
     cmd.add<string>("adapter_sequence", 'a', "the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped.", false, "auto");
-    cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "");
+    cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "auto");
+    cmd.add("detect_adapter_for_pe", 0, "by default, the auto-detection for adapter is for SE data input only, turn on this option to enable it for PE data.");
 
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
@@ -144,9 +145,10 @@ int main(int argc, char* argv[]){
 
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");
+    opt.adapter.detectAdapterForPE = cmd.exist("detect_adapter_for_pe");
     opt.adapter.sequence = cmd.get<string>("adapter_sequence");
     opt.adapter.sequenceR2 = cmd.get<string>("adapter_sequence_r2");
-    if(opt.adapter.sequenceR2.empty() && opt.adapter.sequence != "auto") {
+    if(opt.adapter.sequenceR2=="auto" && !opt.adapter.detectAdapterForPE && opt.adapter.sequence != "auto") {
         opt.adapter.sequenceR2 = opt.adapter.sequence;
     }
 
@@ -309,20 +311,38 @@ int main(int argc, char* argv[]){
     long readNum = 0;
 
     // using evaluator to guess how many reads in total
-    if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
+    if(opt.shallDetectAdapter(false)) {
         if(!supportEvaluation)
             cerr << "Adapter auto-detection is disabled for STDIN mode" << endl;
         else {
-            cerr << "Detecting adapter..." << endl;
-            string adapt = eva.evalAdapterAndReadNum(readNum);
+            cerr << "Detecting adapter sequence for read1..." << endl;
+            string adapt = eva.evalAdapterAndReadNum(readNum, false);
             if(adapt.length() > 60 )
                 adapt.resize(0, 60);
             if(adapt.length() > 0 ) {
                 opt.adapter.sequence = adapt;
                 opt.adapter.detectedAdapter1 = adapt;
             } else {
-                cerr << "No adapter detected" << endl;
+                cerr << "No adapter detected for read1" << endl;
                 opt.adapter.sequence = "";
+            }
+            cerr << endl;
+        }
+    }
+    if(opt.shallDetectAdapter(true)) {
+        if(!supportEvaluation)
+            cerr << "Adapter auto-detection is disabled for STDIN mode" << endl;
+        else {
+            cerr << "Detecting adapter sequence for read2..." << endl;
+            string adapt = eva.evalAdapterAndReadNum(readNum, true);
+            if(adapt.length() > 60 )
+                adapt.resize(0, 60);
+            if(adapt.length() > 0 ) {
+                opt.adapter.sequenceR2 = adapt;
+                opt.adapter.detectedAdapter2 = adapt;
+            } else {
+                cerr << "No adapter detected for read2" << endl;
+                opt.adapter.sequenceR2 = "";
             }
             cerr << endl;
         }
