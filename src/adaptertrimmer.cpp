@@ -53,12 +53,20 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
 
     int pos=0;
     bool found = false;
-    for(pos = 0; pos<rlen-matchReq; pos++) {
+    int start = 0;
+    if(alen >= 16)
+        start = -4;
+    else if(alen >= 12)
+        start = -3;
+    else if(alen >= 8)
+        start = -2;
+    // we start from negative numbers since the Illumina adapter dimer usually have the first A skipped as A-tailing
+    for(pos = start; pos<rlen-matchReq; pos++) {
         int cmplen = min(rlen - pos, alen);
         int allowedMismatch = cmplen/allowOneMismatchForEach;
         int mismatch = 0;
         bool matched = true;
-        for(int i=0; i<cmplen; i++) {
+        for(int i=max(0, -pos); i<cmplen; i++) {
             if( adata[i] != rdata[i+pos] ){
                 mismatch++;
                 if(mismatch > allowedMismatch) {
@@ -75,11 +83,21 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
     }
 
     if(found) {
-        string adapter = r->mSeq.mStr.substr(pos, rlen-pos);
-        r->mSeq.mStr = r->mSeq.mStr.substr(0, pos);
-        r->mQuality = r->mQuality.substr(0, pos);
-        if(fr) {
-            fr->addAdapterTrimmed(adapter, isR2);
+        if(pos < 0) {
+            string adapter = adapterseq.substr(0, alen+pos);
+            r->mSeq.mStr.resize(0);
+            r->mQuality.resize(0);
+            if(fr) {
+                fr->addAdapterTrimmed(adapter, isR2);
+            }
+
+        } else {
+            string adapter = r->mSeq.mStr.substr(pos, rlen-pos);
+            r->mSeq.mStr = r->mSeq.mStr.substr(0, pos);
+            r->mQuality = r->mQuality.substr(0, pos);
+            if(fr) {
+                fr->addAdapterTrimmed(adapter, isR2);
+            }
         }
         return true;
     }
