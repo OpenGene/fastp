@@ -136,6 +136,9 @@ Adapter trimming is enabled by default, but you can disable it by `-A` or `--dis
 * For SE data, the adapters are evaluated by analyzing the tails of first ~1M reads. This evaluation may be inacurrate, and you can specify the adapter sequence by `-a` or `--adapter_sequence` option. If adapter sequence is specified, the auto detection for SE data will be disabled.
 * For PE data, the adapters can be detected by per-read overlap analysis, which seeks for the overlap of each pair of reads. This method is robust and fast, so normally you don't have to input the adapter sequence even you know it. But you can still specify the adapter sequences for read1 by `--adapter_sequence`, and for read2 by `--adapter_sequence_r2`. If `fastp` fails to find an overlap (i.e. due to low quality bases), it will use these sequences to trim adapters for read1 and read2 respectively.
 * The adapter sequence auto-detection for PE data is disabled by default since the adapters can be trimmed by overlap analysis. However, if you want to enable it for PE data, you can specify the `--detect_adapter_for_pe` option.
+* For PE data, `fastp` will run a little slower if you specify the sequence adapter or enable adapter auto-detection, but usually result in a slightly cleaner data since in some cases the overlap analysis fails due to sequencing error or adapter dimers.
+* The most widely used adapter is the Illumina TruSeq adapters. If your data is from the TruSeq library, You can add `--adapter_sequence=AGATCGGAAGAGCACACGTCTGAACTCCAGTCA --adapter_sequence_r2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT` to your command lines, or enable auto detection for PE data by specifing `detect_adapter_for_pe`.
+* `fastp` contains some built-in known adapter sequences for better auto-detection. If you want to make some adapters to be a part of the built-in adapters, you can file an issue.
 
 The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
 
