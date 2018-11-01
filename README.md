@@ -163,7 +163,7 @@ For example, the last cycle of Illumina sequencing is uaually with low quality, 
 
 * For read1 or SE data, the front/tail trimming settings are given with `-f, --trim_front1` and `-t, --trim_tail1`.
 * For read2 of PE data, the front/tail trimming settings are given with `-F, --trim_front2` and `-T, --trim_tail2`. But if these options are not specified, they will be as same as read1 options, which means `trim_front2 = trim_front1` and `trim_tail2 = trim_tail1`.
-* If you want to limit the read length, you can specify `-b, --max_len1` for read1, and `-B, --max_len2` for read2. If `--max_len1` is specified but `--max_len2` is not, `--max_len2` will be same as `--max_len1`. For example, if `--max_len1` is specified and read1 is longer than `--max_len1`, `fastp` will trim read1 at its tail to make it as long as `--max_len1`.
+* If you want to trim the reads to maximum length, you can specify `-b, --max_len1` for read1, and `-B, --max_len2` for read2. If `--max_len1` is specified but `--max_len2` is not, `--max_len2` will be same as `--max_len1`. For example, if `--max_len1` is specified and read1 is longer than `--max_len1`, `fastp` will trim read1 at its tail to make it as long as `--max_len1`.
 
 Please note that the trimming for `--max_len` limitation will be applied at the last step. Following are fastp's processing steps that may orderly affect the read lengthes:
 ```
