@@ -540,7 +540,7 @@ string Evaluator::evalAdapterAndReadNum(long& readNum, bool isR2) {
         string seq = int2seq(key, keylen);
         if(key == 0)
             continue;
-        int count = counts[key];
+        long count = counts[key];
         if(count<10 || count*size < total * FOLD_THRESHOLD)
             break;
         // skip low complexity seq
