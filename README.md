@@ -163,6 +163,21 @@ For example, the last cycle of Illumina sequencing is uaually with low quality, 
 
 * For read1 or SE data, the front/tail trimming settings are given with `-f, --trim_front1` and `-t, --trim_tail1`.
 * For read2 of PE data, the front/tail trimming settings are given with `-F, --trim_front2` and `-T, --trim_tail2`. But if these options are not specified, they will be as same as read1 options, which means `trim_front2 = trim_front1` and `trim_tail2 = trim_tail1`.
+* If you want to limit the read length, you can specify `-b, --max_len1` for read1, and `-B, --max_len2` for read2. If `--max_len1` is specified but `--max_len2` is not, `--max_len2` will be same as `--max_len1`. For example, if '--max_len1' is specified and read1 is longer than `--max_len1`, `fastp` will trim read1 at its tail to make it as long as `max_len1`.
+
+Please note that the trimming for `--max_len` limitation will be applied at the last step. Following are fastp's processing steps that may orderly affect the read lengthes:
+```
+1, UMI preprocessing (--umi)
+2, global trimming at front (--trim_front)
+3, global trimming at tail (--trim_tail)
+4, quality pruning at 5' (--cut_by_quality5)
+5, quality pruning at 3' (--cut_by_quality3)
+6, trim polyG (--trim_poly_g, enabled by default for NovaSeq/NextSeq data)
+7, trim polyX (--trim_poly_x)
+8, trim adapter by overlap analysis (enabled by default for PE data)
+9, trim adapter by adapter sequence (--adapter_sequence, --adapter_sequence_r2)
+10, trim to max length (---max_len)
+```
 
 # polyG tail trimming
 For Illumina NextSeq/NovaSeq data, `polyG` can happen in read tails since `G` means no signal in the Illumina two-color systems. `fastp` can detect the polyG in read tails and trim them. This feature is enabled for NextSeq/NovaSeq data by default, and you can specify `-g` or `--trim_poly_g` to enable it for any data, or specify `-G` or `--disable_trim_poly_g` to disable it. NextSeq/NovaSeq data is detected by the machine ID in the FASTQ records.   
@@ -250,10 +265,12 @@ options:
       --detect_adapter_for_pe          by default, the adapter sequence auto-detection is enabled for SE data only, turn on this option to enable it for PE data.
     
   # global trimming options
-  -f, --trim_front1                  trimming how many bases in front for read1, default is 0 (int [=0])
-  -t, --trim_tail1                   trimming how many bases in tail for read1, default is 0 (int [=0])
-  -F, --trim_front2                  trimming how many bases in front for read2. If it's not specified, it will follow read1's settings (int [=0])
-  -T, --trim_tail2                   trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings (int [=0])
+  -f, --trim_front1                    trimming how many bases in front for read1, default is 0 (int [=0])
+  -t, --trim_tail1                     trimming how many bases in tail for read1, default is 0 (int [=0])
+  -b, --max_len1                       if read1 is longer than max_len1, then trim read1 at its tail to make it as long as max_len1. Default 0 means no limitation (int [=0])
+  -F, --trim_front2                    trimming how many bases in front for read2. If it's not specified, it will follow read1's settings (int [=0])
+  -T, --trim_tail2                     trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings (int [=0])
+  -B, --max_len2                       if read2 is longer than max_len2, then trim read2 at its tail to make it as long as max_len2. Default 0 means no limitation. If it's not specified, it will follow read1's settings (int [=0])
 
   # polyG tail trimming, useful for NextSeq/NovaSeq data
   -g, --trim_poly_g                  force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data

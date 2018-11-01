@@ -183,6 +183,8 @@ public:
         tail1 = 0;
         front2 = 0;
         tail2 = 0;
+        maxLen1 = 0;
+        maxLen2 = 0;
     }
 public:
     // trimming first cycles for read1
@@ -193,6 +195,10 @@ public:
     int front2;
     // trimming last cycles for read2
     int tail2;
+    // max length of read1
+    int maxLen1;
+    // max length of read2
+    int maxLen2;
 };
 
 class QualityFilteringOptions {

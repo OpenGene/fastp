@@ -53,8 +53,10 @@ int main(int argc, char* argv[]){
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
     cmd.add<int>("trim_tail1", 't', "trimming how many bases in tail for read1, default is 0", false, 0);
+    cmd.add<int>("max_len1", 'b', "if read1 is longer than max_len1, then trim read1 at its tail to make it as long as max_len1. Default 0 means no limitation", false, 0);
     cmd.add<int>("trim_front2", 'F', "trimming how many bases in front for read2. If it's not specified, it will follow read1's settings", false, 0);
     cmd.add<int>("trim_tail2", 'T', "trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings", false, 0);
+    cmd.add<int>("max_len2", 'B', "if read2 is longer than max_len2, then trim read2 at its tail to make it as long as max_len2. Default 0 means no limitation. If it's not specified, it will follow read1's settings", false, 0);
 
     // polyG tail trimming
     cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
@@ -155,6 +157,7 @@ int main(int argc, char* argv[]){
     // trimming
     opt.trim.front1 = cmd.get<int>("trim_front1");
     opt.trim.tail1 = cmd.get<int>("trim_tail1");
+    opt.trim.maxLen1 = cmd.get<int>("max_len1");
     // read2 settings follows read1 if it's not specified
     if(cmd.exist("trim_front2"))
         opt.trim.front2 = cmd.get<int>("trim_front2");
@@ -164,6 +167,10 @@ int main(int argc, char* argv[]){
         opt.trim.tail2 = cmd.get<int>("trim_tail2");
     else
         opt.trim.tail2 = opt.trim.tail1;
+    if(cmd.exist("max_len2"))
+        opt.trim.maxLen2 = cmd.get<int>("max_len2");
+    else
+        opt.trim.maxLen2 = opt.trim.maxLen1;
 
     // polyG tail trimming
     if(cmd.exist("trim_poly_g") && cmd.exist("disable_trim_poly_g")) {

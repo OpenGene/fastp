@@ -295,6 +295,13 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             isizeEvaluated = true;
         }
 
+        if(r1 != NULL && r2!=NULL) {
+            if( mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length())
+                r1->resize(mOptions->trim.maxLen1);
+            if( mOptions->trim.maxLen2 > 0 && mOptions->trim.maxLen2 < r2->length())
+                r2->resize(mOptions->trim.maxLen2);
+        }
+
         int result1 = mFilter->passFilter(r1);
         int result2 = mFilter->passFilter(r2);
 

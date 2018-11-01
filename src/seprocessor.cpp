@@ -215,6 +215,11 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence);
         }
 
+        if(r1 != NULL) {
+            if( mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length())
+                r1->resize(mOptions->trim.maxLen1);
+        }
+
         int result = mFilter->passFilter(r1);
 
         config->addFilterResult(result);
