@@ -16,7 +16,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [base correction for paired end (PE) data](#base-correction-for-pe-data)
 * [globa trimming](#global-trimming)
 * [polyG tail trimming](#polyg-tail-trimming) and [polyX tail trimming](#polyx-tail-trimming)
-* [unique molecular identifer (UMI) processing](#unique-molecular-identifer-umi-processing)
+* [unique molecular identifier (UMI) processing](#unique-molecular-identifier-umi-processing)
 * [output splitting](#output-splitting)
 * [overrepresented sequence analysis](#overrepresented-sequence-analysis)
 * [all options](#all-options)
@@ -30,7 +30,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 4. cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
 5. correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
 6. trim polyG in 3' ends, which is commonly seen in NovaSeq/NextSeq data. Trim polyX in 3' ends to remove unwanted polyX tailing (i.e. polyA tailing for mRNA-Seq data)
-7. preprocess unique molecular identifer (UMI) enabled data, shift UMI to sequence name.
+7. preprocess unique molecular identifier (UMI) enabled data, shift UMI to sequence name.
 8. report JSON format result for further interpreting. 
 9. visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
 10. split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
@@ -189,7 +189,7 @@ This feature is similar as polyG tail trimming, but is disabled by default. Use 
 
 When `polyG tail trimming` and `polyX tail trimming` are both enabled, fastp will perform `polyG trimming` first, then perform `polyX trimming`. This setting is useful for trimming the tails having `polyX (i.e. polyA) ` before `polyG`. `polyG` is usually caused by sequencing artifacts, while `polyA` can be commonly found from the tails of mRNA-Seq reads.
 
-# unique molecular identifer (UMI) processing
+# unique molecular identifier (UMI) processing
 UMI is useful for duplication elimination and error correction based on generating consensus of reads originated from a same DNA fragment. It's usually used in deep sequencing applications like ctDNA sequencing. Commonly for Illumina platforms, UMIs can be integrated in two different places: `index` or head of `read`.  
 To enable UMI processing, you have to enable `-U` or `--umi` option in the command line, and specify `--umi_loc`  to specify the UMI location, it can be one of:
 * `index1` the first index is used as UMI. If the data is PE, this UMI will be used for both read1/read2.
@@ -253,8 +253,8 @@ options:
   -6, --phred64                      indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
   -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4. (int [=4])
       --stdin                          input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
-      --stdout                         output passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.
-      --interleaved_in                 indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.
+      --stdout                         output passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by default.
+      --interleaved_in                 indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.
       --reads_to_process             specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
       --dont_overwrite               don't overwrite existing files. Overwritting is allowed by default.
   
@@ -313,7 +313,7 @@ options:
       --overlap_diff_limit           the maximum difference of the overlapped region for overlap analysis based adapter trimming and correction. 5 by default. (int [=5])
   
   # UMI processing
-  -U, --umi                          enable unique molecular identifer (UMI) preprocessing
+  -U, --umi                          enable unique molecular identifier (UMI) preprocessing
       --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none (string [=])
       --umi_len                      if the UMI is in read1/read2, its length should be provided (int [=0])
       --umi_prefix                   if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default (string [=])
