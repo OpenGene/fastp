@@ -38,8 +38,8 @@ int main(int argc, char* argv[]){
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4.", false, 4);
     cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
-    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.");
-    cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.");
+    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by default.");
+    cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]){
     cmd.add<int>("overlap_diff_limit", 0, "the maximum difference of the overlapped region for overlap analysis based adapter trimming and correction. 5 by default.", false, 5);
 
     // umi
-    cmd.add("umi", 'U', "enable unique molecular identifer (UMI) preprocessing");
+    cmd.add("umi", 'U', "enable unique molecular identifier (UMI) preprocessing");
     cmd.add<string>("umi_loc", 0, "specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none", false, "");
     cmd.add<int>("umi_len", 0, "if the UMI is in read1/read2, its length should be provided", false, 0);
     cmd.add<string>("umi_prefix", 0, "if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default", false, "");
