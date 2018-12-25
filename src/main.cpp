@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
     // sliding window cutting for each reads
     cmd.add("cut_by_quality5", '5', "enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)");
     cmd.add("cut_by_quality3", '3', "enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)");
-    cmd.add<int>("cut_window_size", 'W', "the size of the sliding window for sliding window trimming, default is 4", false, 4);
+    cmd.add<int>("cut_window_size", 'W', "the size of the sliding window for sliding window trimming (1~16), default is 4", false, 4);
     cmd.add<int>("cut_mean_quality", 'M', "the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20", false, 20);
 
     // quality filtering

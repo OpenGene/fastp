@@ -286,7 +286,7 @@ options:
   # per read cutting by quality options
   -5, --cut_by_quality5              enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)
   -3, --cut_by_quality3              enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)
-  -W, --cut_window_size              the size of the sliding window for sliding window trimming, default is 4 (int [=4])
+  -W, --cut_window_size              the size of the sliding window for sliding window trimming (1~16), default is 4 (int [=4])
   -M, --cut_mean_quality             the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20 (int [=20])
   
   # quality filtering options

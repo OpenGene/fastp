@@ -175,8 +175,8 @@ bool Options::validate() {
     }
 
     if(qualityCut.enabled5 || qualityCut.enabled3) {
-        if(qualityCut.windowSize < 2 || qualityCut.windowSize > 10)
-            error_exit("the sliding window size for cutting by quality (--cut_window_size) should be between 2~10.");
+        if(qualityCut.windowSize < 1 || qualityCut.windowSize > 16)
+            error_exit("the sliding window size for cutting by quality (--cut_window_size) should be between 1~16.");
         if(qualityCut.quality < 1 || qualityCut.quality > 30)
             error_exit("the mean quality requirement for cutting by quality (--cut_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
     }
