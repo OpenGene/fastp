@@ -68,8 +68,9 @@ int main(int argc, char* argv[]){
     cmd.add<int>("poly_x_min_len", 0, "the minimum length to detect polyX in the read tail. 10 by default.", false, 10);
 
     // sliding window cutting for each reads
-    cmd.add("cut_by_quality5", '5', "enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)");
-    cmd.add("cut_by_quality3", '3', "enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)");
+    cmd.add("cut_by_quality5", '5', "move a sliding window from front (5') to tail, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise.");
+    cmd.add("cut_by_quality3", '3', "move a sliding window from tail (3') to front, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise.");
+    cmd.add("cut_by_quality_aggressive", 0, "move a sliding window from front to tail, if meet one window with mean quality below cut_mean_quality, drop the bases in this window and the rest, and stop. ");
     cmd.add<int>("cut_window_size", 'W', "the size of the sliding window for sliding window trimming (1~16), default is 4", false, 4);
     cmd.add<int>("cut_mean_quality", 'M', "the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20", false, 20);
 
@@ -191,6 +192,7 @@ int main(int argc, char* argv[]){
     // sliding window cutting by quality
     opt.qualityCut.enabled5 = cmd.exist("cut_by_quality5");
     opt.qualityCut.enabled3 = cmd.exist("cut_by_quality3");
+    opt.qualityCut.enabledAggressive = cmd.exist("cut_by_quality_aggressive");
     opt.qualityCut.windowSize = cmd.get<int>("cut_window_size");
     opt.qualityCut.quality = cmd.get<int>("cut_mean_quality");
     // raise a warning if -5/-3 is not enabled but -W/-M is enabled

@@ -118,6 +118,7 @@ public:
     QualityCutOptions() {
         enabled5 = false;
         enabled3 = false;
+        enabledAggressive = false;
         windowSize = 4;
         quality = 20;
     }
@@ -126,6 +127,8 @@ public:
     bool enabled5;
     // enable 3' cutting by quality
     bool enabled3;
+    // enable agressive cutting mode
+    bool enabledAggressive;
     // the sliding window size for cutting by quality
     int windowSize;
     // the mean quality requirement for cutting by quality

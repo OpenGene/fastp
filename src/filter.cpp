@@ -132,8 +132,40 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
         rlen = l - front - tail;
     }
 
+    // aggressive quality cutting
+    if(mOptions->qualityCut.enabledAggressive) {
+        int s = front;
+        if(l - front - tail - w <= 0)
+            return NULL;
+
+        int totalQual = 0;
+
+        // preparing rolling
+        for(int i=0; i<w-1; i++)
+            totalQual += qualstr[s+i];
+
+        bool foundLowQualWindow = false;
+
+        for(s=front; s+w<l-tail; s++) {
+            totalQual += qualstr[s+w-1];
+            // rolling
+            if(s > front) {
+                totalQual -= qualstr[s-1];
+            }
+            // add 33 for phred33 transforming
+            if((double)totalQual / (double)w < 33 + mOptions->qualityCut.quality) {
+                foundLowQualWindow = true;
+                break;
+            }
+        }
+
+        // the trimming in front is forwarded and rlen is recalculated
+        if(foundLowQualWindow )
+            rlen = s - front;
+    }
+
     // quality cutting backward
-    if(mOptions->qualityCut.enabled3) {
+    if(!mOptions->qualityCut.enabledAggressive && mOptions->qualityCut.enabled3) {
         if(l - front - tail - w <= 0)
             return NULL;
 
