@@ -145,14 +145,14 @@ Adapter trimming is enabled by default, but you can disable it by `-A` or `--dis
 The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
 
 # per read cutting by quality score
-`fastp` supports per read sliding window cutting by evaluating the mean quality scores in the sliding window. `fastp` continues to trim all the bases in a window if the window's mean quality is below the threshold set by `-M, --cut_mean_quality`, and then moves to the next window. When `fastp` meets a window with mean quality above the threshold, it stops. This function is disabled by default, to enable it, you can specify either or both of:
+`fastp` supports per read sliding window cutting by evaluating the mean quality scores in the sliding window. From v0.19.6, `fastp` supports 3 different operations, and you enable one or all of them:
 * `-5, --cut_by_quality5`              move a sliding window from front (5') to tail, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise. Default is disabled. The leading N bases are also trimmed.
 * `-3, --cut_by_quality3`              move a sliding window from tail (3') to front, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise. Default is disabled. The trailing N bases are also trimmed.
 * `--cut_by_quality_aggressive`        move a sliding window from front to tail, if meet one window with mean quality below cut_mean_quality, drop the bases in this window and the rest, and stop. This is similar as the Trimmomatic `SLIDINGWINDOW` method.
 
 WARNING: all these three operations will interfere deduplication for SE data, and `--cut_by_quality5` will also interfere deduplication for PE data.
 
-If `--cut_by_quality_aggressive` is enabled, then there is no need to enable `-3, --cut_by_quality3` since the former is more aggressive. If `--cut_by_quality_aggressive` is enabled together with `-5, --cut_by_quality5`, `-5, --cut_by_quality5` will be performed first before `--cut_by_quality_aggressive` to avoid dropping whole reads due to the low quality starting bases.
+If `--cut_by_quality_aggressive` is enabled, then there is no need to enable `--cut_by_quality3`, since the former is more aggressive. If `--cut_by_quality_aggressive` is enabled together with `--cut_by_quality5`, `--cut_by_quality5` will be performed first before `--cut_by_quality_aggressive` to avoid dropping whole reads due to the low quality starting bases.
 
 Please be noted that `--cut_by_quality5` will interfere deduplication for both PE/SE data, and `--cut_by_quality3` will interfere deduplication for SE data, since the deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.
 
