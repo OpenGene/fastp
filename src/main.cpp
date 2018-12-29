@@ -67,12 +67,19 @@ int main(int argc, char* argv[]){
     cmd.add("trim_poly_x", 'x', "enable polyX trimming in 3' ends.");
     cmd.add<int>("poly_x_min_len", 0, "the minimum length to detect polyX in the read tail. 10 by default.", false, 10);
 
-    // sliding window cutting for each reads
-    cmd.add("cut_by_quality5", '5', "move a sliding window from front (5') to tail, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise.");
-    cmd.add("cut_by_quality3", '3', "move a sliding window from tail (3') to front, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise.");
-    cmd.add("cut_by_quality_aggressive", 0, "move a sliding window from front to tail, if meet one window with mean quality below cut_mean_quality, drop the bases in this window and the rest, and stop. ");
-    cmd.add<int>("cut_window_size", 'W', "the size of the sliding window for sliding window trimming (1~16), default is 4", false, 4);
-    cmd.add<int>("cut_mean_quality", 'M', "the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20", false, 20);
+    // cutting by quality
+    cmd.add("cut_front", '5', "move a sliding window from front (5') to tail, drop the bases in the window if its mean quality < threshold, stop otherwise.");
+    cmd.add("cut_tail", '3', "move a sliding window from tail (3') to front, drop the bases in the window if its mean quality < threshold, stop otherwise.");
+    cmd.add("cut_right", 'r', "move a sliding window from front to tail, if meet one window with mean quality < threshold, drop the bases in the window and the right part, and then stop.");
+    cmd.add<int>("cut_window_size", 'W', "the window size option shared by cut_front, cut_tail or cut_sliding. Range: 1~1000, default: 4", false, 4);
+    cmd.add<int>("cut_mean_quality", 'M', "the mean quality requirement option shared by cut_front, cut_tail or cut_sliding. Range: 1~36 default: 20 (Q20)", false, 20);
+    cmd.add<int>("cut_front_window_size", 0, "the window size option of cut_front, default to cut_window_size if not specified", false, 4);
+    cmd.add<int>("cut_front_mean_quality", 0, "the mean quality requirement option for cut_front, default to cut_mean_quality if not specified", false, 20);
+    cmd.add<int>("cut_tail_window_size", 0, "the window size option of cut_tail, default to cut_window_size if not specified", false, 4);
+    cmd.add<int>("cut_tail_mean_quality", 0, "the mean quality requirement option for cut_tail, default to cut_mean_quality if not specified", false, 20);
+    cmd.add<int>("cut_right_window_size", 0, "the window size option of cut_right, default to cut_window_size if not specified", false, 4);
+    cmd.add<int>("cut_right_mean_quality", 0, "the mean quality requirement option for cut_right, default to cut_mean_quality if not specified", false, 20);
+
 
     // quality filtering
     cmd.add("disable_quality_filtering", 'Q', "quality filtering is enabled by default. If this option is specified, quality filtering is disabled");
@@ -123,6 +130,11 @@ int main(int argc, char* argv[]){
     cmd.add<long>("split_by_lines", 'S', "split output by limiting lines of each file with this option(>=1000), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default", false, 0);
     cmd.add<int>("split_prefix_digits", 'd', "the digits for the sequential number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding", false, 4);
 
+    // deprecated options
+    cmd.add("cut_by_quality5", 0, "DEPRECATED, use --cut_front instead.");
+    cmd.add("cut_by_quality3", 0, "DEPRECATED, use --cut_tail instead.");
+    cmd.add("cut_by_quality_aggressive", 0, "DEPRECATED, use --cut_right instead.");
+    
     cmd.parse_check(argc, argv);
 
     if(argc == 1) {
@@ -189,17 +201,67 @@ int main(int argc, char* argv[]){
     }
     opt.polyXTrim.minLen = cmd.get<int>("poly_x_min_len");
 
+
     // sliding window cutting by quality
-    opt.qualityCut.enabled5 = cmd.exist("cut_by_quality5");
-    opt.qualityCut.enabled3 = cmd.exist("cut_by_quality3");
-    opt.qualityCut.enabledAggressive = cmd.exist("cut_by_quality_aggressive");
-    opt.qualityCut.windowSize = cmd.get<int>("cut_window_size");
-    opt.qualityCut.quality = cmd.get<int>("cut_mean_quality");
-    // raise a warning if -5/-3 is not enabled but -W/-M is enabled
-    if(cmd.exist("cut_window_size") && !opt.qualityCut.enabled5 && !opt.qualityCut.enabled3) {
-        cerr << "WARNING: you've specified sliding window size (-W/--cut_window_size), but you haven't enabled per read cutting by quality for 5'(-5/--cut_by_quality5) or 3' (-3/--cut_by_quality3), so quality cutting is ignored " << endl << endl;
-    } else if(cmd.exist("cut_mean_quality") && !opt.qualityCut.enabled5 && !opt.qualityCut.enabled3) {
-        cerr << "WARNING: you've specified sliding window mean quality requirement (-M/--cut_mean_quality), but you haven't enabled per read cutting by quality for 5'(-5/--cut_by_quality5) or 3' (-3/--cut_by_quality3), so quality cutting is ignored "<<endl << endl;
+    opt.qualityCut.enabledFront = cmd.exist("cut_front");
+    // back compatible with old versions
+    if(!opt.qualityCut.enabledFront){
+        opt.qualityCut.enabledFront = cmd.exist("cut_by_quality5");
+        if(opt.qualityCut.enabledFront)
+            cerr << "WARNING: cut_by_quality5 is deprecated, please use cut_front instead." << endl;
+    }
+    opt.qualityCut.enabledTail = cmd.exist("cut_tail");
+    // back compatible with old versions
+    if(!opt.qualityCut.enabledFront){
+        opt.qualityCut.enabledFront = cmd.exist("cut_by_quality3");
+        if(opt.qualityCut.enabledFront)
+            cerr << "WARNING: cut_by_quality3 is deprecated, please use cut_tail instead." << endl;
+    }
+    opt.qualityCut.enabledRight = cmd.exist("cut_right");
+    // back compatible with old versions
+    if(!opt.qualityCut.enabledRight){
+        opt.qualityCut.enabledRight = cmd.exist("cut_by_quality_aggressive");
+        if(opt.qualityCut.enabledRight)
+            cerr << "WARNING: cut_by_quality_aggressive is deprecated, please use cut_right instead." << endl;
+    }
+
+    opt.qualityCut.windowSizeShared = cmd.get<int>("cut_window_size");
+    opt.qualityCut.qualityShared = cmd.get<int>("cut_mean_quality");
+
+    if(cmd.exist("cut_front_window_size"))
+        opt.qualityCut.windowSizeFront = cmd.get<int>("cut_front_window_size");
+    else
+        opt.qualityCut.windowSizeFront = opt.qualityCut.windowSizeShared;
+    if(cmd.exist("cut_front_mean_quality"))
+        opt.qualityCut.qualityFront = cmd.get<int>("cut_front_mean_quality");
+    else
+        opt.qualityCut.qualityFront = opt.qualityCut.qualityShared;
+
+    if(cmd.exist("cut_tail_window_size"))
+        opt.qualityCut.windowSizeTail = cmd.get<int>("cut_tail_window_size");
+    else
+        opt.qualityCut.windowSizeTail = opt.qualityCut.windowSizeShared;
+    if(cmd.exist("cut_tail_mean_quality"))
+        opt.qualityCut.qualityTail = cmd.get<int>("cut_tail_mean_quality");
+    else
+        opt.qualityCut.qualityTail = opt.qualityCut.qualityShared;
+
+    if(cmd.exist("cut_right_window_size"))
+        opt.qualityCut.windowSizeRight = cmd.get<int>("cut_right_window_size");
+    else
+        opt.qualityCut.windowSizeRight = opt.qualityCut.windowSizeShared;
+    if(cmd.exist("cut_right_mean_quality"))
+        opt.qualityCut.qualityRight = cmd.get<int>("cut_right_mean_quality");
+    else
+        opt.qualityCut.qualityRight = opt.qualityCut.qualityShared;
+
+    // raise a warning if cutting option is not enabled but -W/-M is enabled
+    if(!opt.qualityCut.enabledFront && !opt.qualityCut.enabledTail && !opt.qualityCut.enabledRight) {
+        if(cmd.exist("cut_window_size") || cmd.exist("cut_mean_quality") 
+            || cmd.exist("cut_front_window_size") || cmd.exist("cut_front_mean_quality") 
+            || cmd.exist("cut_tail_window_size") || cmd.exist("cut_tail_mean_quality") 
+            || cmd.exist("cut_right_window_size") || cmd.exist("cut_right_mean_quality"))
+            cerr << "WARNING: you specified the options for cutting by quality, but forogt to enable any of cut_front/cut_tail/cut_right. This will have no effect." << endl;
     }
 
     // quality filtering

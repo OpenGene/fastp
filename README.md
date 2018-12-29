@@ -145,16 +145,19 @@ Adapter trimming is enabled by default, but you can disable it by `-A` or `--dis
 The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
 
 # per read cutting by quality score
-`fastp` supports per read sliding window cutting by evaluating the mean quality scores in the sliding window. From v0.19.6, `fastp` supports 3 different operations, and you enable one or all of them:
-* `-5, --cut_by_quality5`              move a sliding window from front (5') to tail, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise. Default is disabled. The leading N bases are also trimmed.
-* `-3, --cut_by_quality3`              move a sliding window from tail (3') to front, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise. Default is disabled. The trailing N bases are also trimmed.
-* `--cut_by_quality_aggressive`        move a sliding window from front to tail, if meet one window with mean quality below cut_mean_quality, drop the bases in this window and the rest, and stop. This is similar as the Trimmomatic `SLIDINGWINDOW` method.
+`fastp` supports per read sliding window cutting by evaluating the mean quality scores in the sliding window. From `v0.19.6`, `fastp` supports 3 different operations, and you enable one or all of them:
+* `-5, --cut_front`             move a sliding window from front (5') to tail, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise. Default is disabled. The leading N bases are also trimmed. Use `cut_front_window_size` to set the widnow size, and `cut_front_mean_quality` to set the mean quality threshold. If the window size is 1, this is similar as the Trimmomatic `LEADING` method.
+* `-3, --cut_tail`              move a sliding window from tail (3') to front, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise. Default is disabled. The trailing N bases are also trimmed. Use `cut_tail_window_size` to set the widnow size, and `cut_tail_mean_quality` to set the mean quality threshold. If the window size is 1, this is similar as the Trimmomatic `TRAILING` method.
+* `-r, --cut_right`             move a sliding window from front to tail, if meet one window with mean quality < threshold, drop the bases in the window and the right part, and then stop. Use `cut_right_window_size` to set the widnow size, and `cut_right_mean_quality` to set the mean quality threshold.  This is similar as the Trimmomatic `SLIDINGWINDOW` method.
 
-***WARNING: all these three operations will interfere deduplication for SE data, and `--cut_by_quality5` will also interfere deduplication for PE data. The deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.***
 
-If `--cut_by_quality_aggressive` is enabled, then there is no need to enable `--cut_by_quality3`, since the former is more aggressive. If `--cut_by_quality_aggressive` is enabled together with `--cut_by_quality5`, `--cut_by_quality5` will be performed first before `--cut_by_quality_aggressive` to avoid dropping whole reads due to the low quality starting bases.
+***WARNING: all these three operations will interfere deduplication for SE data, and `--cut_front` or `--cut_right` may also interfere deduplication for PE data. The deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.***
 
-The size of sliding window can be specified with `-W, --cut_window_size`, and the mean quality requirement can be specified with `-M, --cut_mean_quality `.
+If `--cut_right` is enabled, then there is no need to enable `--cut_tail`, since the former is more aggressive. If `--cut_right` is enabled together with `--cut_front`, `--cut_front` will be performed first before `--cut_right` to avoid dropping whole reads due to the low quality starting bases.
+
+Please be noted that `--cut_front` will interfere deduplication for both PE/SE data, and `--cut_tail` will interfere deduplication for SE data, since the deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.
+
+If you don't set window size and mean quality threshold for these function respectively, `fastp` will use the values from `-W, --cut_window_size` and `-M, --cut_mean_quality `
 
 # base correction for PE data
 `fastp` perform `overlap analysis` for PE data, which try to find an overlap of each pair of reads. If an proper overlap is found, it can correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality. If a base is corrected, the quality of its paired base will be assigned to it so that they will share the same quality.   
@@ -175,8 +178,8 @@ Please note that the trimming for `--max_len` limitation will be applied at the 
 1, UMI preprocessing (--umi)
 2, global trimming at front (--trim_front)
 3, global trimming at tail (--trim_tail)
-4, quality pruning at 5' (--cut_by_quality5)
-5, quality pruning at 3' (--cut_by_quality3)
+4, quality pruning at 5' (--cut_front)
+5, quality pruning at 3' (--cut_tail)
 6, trim polyG (--trim_poly_g, enabled by default for NovaSeq/NextSeq data)
 7, trim polyX (--trim_poly_x)
 8, trim adapter by overlap analysis (enabled by default for PE data)
@@ -287,11 +290,17 @@ options:
       --poly_x_min_len                 the minimum length to detect polyX in the read tail. 10 by default. (int [=10])
   
   # per read cutting by quality options
-  -5, --cut_by_quality5                move a sliding window from front (5') to tail, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise.
-  -3, --cut_by_quality3                move a sliding window from tail (3') to front, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise.
-      --cut_by_quality_aggressive      move a sliding window from front to tail, if meet one window with mean quality below cut_mean_quality, drop the bases in this window and the rest, and stop.
-  -W, --cut_window_size              the size of the sliding window for sliding window trimming (1~16), default is 4 (int [=4])
-  -M, --cut_mean_quality             the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20 (int [=20])
+  -5, --cut_front                      move a sliding window from front (5') to tail, drop the bases in the window if its mean quality < threshold, stop otherwise.
+  -3, --cut_tail                       move a sliding window from tail (3') to front, drop the bases in the window if its mean quality < threshold, stop otherwise.
+  -r, --cut_right                      move a sliding window from front to tail, if meet one window with mean quality < threshold, drop the bases in the window and the right part, and then stop.
+  -W, --cut_window_size                the window size option shared by cut_front, cut_tail or cut_sliding. Range: 1~1000, default: 4 (int [=4])
+  -M, --cut_mean_quality               the mean quality requirement option shared by cut_front, cut_tail or cut_sliding. Range: 1~36 default: 20 (Q20) (int [=20])
+      --cut_front_window_size          the window size option of cut_front, default to cut_window_size if not specified (int [=4])
+      --cut_front_mean_quality         the mean quality requirement option for cut_front, default to cut_mean_quality if not specified (int [=20])
+      --cut_tail_window_size           the window size option of cut_tail, default to cut_window_size if not specified (int [=4])
+      --cut_tail_mean_quality          the mean quality requirement option for cut_tail, default to cut_mean_quality if not specified (int [=20])
+      --cut_right_window_size          the window size option of cut_right, default to cut_window_size if not specified (int [=4])
+      --cut_right_mean_quality         the mean quality requirement option for cut_right, default to cut_mean_quality if not specified (int [=20])
   
   # quality filtering options
   -Q, --disable_quality_filtering    quality filtering is enabled by default. If this option is specified, quality filtering is disabled

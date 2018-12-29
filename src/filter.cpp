@@ -77,7 +77,7 @@ bool Filter::passLowComplexityFilter(Read* r) {
 
 Read* Filter::trimAndCut(Read* r, int front, int tail) {
     // return the same read for speed if no change needed
-    if(front == 0 && tail == 0 && !mOptions->qualityCut.enabled5 && !mOptions->qualityCut.enabled3)
+    if(front == 0 && tail == 0 && !mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail)
         return r;
 
 
@@ -85,10 +85,10 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
     if (rlen < 0)
         return NULL;
 
-    if(front == 0 && !mOptions->qualityCut.enabled5 && !mOptions->qualityCut.enabled3){
+    if(front == 0 && !mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight){
         r->resize(rlen);
         return r;
-    } else if(!mOptions->qualityCut.enabled5 && !mOptions->qualityCut.enabled3){
+    } else if(!mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight){
         r->mSeq.mStr = r->mSeq.mStr.substr(front, rlen);
         r->mQuality = r->mQuality.substr(front, rlen);
         return r;
@@ -96,12 +96,12 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
 
     // need quality cutting
 
-    int w = mOptions->qualityCut.windowSize;
     int l = r->length();
     const char* qualstr = r->mQuality.c_str();
     const char* seq = r->mSeq.mStr.c_str();
     // quality cutting forward
-    if(mOptions->qualityCut.enabled5) {
+    if(mOptions->qualityCut.enabledFront) {
+        int w = mOptions->qualityCut.windowSizeFront;
         int s = front;
         if(l - front - tail - w <= 0)
             return NULL;
@@ -119,7 +119,7 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
                 totalQual -= qualstr[s-1];
             }
             // add 33 for phred33 transforming
-            if((double)totalQual / (double)w >= 33 + mOptions->qualityCut.quality)
+            if((double)totalQual / (double)w >= 33 + mOptions->qualityCut.qualityFront)
                 break;
         }
 
@@ -132,8 +132,9 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
         rlen = l - front - tail;
     }
 
-    // aggressive quality cutting
-    if(mOptions->qualityCut.enabledAggressive) {
+    // quality cutting in right mode
+    if(mOptions->qualityCut.enabledRight) {
+        int w = mOptions->qualityCut.windowSizeRight;
         int s = front;
         if(l - front - tail - w <= 0)
             return NULL;
@@ -153,7 +154,7 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
                 totalQual -= qualstr[s-1];
             }
             // add 33 for phred33 transforming
-            if((double)totalQual / (double)w < 33 + mOptions->qualityCut.quality) {
+            if((double)totalQual / (double)w < 33 + mOptions->qualityCut.qualityRight) {
                 foundLowQualWindow = true;
                 break;
             }
@@ -165,7 +166,8 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
     }
 
     // quality cutting backward
-    if(!mOptions->qualityCut.enabledAggressive && mOptions->qualityCut.enabled3) {
+    if(!mOptions->qualityCut.enabledRight && mOptions->qualityCut.enabledTail) {
+        int w = mOptions->qualityCut.windowSizeTail;
         if(l - front - tail - w <= 0)
             return NULL;
 
@@ -183,7 +185,7 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
                 totalQual -= qualstr[t+1];
             }
             // add 33 for phred33 transforming
-            if((double)totalQual / (double)w >= 33 + mOptions->qualityCut.quality)
+            if((double)totalQual / (double)w >= 33 + mOptions->qualityCut.qualityTail)
                 break;
         }
 
@@ -245,10 +247,12 @@ bool Filter::test() {
         "+",
         "/////CCCCCCCCCCCC////CCCCCCCCCCCCCC////E");
     Options opt;
-    opt.qualityCut.enabled5 = true;
-    opt.qualityCut.enabled3 = true;
-    opt.qualityCut.windowSize = 4;
-    opt.qualityCut.quality = 20;
+    opt.qualityCut.enabledFront = true;
+    opt.qualityCut.enabledTail = true;
+    opt.qualityCut.windowSizeFront = 4;
+    opt.qualityCut.qualityFront = 20;
+    opt.qualityCut.windowSizeTail = 4;
+    opt.qualityCut.qualityTail = 20;
     Filter filter(&opt);
     Read* ret = filter.trimAndCut(&r, 0, 1);
     ret->print();

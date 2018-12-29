@@ -174,11 +174,23 @@ bool Options::validate() {
         }
     }
 
-    if(qualityCut.enabled5 || qualityCut.enabled3) {
-        if(qualityCut.windowSize < 1 || qualityCut.windowSize > 1000)
+    if(qualityCut.enabledFront || qualityCut.enabledTail || qualityCut.enabledRight) {
+        if(qualityCut.windowSizeShared < 1 || qualityCut.windowSizeShared > 1000)
             error_exit("the sliding window size for cutting by quality (--cut_window_size) should be between 1~1000.");
-        if(qualityCut.quality < 1 || qualityCut.quality > 30)
+        if(qualityCut.qualityShared < 1 || qualityCut.qualityShared > 30)
             error_exit("the mean quality requirement for cutting by quality (--cut_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
+        if(qualityCut.windowSizeFront < 1 || qualityCut.windowSizeFront > 1000)
+            error_exit("the sliding window size for cutting by quality (--cut_front_window_size) should be between 1~1000.");
+        if(qualityCut.qualityFront < 1 || qualityCut.qualityFront > 30)
+            error_exit("the mean quality requirement for cutting by quality (--cut_front_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
+        if(qualityCut.windowSizeTail < 1 || qualityCut.windowSizeTail > 1000)
+            error_exit("the sliding window size for cutting by quality (--cut_tail_window_size) should be between 1~1000.");
+        if(qualityCut.qualityTail < 1 || qualityCut.qualityTail > 30)
+            error_exit("the mean quality requirement for cutting by quality (--cut_tail_mean_quality) should be 1 ~ 30, suggest 13 ~ 20.");
+        if(qualityCut.windowSizeRight < 1 || qualityCut.windowSizeRight > 1000)
+            error_exit("the sliding window size for cutting by quality (--cut_right_window_size) should be between 1~1000.");
+        if(qualityCut.qualityRight < 1 || qualityCut.qualityRight > 30)
+            error_exit("the mean quality requirement for cutting by quality (--cut_right_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
     }
 
     if(adapter.sequence!="auto" && !adapter.sequence.empty()) {

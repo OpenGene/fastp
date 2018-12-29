@@ -116,23 +116,41 @@ public:
 class QualityCutOptions {
 public:
     QualityCutOptions() {
-        enabled5 = false;
-        enabled3 = false;
-        enabledAggressive = false;
-        windowSize = 4;
-        quality = 20;
+        enabledFront = false;
+        enabledTail = false;
+        enabledRight = false;
+        windowSizeShared = 4;
+        qualityShared = 20;
+        windowSizeFront = windowSizeShared;
+        qualityFront = qualityShared;
+        windowSizeTail = windowSizeShared;
+        qualityTail = qualityShared;
+        windowSizeRight = windowSizeShared;
+        qualityRight = qualityShared;
     }
 public:
     // enable 5' cutting by quality
-    bool enabled5;
+    bool enabledFront;
     // enable 3' cutting by quality
-    bool enabled3;
+    bool enabledTail;
     // enable agressive cutting mode
-    bool enabledAggressive;
-    // the sliding window size for cutting by quality
-    int windowSize;
-    // the mean quality requirement for cutting by quality
-    int quality;
+    bool enabledRight;
+    // the sliding window size
+    int windowSizeShared;
+    // the mean quality requirement
+    int qualityShared;
+    // the sliding window size for cutting by quality in 5'
+    int windowSizeFront;
+    // the mean quality requirement for cutting by quality in 5'
+    int qualityFront;
+    // the sliding window size for cutting by quality in 3'
+    int windowSizeTail;
+    // the mean quality requirement for cutting by quality in 3'
+    int qualityTail;
+    // the sliding window size for cutting by quality in aggressive mode
+    int windowSizeRight;
+    // the mean quality requirement for cutting by quality in aggressive mode
+    int qualityRight;
 };
 
 class SplitOptions {
