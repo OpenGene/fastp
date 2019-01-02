@@ -160,9 +160,12 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
             }
         }
 
-        // the trimming in front is forwarded and rlen is recalculated
-        if(foundLowQualWindow )
+        if(foundLowQualWindow ) {
+            // keep the good bases in the window
+            while(s<l-1 && qualstr[s]>=33 + mOptions->qualityCut.qualityRight)
+                s++;
             rlen = s - front;
+        }
     }
 
     // quality cutting backward
