@@ -77,7 +77,7 @@ bool Filter::passLowComplexityFilter(Read* r) {
 
 Read* Filter::trimAndCut(Read* r, int front, int tail) {
     // return the same read for speed if no change needed
-    if(front == 0 && tail == 0 && !mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail)
+    if(front == 0 && tail == 0 && !mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight)
         return r;
 
 
