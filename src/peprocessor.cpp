@@ -264,8 +264,6 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         if(r1 != NULL && r2!=NULL) {
             if(mOptions->polyGTrim.enabled)
                 PolyX::trimPolyG(r1, r2, config->getFilterResult(), mOptions->polyGTrim.minLen);
-            if(mOptions->polyXTrim.enabled)
-                PolyX::trimPolyX(r1, r2, config->getFilterResult(), mOptions->polyXTrim.minLen);
         }
         bool isizeEvaluated = false;
         if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)){
@@ -293,6 +291,11 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
             statInsertSize(r1, r2, ov);
             isizeEvaluated = true;
+        }
+
+        if(r1 != NULL && r2!=NULL) {
+            if(mOptions->polyXTrim.enabled)
+                PolyX::trimPolyX(r1, r2, config->getFilterResult(), mOptions->polyXTrim.minLen);
         }
 
         if(r1 != NULL && r2!=NULL) {

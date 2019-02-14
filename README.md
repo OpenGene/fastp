@@ -182,9 +182,9 @@ Please note that the trimming for `--max_len` limitation will be applied at the 
 5, quality pruning by sliding window (--cut_right)
 6, quality pruning at 3' (--cut_tail)
 7, trim polyG (--trim_poly_g, enabled by default for NovaSeq/NextSeq data)
-8, trim polyX (--trim_poly_x)
-9, trim adapter by overlap analysis (enabled by default for PE data)
-10, trim adapter by adapter sequence (--adapter_sequence, --adapter_sequence_r2. For PE data, this step is skipped if last step succeeded)
+8, trim adapter by overlap analysis (enabled by default for PE data)
+9, trim adapter by adapter sequence (--adapter_sequence, --adapter_sequence_r2. For PE data, this step is skipped if last step succeeded)
+10, trim polyX (--trim_poly_x)
 11, trim to max length (---max_len)
 ```
 

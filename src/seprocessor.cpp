@@ -207,12 +207,15 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         if(r1 != NULL) {
             if(mOptions->polyGTrim.enabled)
                 PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen);
-            if(mOptions->polyXTrim.enabled)
-                PolyX::trimPolyX(r1, config->getFilterResult(), mOptions->polyXTrim.minLen);
         }
 
         if(r1 != NULL && mOptions->adapter.enabled && mOptions->adapter.hasSeqR1){
             AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence);
+        }
+
+        if(r1 != NULL) {
+            if(mOptions->polyXTrim.enabled)
+                PolyX::trimPolyX(r1, config->getFilterResult(), mOptions->polyXTrim.minLen);
         }
 
         if(r1 != NULL) {
