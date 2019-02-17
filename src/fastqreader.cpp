@@ -174,6 +174,11 @@ Read* FastqReader::read(){
 	}
 
 	string name = getLine();
+	// name should start with @
+	while((name.empty() && !(mBufUsedLen >= mBufDataLen && eof())) || (!name.empty() && name[0]!='@')){
+		name = getLine();
+	}
+
 	string sequence = getLine();
 	string strand = getLine();
 
