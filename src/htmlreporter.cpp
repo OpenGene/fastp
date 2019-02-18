@@ -208,7 +208,8 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
 }
 
 void HtmlReporter::reportInsertSize(ofstream& ofs, int isizeLimit) {
-
+    if(isizeLimit<1)
+        isizeLimit = 1;
     int total = min(mOptions->insertSizeMax, isizeLimit);
     long *x = new long[total];
     double allCount = 0;
