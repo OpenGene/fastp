@@ -92,6 +92,8 @@ void FastqReader::clearLineBreaks(char* line) {
 }
 
 string FastqReader::getLine(){
+	static int c=0;
+	c++;
 	int copied = 0;
 
 	int start = mBufUsedLen;
@@ -112,7 +114,7 @@ string FastqReader::getLine(){
 		// skip \n or \r
 		end++;
 		// handle \r\n
-		if(end < mBufDataLen-1 && mBuf[end] == '\n')
+		if(end < mBufDataLen-1 && mBuf[end-1]=='\r' && mBuf[end] == '\n')
 			end++;
 
 		mBufUsedLen = end;
@@ -145,7 +147,6 @@ string FastqReader::getLine(){
 				end++;
 
 			mBufUsedLen = end;
-
 			return str;
 		}
 		// even this new buf is not enough, although impossible
@@ -179,11 +180,11 @@ Read* FastqReader::read(){
 		name = getLine();
 	}
 
+	if(name.empty())
+		return NULL;
+
 	string sequence = getLine();
 	string strand = getLine();
-
-	if(name.empty() || sequence.empty() || strand.empty())
-		return NULL;
 
 	// WAR for FQ with no quality
 	if (!mHasQuality){
@@ -192,8 +193,14 @@ Read* FastqReader::read(){
 	}
 	else {
 		string quality = getLine();
-		if(quality.empty())
+		if(quality.length() != sequence.length()) {
+			cerr << "ERROR: sequence and quality have different length:" << endl;
+			cerr << name << endl;
+			cerr << sequence << endl;
+			cerr << strand << endl;
+			cerr << quality << endl;
 			return NULL;
+		}
 		return new Read(name, sequence, strand, quality, mPhred64);
 	}
 
