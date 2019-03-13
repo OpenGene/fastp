@@ -57,6 +57,19 @@ bool Options::validate() {
         check_file_valid(in2);
     }
 
+    if(merge.enabled) {
+        if(split.enabled) {
+            error_exit("splitting mode cannot work with merging mode");
+        }
+        if(in2.empty()) {
+            error_exit("read2 input should be specified by --in2 for merging mode");
+        }
+        if(!out2.empty()) {
+            cerr << "Merging mode. Ignore argument --out2 = " << out2 << endl;
+            out2 = "";
+        }
+    }
+
     // if output to STDOUT, then...
     if(outputToSTDOUT) {
         cerr << "Streaming uncompressed output to STDOUT..." << endl;
@@ -82,11 +95,12 @@ bool Options::validate() {
     }
 
     if(!in2.empty() || interleavedInput) {
-        if(!out1.empty() && out2.empty()) {
+        if(!out1.empty() && out2.empty() && !merge.enabled) {
             error_exit("paired-end input, read1 output should be specified together with read2 output (--out2 needed) ");
         }
         if(out1.empty() && !out2.empty()) {
-            error_exit("paired-end input, read1 output should be specified (--out1 needed) together with read2 output ");
+            if(!merge.enabled)
+                error_exit("paired-end input, read1 output should be specified (--out1 needed) together with read2 output ");
         }
     }
 

@@ -90,7 +90,7 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "\t\t\t" << "\"q20_rate\":" << (post_total_bases == 0?0.0:(double)post_q20_bases / (double)post_total_bases) << "," << endl; 
     ofs << "\t\t\t" << "\"q30_rate\":" << (post_total_bases == 0?0.0:(double)post_q30_bases / (double)post_total_bases) << "," << endl; 
     ofs << "\t\t\t" << "\"read1_mean_length\":" << postStats1->getMeanLength() << "," << endl;
-    if(mOptions->isPaired())
+    if(mOptions->isPaired() && !mOptions->merge.enabled)
         ofs << "\t\t\t" << "\"read2_mean_length\":" << postStats2->getMeanLength() << "," << endl;
     ofs << "\t\t\t" << "\"gc_content\":" << (post_total_bases == 0?0.0:(double)post_total_gc / (double)post_total_bases)  << endl; 
     ofs << "\t\t" << "}";
@@ -160,7 +160,7 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         preStats2 -> reportJson(ofs, "\t");
     }
 
-    if(postStats2) {
+    if(postStats2 && !mOptions->merge.enabled) {
         ofs << "\t" << "\"read2_after_filtering\": " ;
         postStats2 -> reportJson(ofs, "\t");
     }

@@ -21,14 +21,10 @@ FilterResult::~FilterResult() {
     delete mCorrectionMatrix;
 }
 
-void FilterResult::addFilterResult(int result) {
+void FilterResult::addFilterResult(int result, int readNum) {
     if(result < PASS_FILTER || result >= FILTER_RESULT_TYPES)
         return ;
-    // for paired end data, both reads are filtered together
-    if(mPaired)
-        mFilterReadStats[result] += 2;
-    else
-        mFilterReadStats[result]++;
+    mFilterReadStats[result] += readNum;
 }
 
 FilterResult* FilterResult::merge(vector<FilterResult*>& list) {

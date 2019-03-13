@@ -27,6 +27,7 @@ public:
 
     static OverlapResult analyze(Sequence&  r1, Sequence&  r2, int overlapDiffLimit = 5, int overlapRequire=30);
     static OverlapResult analyze(Read* r1, Read* r2, int overlapDiffLimit = 5, int overlapRequire=30);
+    static Read* merge(Read* r1, Read* r2, OverlapResult ov);
 
 public:
     static bool test();

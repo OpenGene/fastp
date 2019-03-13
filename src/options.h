@@ -17,6 +17,17 @@ using namespace std;
 #define UMI_LOC_PER_INDEX 5
 #define UMI_LOC_PER_READ 6
 
+class MergeOptions {
+public:
+    MergeOptions() {
+        enabled = false;
+        discardUnmerged = false;
+    }
+public:
+    bool enabled;
+    bool discardUnmerged;
+};
+
 class DuplicationOptions {
 public:
     DuplicationOptions() {
@@ -341,6 +352,8 @@ public:
     int overlapDiffLimit;
     // output debug information
     bool verbose;
+    // merge options
+    MergeOptions merge;
 
 };
 

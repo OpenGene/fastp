@@ -225,7 +225,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         int result = mFilter->passFilter(r1);
 
-        config->addFilterResult(result);
+        config->addFilterResult(result, 1);
 
         if( r1 != NULL &&  result == PASS_FILTER) {
             outstr += r1->toString();

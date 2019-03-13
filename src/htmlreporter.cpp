@@ -117,7 +117,8 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     // report read length change
     if(mOptions->isPaired()) {
         outputRow(ofs, "mean length before filtering:", to_string(preStats1->getMeanLength()) + "bp, " + to_string(preStats2->getMeanLength()) + "bp");
-        outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp, " + to_string(postStats2->getMeanLength()) + "bp");
+        if(!mOptions->merge.enabled)
+            outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp, " + to_string(postStats2->getMeanLength()) + "bp");
     } else  {
         outputRow(ofs, "mean length before filtering:", to_string(preStats1->getMeanLength()) + "bp");
         outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp");
@@ -354,7 +355,7 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         postStats1 -> reportHtml(ofs, "After filtering", "read1");
     }
 
-    if(postStats2) {
+    if(postStats2 && !mOptions->merge.enabled) {
         postStats2 -> reportHtml(ofs, "After filtering", "read2");
     }
 

@@ -77,8 +77,8 @@ void ThreadConfig::initWriter(gzFile gzfile1, gzFile gzfile2) {
     mWriter2 = new Writer(gzfile2);
 }
 
-void ThreadConfig::addFilterResult(int result) {
-    mFilterResult->addFilterResult(result);
+void ThreadConfig::addFilterResult(int result, int readNum) {
+    mFilterResult->addFilterResult(result, readNum);
 }
 
 void ThreadConfig::initWriterForSplit() {

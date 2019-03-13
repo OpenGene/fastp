@@ -44,11 +44,12 @@ PairEndProcessor::~PairEndProcessor() {
 }
 
 void PairEndProcessor::initOutput() {
-    if(mOptions->out1.empty() || mOptions->out2.empty())
+    if(mOptions->out1.empty())
         return;
     
     mLeftWriter = new WriterThread(mOptions, mOptions->out1);
-    mRightWriter = new WriterThread(mOptions, mOptions->out2);
+    if(!mOptions->out2.empty())
+        mRightWriter = new WriterThread(mOptions, mOptions->out2);
 }
 
 void PairEndProcessor::closeOutput() {
@@ -140,9 +141,11 @@ bool PairEndProcessor::process(){
     cerr << endl;
     cerr << "Read2 before filtering:"<<endl;
     finalPreStats2->print();
-    cerr << endl;
-    cerr << "Read2 aftering filtering:"<<endl;
-    finalPostStats2->print();
+    if(!mOptions->merge.enabled) {
+        cerr << endl;
+        cerr << "Read2 aftering filtering:"<<endl;
+        finalPostStats2->print();
+    }
 
     cerr << endl;
     cerr << "Filtering result:"<<endl;
@@ -227,7 +230,7 @@ int PairEndProcessor::getPeakInsertSize() {
 bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     string outstr1;
     string outstr2;
-    string interleaved;
+    string singleOutput;
     int readPassed = 0;
     for(int p=0;p<pack->count;p++){
         ReadPair* pair = pack->data[p];
@@ -305,25 +308,59 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 r2->resize(mOptions->trim.maxLen2);
         }
 
-        int result1 = mFilter->passFilter(r1);
-        int result2 = mFilter->passFilter(r2);
+        Read* merged = NULL;
+        // merging mode
+        if(mOptions->merge.enabled && r1 && r2) {
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+            if(ov.overlapped) {
+                merged = OverlapAnalysis::merge(r1, r2, ov);
+                int result = mFilter->passFilter(merged);
+                config->addFilterResult(result, 2);
+                if(result == PASS_FILTER) {
+                    singleOutput += merged->toString();
+                    config->getPostStats1()->statRead(merged);
+                    readPassed++;
+                }
+                delete merged;
+            } else if(!mOptions->merge.discardUnmerged){
+                int result1 = mFilter->passFilter(r1);
+                config->addFilterResult(result1, 1);
+                if(result1 == PASS_FILTER) {
+                    singleOutput += r1->toString();
+                    config->getPostStats1()->statRead(r1);
+                }
 
-        config->addFilterResult(max(result1, result2));
-
-        if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
-            
-            if(mOptions->outputToSTDOUT) {
-                interleaved += r1->toString() + r2->toString();
-            } else {
-                outstr1 += r1->toString();
-                outstr2 += r2->toString();
+                int result2 = mFilter->passFilter(r2);
+                config->addFilterResult(result2, 1);
+                if(result2 == PASS_FILTER) {
+                    singleOutput += r2->toString();
+                    config->getPostStats1()->statRead(r2);
+                }
+                if(result1 == PASS_FILTER && result2 == PASS_FILTER )
+                    readPassed++;
             }
+        } else {
 
-            // stats the read after filtering
-            config->getPostStats1()->statRead(r1);
-            config->getPostStats2()->statRead(r2);
+            int result1 = mFilter->passFilter(r1);
+            int result2 = mFilter->passFilter(r2);
 
-            readPassed++;
+            config->addFilterResult(max(result1, result2), 2);
+
+            if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
+                
+                if(mOptions->outputToSTDOUT) {
+                    singleOutput += r1->toString() + r2->toString();
+                } else {
+                    outstr1 += r1->toString();
+                    outstr2 += r2->toString();
+                }
+
+                // stats the read after filtering
+                config->getPostStats1()->statRead(r1);
+                config->getPostStats2()->statRead(r2);
+
+                readPassed++;
+            }
         }
 
         delete pair;
@@ -339,7 +376,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         mOutputMtx.lock();
     if(mOptions->outputToSTDOUT) {
         // STDOUT output
-        fwrite(interleaved.c_str(), 1, interleaved.length(), stdout);
+        fwrite(singleOutput.c_str(), 1, singleOutput.length(), stdout);
     } else if(mOptions->split.enabled) {
         // split output by each worker thread
         if(!mOptions->out1.empty())
@@ -358,10 +395,10 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             memcpy(rdata, outstr2.c_str(), outstr2.size());
             mRightWriter->input(rdata, outstr2.size());
         } else if(mLeftWriter) {
-            // write interleaved
-            char* ldata = new char[interleaved.size()];
-            memcpy(ldata, interleaved.c_str(), interleaved.size());
-            mLeftWriter->input(ldata, interleaved.size());
+            // write singleOutput
+            char* ldata = new char[singleOutput.size()];
+            memcpy(ldata, singleOutput.c_str(), singleOutput.size());
+            mLeftWriter->input(ldata, singleOutput.size());
         }
     }
     if(!mOptions->split.enabled)

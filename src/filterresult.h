@@ -29,7 +29,7 @@ public:
     FilterResult(Options* opt, bool paired = false);
     ~FilterResult();
     inline long* getFilterReadStats() {return mFilterReadStats;}
-    void addFilterResult(int result);
+    void addFilterResult(int result, int readNum=1);
     static FilterResult* merge(vector<FilterResult*>& list);
     void print();
     // for single end
