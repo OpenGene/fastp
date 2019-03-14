@@ -61,7 +61,7 @@ bool Options::validate() {
         if(split.enabled) {
             error_exit("splitting mode cannot work with merging mode");
         }
-        if(in2.empty()) {
+        if(in2.empty() && !interleavedInput) {
             error_exit("read2 input should be specified by --in2 for merging mode");
         }
         if(!out2.empty()) {

@@ -170,6 +170,18 @@ bool PairEndProcessor::process(){
     cerr << endl;
     cerr << "Insert size peak (evaluated by paired-end reads): " << peakInsertSize << endl;
 
+    if(mOptions->merge.enabled) {
+        cerr << endl;
+        cerr << "Read pairs merged: " << finalFilterResult->mMergedPairs << endl;
+        if(finalPostStats1->getReads() > 0) {
+            double postMergedPercent = 100.0 * finalFilterResult->mMergedPairs / finalPostStats1->getReads();
+            double preMergedPercent = 100.0 * finalFilterResult->mMergedPairs / finalPreStats1->getReads();
+            cerr << "% of original read pairs: " << preMergedPercent << "%" << endl;
+            cerr << "% in reads after filtering: " << postMergedPercent << "%" << endl;
+        }
+        cerr << endl;
+    }
+
     // make JSON report
     JsonReporter jr(mOptions);
     jr.setDupHist(dupHist, dupMeanGC, dupRate);
@@ -232,6 +244,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     string outstr2;
     string singleOutput;
     int readPassed = 0;
+    int mergedCount = 0;
     for(int p=0;p<pack->count;p++){
         ReadPair* pair = pack->data[p];
         Read* or1 = pair->mLeft;
@@ -320,6 +333,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                     singleOutput += merged->toString();
                     config->getPostStats1()->statRead(merged);
                     readPassed++;
+                    mergedCount++;
                 }
                 delete merged;
             } else if(!mOptions->merge.discardUnmerged){
@@ -408,6 +422,10 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         config->markProcessed(readPassed);
     else
         config->markProcessed(pack->count);
+
+    if(mOptions->merge.enabled) {
+        config->addMergedPairs(mergedCount);
+    }
 
     delete pack->data;
     delete pack;

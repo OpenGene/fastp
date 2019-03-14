@@ -81,6 +81,10 @@ void ThreadConfig::addFilterResult(int result, int readNum) {
     mFilterResult->addFilterResult(result, readNum);
 }
 
+void ThreadConfig::addMergedPairs(int pairs) {
+    mFilterResult->addMergedPairs(pairs);
+}
+
 void ThreadConfig::initWriterForSplit() {
     if(mOptions->out1.empty())
         return ;

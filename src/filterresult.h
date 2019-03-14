@@ -52,11 +52,13 @@ public:
     void addCorrection(char from, char to);
     long getCorrectionNum(char from, char to);
     void incCorrectedReads(int count);
+    void addMergedPairs(int pairs);
 
 public:
     Options* mOptions;
     bool mPaired;
     long mCorrectedReads;
+    long mMergedPairs;
 private:
     long mFilterReadStats[FILTER_RESULT_TYPES];
     long mTrimmedAdapterRead;

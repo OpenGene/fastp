@@ -9,6 +9,7 @@ FilterResult::FilterResult(Options* opt, bool paired){
     mPaired = paired;
     mTrimmedAdapterRead = 0;
     mTrimmedAdapterBases = 0;
+    mMergedPairs = 0;
     for(int i=0; i<FILTER_RESULT_TYPES; i++) {
         mFilterReadStats[i] = 0;
     }
@@ -27,6 +28,10 @@ void FilterResult::addFilterResult(int result, int readNum) {
     mFilterReadStats[result] += readNum;
 }
 
+void FilterResult::addMergedPairs(int pairs) {
+    mMergedPairs += pairs;
+}
+
 FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
     if(list.size() == 0)
         return NULL;
@@ -41,6 +46,7 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
         }
         result->mTrimmedAdapterRead += list[i]->mTrimmedAdapterRead;
         result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
+        result->mMergedPairs += list[i]->mMergedPairs;
 
         // merge adapter stats
         map<string, long>::iterator iter;
