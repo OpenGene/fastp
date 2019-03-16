@@ -259,6 +259,8 @@ options:
   -o, --out1                         read1 output file name (string [=])
   -I, --in2                          read2 input file name (string [=])
   -O, --out2                         read2 output file name (string [=])
+  -m, --merge                        for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.
+      --chastity                     in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.
   -6, --phred64                      indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
   -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4. (int [=4])
       --stdin                          input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.

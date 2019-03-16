@@ -35,12 +35,12 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
+    cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.");
+    cmd.add("chastity", 0, "in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.");
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4.", false, 4);
     cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
     cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by default.");
-    cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.");
-    cmd.add("discard_unmerged", 0, "in the merge mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.");
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
@@ -162,7 +162,7 @@ int main(int argc, char* argv[]){
 
     // merge PE
     opt.merge.enabled = cmd.exist("merge");
-    opt.merge.discardUnmerged = cmd.exist("discard_unmerged");
+    opt.merge.discardUnmerged = cmd.exist("chastity");
 
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");
