@@ -254,7 +254,7 @@ By default, fastp uses 1/20 reads for sequence counting, and you can change this
 # merge paired-end reads
 For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode, the output will be a single file.
 
-In the output file, a tag will `merged_xxx_yyy` be added to the read name to indicate that how many base pairs are from read1 and from read2, respectively. For example, `
+In the output file, a tag like `merged_xxx_yyy`will be added to each read name to indicate that how many base pairs are from read1 and from read2, respectively. For example, `
 @NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15` 
 means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the bases in read1 since they usually have higher quality than read2.
 
