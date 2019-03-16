@@ -21,6 +21,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 * [unique molecular identifier (UMI) processing](#unique-molecular-identifier-umi-processing)
 * [output splitting](#output-splitting)
 * [overrepresented sequence analysis](#overrepresented-sequence-analysis)
+* [merge paired-end reads](#merge-paired-end-reads)
 * [all options](#all-options)
 * [citation](#citation)
 
@@ -162,7 +163,7 @@ If you don't set window size and mean quality threshold for these function respe
 # base correction for PE data
 `fastp` perform `overlap analysis` for PE data, which try to find an overlap of each pair of reads. If an proper overlap is found, it can correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality. If a base is corrected, the quality of its paired base will be assigned to it so that they will share the same quality.   
 
-This function is not enabled by default, specify `-c` or `--correction` to enable it.
+This function is not enabled by default, specify `-c` or `--correction` to enable it. This function is based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)` and `overlap_diff_limit (default 5)`.
 
 # global trimming
 `fastp` supports global trimming, which means trim all reads in the front or the tail. This function is useful since sometimes you want to drop some cycles of a sequencing run.
@@ -249,6 +250,17 @@ Overrepresented sequence analysis is disabled by default, you can specify `-p` o
 By default, fastp uses 1/20 reads for sequence counting, and you can change this settings by specifying `-P` or `--overrepresentation_sampling` option. For example, if you set `-P 100`, only 1/100 reads will be used for counting, and if you set `-P 1`, all reads will be used but it will be extremely slow. The default value 20 is a balance of speed and accuracy.  
 
 `fastp` not only gives the counts of overrepresented sequence, but also gives the information that how they distribute over cycles. A figure is provided for each detected overrepresented sequence, from which you can know where this sequence is mostly found.
+
+# merge paired-end reads
+For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode, the output will be a single file.
+
+In the output file, a tag will `merged_xxx_yyy` be added to the read name to indicate that how many base pairs are from read1 and read2 respectively. For example, `
+@NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15` 
+means that 150bp are from read1, and 15bp are from read2. fastp prefers the bases in since they usually have higher quality than read2.
+
+For the pairs of reads that cannot be merged successfully, they will be both included in the output by default. But you can specify the `--chastity` option to discard the unmerged reads.
+
+Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)` and `overlap_diff_limit (default 5)`.
 
 # all options
 ```shell
