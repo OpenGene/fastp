@@ -258,7 +258,7 @@ In the output file, a tag like `merged_xxx_yyy`will be added to each read name t
 @NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15` 
 means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the bases in read1 since they usually have higher quality than read2.
 
-For the pairs of reads that cannot be merged successfully, they will be both included in the output by default. But you can specify the `--chastity` option to discard the unmerged reads.
+For the pairs of reads that cannot be merged successfully, they will be both included in the output by default. But you can specify the `--discard_unmerged` option to discard the unmerged reads.
 
 Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)` and `overlap_diff_limit (default 5)`.
 
@@ -272,7 +272,7 @@ options:
   -I, --in2                          read2 input file name (string [=])
   -O, --out2                         read2 output file name (string [=])
   -m, --merge                        for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.
-      --chastity                     in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.
+      --discard_unmerged                     in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.
   -6, --phred64                      indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
   -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4. (int [=4])
       --stdin                          input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
