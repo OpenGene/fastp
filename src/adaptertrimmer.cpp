@@ -84,7 +84,7 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
 
     if(found) {
         if(pos < 0) {
-            string adapter = adapterseq.substr(0, alen+pos);
+            string adapter = adapterseq.substr(-pos, alen+pos);
             r->mSeq.mStr.resize(0);
             r->mQuality.resize(0);
             if(fr) {
