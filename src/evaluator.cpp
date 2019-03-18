@@ -195,10 +195,10 @@ void Evaluator::evaluateReadNum(long& readNum) {
     readNum = 0;
     if(reachedEOF){
         readNum = records;
-    } else if(records>0) {
+    } else if(records>1) {
         // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
         reader.getBytes(bytesRead, bytesTotal);
-        double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
+        double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) (records - 1);
         // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
         readNum = (long) (bytesTotal*1.01 / bytesPerRead);
     }
@@ -281,10 +281,10 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
     readNum = 0;
     if(reachedEOF){
         readNum = records;
-    } else if(records>0) {
+    } else if(records>1) {
         // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
         reader.getBytes(bytesRead, bytesTotal);
-        double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
+        double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) (records - 1);
         // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
         readNum = (long) (bytesTotal*1.01 / bytesPerRead);
     }
