@@ -36,6 +36,7 @@ public:
     void addAdapterTrimmed(string adapter, bool isR2 = false);
     // for paired end
     void addAdapterTrimmed(string adapter1, string adapter2);
+    void addPolyXTrimmed(int base, int length);
     // a part of JSON report
     void reportJson(ofstream& ofs, string padding);
     // a part of JSON report for adapters
@@ -63,6 +64,8 @@ private:
     long mFilterReadStats[FILTER_RESULT_TYPES];
     long mTrimmedAdapterRead;
     long mTrimmedAdapterBases;
+    long mTrimmedPolyXReads[4] = {0};
+    long mTrimmedPolyXBases[4] = {0};
     map<string, long, classcomp> mAdapter1;
     map<string, long, classcomp> mAdapter2;
     long* mCorrectionMatrix;

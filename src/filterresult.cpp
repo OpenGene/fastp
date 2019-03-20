@@ -48,6 +48,11 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
         result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
         result->mMergedPairs += list[i]->mMergedPairs;
 
+        for(int b=0; b<4; b++) {
+          result->mTrimmedPolyXReads[b] += list[i]->mTrimmedPolyXReads[b];
+          result->mTrimmedPolyXBases[b] += list[i]->mTrimmedPolyXBases[b];
+        }
+
         // merge adapter stats
         map<string, long>::iterator iter;
         for(iter = list[i]->mAdapter1.begin(); iter != list[i]->mAdapter1.end(); iter++) {
@@ -140,6 +145,11 @@ void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
     }
 }
 
+void FilterResult::addPolyXTrimmed(int base, int length) {
+    mTrimmedPolyXReads[base] += 1;
+    mTrimmedPolyXBases[base] += length;
+}
+
 void FilterResult::print() {
     cerr <<  "reads passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
     cerr <<  "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
@@ -155,6 +165,16 @@ void FilterResult::print() {
     if(mOptions->adapter.enabled) {
         cerr <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
         cerr <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
+    }
+    if(mOptions->polyXTrim.enabled) {
+        int sum_reads = 0;
+        int sum_bases = 0;
+        for(int b = 0; b < 4; b++) {
+          sum_reads += mTrimmedPolyXReads[b];
+          sum_bases += mTrimmedPolyXBases[b];
+        }
+        cerr <<  "reads with polyX in 3' end: " << sum_reads << endl;
+        cerr <<  "bases trimmed in polyX tail: " << sum_bases << endl;
     }
     if(mOptions->correction.enabled) {
         cerr <<  "reads corrected by overlap analysis: " << mCorrectedReads << endl;
