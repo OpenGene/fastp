@@ -145,6 +145,11 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         result -> reportAdapterJson(ofs, "\t");
     }
 
+    if(result && mOptions->polyXTrimmingEnabled()) {
+        ofs << "\t" << "\"polyx_trimming\": " ;
+        result -> reportPolyXTrimJson(ofs, "\t");
+    }
+
     if(preStats1) {
         ofs << "\t" << "\"read1_before_filtering\": " ;
         preStats1 -> reportJson(ofs, "\t");

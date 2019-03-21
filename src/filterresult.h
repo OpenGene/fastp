@@ -37,10 +37,14 @@ public:
     // for paired end
     void addAdapterTrimmed(string adapter1, string adapter2);
     void addPolyXTrimmed(int base, int length);
+    long getTotalPolyXTrimmedReads();
+    long getTotalPolyXTrimmedBases();
     // a part of JSON report
     void reportJson(ofstream& ofs, string padding);
     // a part of JSON report for adapters
     void reportAdapterJson(ofstream& ofs, string padding);
+    // a part of JSON report for polyX trim
+    void reportPolyXTrimJson(ofstream& ofs, string padding);
     // a part of HTML report
     void reportHtml(ofstream& ofs, long totalReads, long totalBases);
     // a part of HTML report for adapters
@@ -54,6 +58,7 @@ public:
     long getCorrectionNum(char from, char to);
     void incCorrectedReads(int count);
     void addMergedPairs(int pairs);
+
 
 public:
     Options* mOptions;

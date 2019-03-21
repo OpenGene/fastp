@@ -17,6 +17,8 @@ typedef unsigned short uint16;
 typedef char int8;
 typedef unsigned char uint8;
 
+const char ATCG_BASES[] = {'A', 'T', 'C', 'G'};
+
 #pragma pack(2) 
 
 

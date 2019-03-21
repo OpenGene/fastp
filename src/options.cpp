@@ -41,6 +41,10 @@ bool Options::adapterCuttingEnabled() {
     return false;
 }
 
+bool Options::polyXTrimmingEnabled() {
+    return polyXTrim.enabled;
+}
+
 bool Options::validate() {
     if(in1.empty()) {
         if(!in2.empty())
