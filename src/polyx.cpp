@@ -110,16 +110,21 @@ void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq) {
             pos--;
 
         r->resize(rlen - pos - 1);
-        fr->addPolyXTrimmed(poly, pos + 1);
+        if(fr)
+          fr->addPolyXTrimmed(poly, pos + 1);
     }
 }
 
 bool PolyX::test() {
+
     Read r("@name",
         "ATTTTAAAAAAAAAATAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAT",
         "+",
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
-    PolyX::trimPolyX(&r, NULL, 10);
+
+    FilterResult fr(NULL, false);
+    PolyX::trimPolyX(&r, &fr, 10);
     r.print();
-    return r.mSeq.mStr == "ATTTT";
+
+    return r.mSeq.mStr == "ATTTT" && fr.getTotalPolyXTrimmedReads() == 1 && fr.getTotalPolyXTrimmedBases() == 51;
 }
