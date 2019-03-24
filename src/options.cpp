@@ -68,6 +68,9 @@ bool Options::validate() {
             cerr << "Merging mode. Ignore argument --out2 = " << out2 << endl;
             out2 = "";
         }
+        // enable correction if it's not enabled
+        if(!correction.enabled)
+            correction.enabled = true;
     }
 
     // if output to STDOUT, then...
