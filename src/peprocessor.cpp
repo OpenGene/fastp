@@ -288,7 +288,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
             // we only use thread 0 to evaluae ISIZE
             if(config->getThreadId() == 0) {
-                statInsertSize(r1, r2, ov);
+                statInsertSize(r1, r2, ov, frontTrimmed1, frontTrimmed2);
                 isizeEvaluated = true;
             }
             if(mOptions->correction.enabled) {
@@ -307,7 +307,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
         if(config->getThreadId() == 0 && !isizeEvaluated && r1 != NULL && r2!=NULL) {
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
-            statInsertSize(r1, r2, ov);
+            statInsertSize(r1, r2, ov, frontTrimmed1, frontTrimmed2);
             isizeEvaluated = true;
         }
 
@@ -435,13 +435,13 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     return true;
 }
     
-void PairEndProcessor::statInsertSize(Read* r1, Read* r2, OverlapResult& ov) {
+void PairEndProcessor::statInsertSize(Read* r1, Read* r2, OverlapResult& ov, int frontTrimmed1, int frontTrimmed2) {
     int isize = mOptions->insertSizeMax;
     if(ov.overlapped) {
         if(ov.offset > 0)
-            isize = r1->length() + r2->length() - ov.overlap_len;
+            isize = r1->length() + r2->length() - ov.overlap_len + frontTrimmed1 + frontTrimmed2;
         else
-            isize = ov.overlap_len;
+            isize = ov.overlap_len + frontTrimmed1 + frontTrimmed2;
     }
 
     if(isize > mOptions->insertSizeMax)

@@ -57,7 +57,7 @@ private:
     void initConfig(ThreadConfig* config);
     void initOutput();
     void closeOutput();
-    void statInsertSize(Read* r1, Read* r2, OverlapResult& ov);
+    void statInsertSize(Read* r1, Read* r2, OverlapResult& ov, int frontTrimmed1 = 0, int frontTrimmed2 = 0);
     int getPeakInsertSize();
     void writeTask(WriterThread* config);
 
