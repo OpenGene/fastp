@@ -12,25 +12,32 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr)
     return trimByOverlapAnalysis(r1, r2, fr, ov);
 }
 
-bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, OverlapResult ov) {
+bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, OverlapResult ov, int frontTrimmed1, int frontTrimmed2) {
     int ol = ov.overlap_len;
     if(ov.diff<=5 && ov.overlapped && ov.offset < 0 && ol > r1->length()/3) {
-        string adapter1 = r1->mSeq.mStr.substr(ol, r1->length() - ol);
-        string adapter2 = r2->mSeq.mStr.substr(ol, r2->length() - ol);
+
+        //5'      ......frontTrimmed1......|------------------------------------------|----- 3'
+        //3' -----|-------------------------------------------|......frontTrimmed2.....      5'
+
+        int len1 = min(r1->length(), ol + frontTrimmed2);
+        int len2 = min(r2->length(), ol + frontTrimmed1);
+        string adapter1 = r1->mSeq.mStr.substr(len1, r1->length() - len1);
+        string adapter2 = r2->mSeq.mStr.substr(len2, r2->length() - len2);
 
         if(_DEBUG) {
             cerr << adapter1 << endl;
             cerr << adapter2 << endl;
+            cerr << "frontTrimmed2: " << frontTrimmed1 << endl;
+            cerr << "frontTrimmed2: " << frontTrimmed2 << endl;
             cerr << "overlap:" << ov.offset << "," << ov.overlap_len << ", " << ov.diff << endl;
             r1->print();
             r2->reverseComplement()->print();
             cerr <<endl;
         }
-
-        r1->mSeq.mStr = r1->mSeq.mStr.substr(0, ol);
-        r1->mQuality = r1->mQuality.substr(0, ol);
-        r2->mSeq.mStr = r2->mSeq.mStr.substr(0, ol);
-        r2->mQuality = r2->mQuality.substr(0, ol);
+        r1->mSeq.mStr = r1->mSeq.mStr.substr(0, len1);
+        r1->mQuality = r1->mQuality.substr(0, len1);
+        r2->mSeq.mStr = r2->mSeq.mStr.substr(0, len2);
+        r2->mQuality = r2->mQuality.substr(0, len2);
 
         fr->addAdapterTrimmed(adapter1, adapter2);
         return true;

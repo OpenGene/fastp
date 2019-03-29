@@ -274,8 +274,10 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             mUmiProcessor->process(or1, or2);
 
         // trim in head and tail, and apply quality cut in sliding window
-        Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
-        Read* r2 = mFilter->trimAndCut(or2, mOptions->trim.front2, mOptions->trim.tail2);
+        int frontTrimmed1 = 0;
+        int frontTrimmed2 = 0;
+        Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1, frontTrimmed1);
+        Read* r2 = mFilter->trimAndCut(or2, mOptions->trim.front2, mOptions->trim.tail2, frontTrimmed2);
 
         if(r1 != NULL && r2!=NULL) {
             if(mOptions->polyGTrim.enabled)
@@ -293,7 +295,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
             }
             if(mOptions->adapter.enabled) {
-                bool trimmed = AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
+                bool trimmed = AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov, frontTrimmed1, frontTrimmed2);
                 if(!trimmed){
                     if(mOptions->adapter.hasSeqR1)
                         AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
