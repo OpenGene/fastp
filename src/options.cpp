@@ -126,6 +126,36 @@ bool Options::validate() {
             error_exit(out2 + " already exists and you have set to not rewrite output files by --dont_overwrite");
         }
     }
+    if(!isPaired()) {
+        if(!unpaired1.empty()) {
+            cerr << "Not paired-end mode. Ignore argument --unpaired1 = " << unpaired1 << endl;
+            unpaired1 = "";
+        }
+        if(!unpaired2.empty()) {
+            cerr << "Not paired-end mode. Ignore argument --unpaired2 = " << unpaired2 << endl;
+            unpaired2 = "";
+        }
+    }
+    if(split.enabled) {
+        if(!unpaired1.empty()) {
+            cerr << "Outputing unpaired reads is not supported in splitting mode. Ignore argument --unpaired1 = " << unpaired1 << endl;
+            unpaired1 = "";
+        }
+        if(!unpaired2.empty()) {
+            cerr << "Outputing unpaired reads is not supported in splitting mode. Ignore argument --unpaired2 = " << unpaired2 << endl;
+            unpaired2 = "";
+        }
+    }
+    if(!unpaired1.empty()) {
+        if(dontOverwrite && file_exists(unpaired1)) {
+            error_exit(unpaired1 + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+    }
+    if(!unpaired2.empty()) {
+        if(dontOverwrite && file_exists(unpaired2)) {
+            error_exit(unpaired2 + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+    }
 
     if(dontOverwrite) {
         if(file_exists(jsonFile)) {

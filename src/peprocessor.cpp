@@ -28,6 +28,8 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     memset(mInsertSizeHist, 0, sizeof(long)*isizeBufLen);
     mLeftWriter =  NULL;
     mRightWriter = NULL;
+    mUnpairedLeftWriter =  NULL;
+    mUnpairedRightWriter = NULL;
 
     mDuplicate = NULL;
     if(mOptions->duplicate.enabled) {
@@ -44,6 +46,12 @@ PairEndProcessor::~PairEndProcessor() {
 }
 
 void PairEndProcessor::initOutput() {
+    if(!mOptions->unpaired1.empty())
+        mUnpairedLeftWriter = new WriterThread(mOptions, mOptions->unpaired1);
+
+    if(!mOptions->unpaired2.empty() && mOptions->unpaired2 != mOptions->unpaired1)
+        mUnpairedRightWriter = new WriterThread(mOptions, mOptions->unpaired2);
+
     if(mOptions->out1.empty())
         return;
     
@@ -59,6 +67,14 @@ void PairEndProcessor::closeOutput() {
     }
     if(mRightWriter) {
         delete mRightWriter;
+        mRightWriter = NULL;
+    }
+    if(mUnpairedLeftWriter) {
+        delete mUnpairedLeftWriter;
+        mLeftWriter = NULL;
+    }
+    if(mUnpairedRightWriter) {
+        delete mUnpairedRightWriter;
         mRightWriter = NULL;
     }
 }
@@ -94,10 +110,16 @@ bool PairEndProcessor::process(){
 
     std::thread* leftWriterThread = NULL;
     std::thread* rightWriterThread = NULL;
+    std::thread* unpairedLeftWriterThread = NULL;
+    std::thread* unpairedRightWriterThread = NULL;
     if(mLeftWriter)
         leftWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mLeftWriter));
     if(mRightWriter)
         rightWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mRightWriter));
+    if(mUnpairedLeftWriter)
+        unpairedLeftWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mUnpairedLeftWriter));
+    if(mUnpairedRightWriter)
+        unpairedRightWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mUnpairedRightWriter));
 
     producer.join();
     for(int t=0; t<mOptions->thread; t++){
@@ -109,6 +131,10 @@ bool PairEndProcessor::process(){
             leftWriterThread->join();
         if(rightWriterThread)
             rightWriterThread->join();
+        if(unpairedLeftWriterThread)
+            unpairedLeftWriterThread->join();
+        if(unpairedRightWriterThread)
+            unpairedRightWriterThread->join();
     }
 
     if(mOptions->verbose)
@@ -220,6 +246,10 @@ bool PairEndProcessor::process(){
         delete leftWriterThread;
     if(rightWriterThread)
         delete rightWriterThread;
+    if(unpairedLeftWriterThread)
+        delete unpairedLeftWriterThread;
+    if(unpairedRightWriterThread)
+        delete unpairedRightWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -242,6 +272,8 @@ int PairEndProcessor::getPeakInsertSize() {
 bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     string outstr1;
     string outstr2;
+    string unpairedOut1;
+    string unpairedOut2;
     string singleOutput;
     int readPassed = 0;
     int mergedCount = 0;
@@ -376,6 +408,14 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 config->getPostStats2()->statRead(r2);
 
                 readPassed++;
+            } else if( r1 != NULL &&  result1 == PASS_FILTER) {
+                if(mUnpairedLeftWriter) {
+                    unpairedOut1 += r1->toString();
+                }
+            } else if( r2 != NULL && result2 == PASS_FILTER) {
+                if(mUnpairedLeftWriter || mUnpairedRightWriter) {
+                    unpairedOut2 += r2->toString();
+                }
             }
         }
 
@@ -416,7 +456,24 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             memcpy(ldata, singleOutput.c_str(), singleOutput.size());
             mLeftWriter->input(ldata, singleOutput.size());
         }
+        // output unpaired reads
+        if(mUnpairedLeftWriter && mUnpairedRightWriter) {
+            // write PE
+            char* unpairedData1 = new char[unpairedOut1.size()];
+            memcpy(unpairedData1, unpairedOut1.c_str(), unpairedOut1.size());
+            mUnpairedLeftWriter->input(unpairedData1, unpairedOut1.size());
+
+            char* unpairedData2 = new char[unpairedOut2.size()];
+            memcpy(unpairedData2, unpairedOut2.c_str(), unpairedOut2.size());
+            mUnpairedRightWriter->input(unpairedData2, unpairedOut2.size());
+        } else if(mUnpairedLeftWriter) {
+            char* unpairedData = new char[unpairedOut1.size() + unpairedOut2.size() ];
+            memcpy(unpairedData, unpairedOut1.c_str(), unpairedOut1.size());
+            memcpy(unpairedData + unpairedOut1.size(), unpairedOut2.c_str(), unpairedOut2.size());
+            mUnpairedLeftWriter->input(unpairedData, unpairedOut1.size() + unpairedOut2.size());
+        }
     }
+
     if(!mOptions->split.enabled)
         mOutputMtx.unlock();
 
@@ -653,6 +710,10 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
             mLeftWriter->setInputCompleted();
         if(mRightWriter)
             mRightWriter->setInputCompleted();
+        if(mUnpairedLeftWriter)
+            mUnpairedLeftWriter->setInputCompleted();
+        if(mUnpairedRightWriter)
+            mUnpairedRightWriter->setInputCompleted();
     }
     
     if(mOptions->verbose) {

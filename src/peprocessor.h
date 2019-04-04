@@ -77,6 +77,8 @@ private:
     long* mInsertSizeHist;
     WriterThread* mLeftWriter;
     WriterThread* mRightWriter;
+    WriterThread* mUnpairedLeftWriter;
+    WriterThread* mUnpairedRightWriter;
     Duplicate* mDuplicate;
 };
 

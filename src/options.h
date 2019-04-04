@@ -289,8 +289,12 @@ public:
     string in2;
     // file name of read1 output
     string out1;
-    // file name of read1 output
+    // file name of read2 output
     string out2;
+    // file name of unpaired read1 output
+    string unpaired1;
+    // file name of unpaired read2 output
+    string unpaired2;
     // json file
     string jsonFile;
     // html file

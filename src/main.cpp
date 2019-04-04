@@ -35,6 +35,8 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
+    cmd.add<string>("unpaired1", 0, "for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it.", false, "");
+    cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. Default is same as --unpaired1. If --unpaired2 is same as --umpaired1, both unpaired reads will be written this same file.", false, "");
     cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.");
     cmd.add("discard_unmerged", 0, "in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.");
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
@@ -151,6 +153,11 @@ int main(int argc, char* argv[]){
     opt.in2 = cmd.get<string>("in2");
     opt.out1 = cmd.get<string>("out1");
     opt.out2 = cmd.get<string>("out2");
+    opt.unpaired1 = cmd.get<string>("unpaired1");
+    opt.unpaired2 = cmd.get<string>("unpaired2");
+    // write to the same file
+    if(opt.unpaired2.empty())
+        opt.unpaired2 = opt.unpaired1;
     opt.compression = cmd.get<int>("compression");
     opt.readsToProcess = cmd.get<int>("reads_to_process");
     opt.phred64 = cmd.exist("phred64");
