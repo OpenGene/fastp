@@ -36,13 +36,14 @@ int main(int argc, char* argv[]){
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
     cmd.add<string>("unpaired1", 0, "for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it.", false, "");
-    cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. Default is same as --unpaired1. If --unpaired2 is same as --umpaired1, both unpaired reads will be written this same file.", false, "");
-    cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.");
-    cmd.add("discard_unmerged", 0, "in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.");
+    cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --umpaired1 (default mode), both unpaired reads will be written to this same file.", false, "");
+    cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. The merged reads will be written to the file given by --merged_out, the unmerged reads will be written to the files specified by --out1 and --out2. The merging mode is disabled by default.");
+    cmd.add<string>("merged_out", 0, "in the merging mode, specify the file name to store merged output, or specify --stdout to stream the merged output", false, "");
+    cmd.add("include_unmerged", 0, "in the merging mode, write the unmerged or unpaired reads to the file specified by --merge. Disabled by default.");
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4.", false, 4);
     cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
-    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by default.");
+    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end output. Disabled by default.");
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
@@ -138,12 +139,17 @@ int main(int argc, char* argv[]){
     cmd.add("cut_by_quality5", 0, "DEPRECATED, use --cut_front instead.");
     cmd.add("cut_by_quality3", 0, "DEPRECATED, use --cut_tail instead.");
     cmd.add("cut_by_quality_aggressive", 0, "DEPRECATED, use --cut_right instead.");
+    cmd.add("discard_unmerged", 0, "DEPRECATED, no effect now, see the introduction for merging.");
     
     cmd.parse_check(argc, argv);
 
     if(argc == 1) {
         cerr << cmd.usage() <<endl;
         return 0;
+    }
+
+    if(cmd.exist("discard_unmerged")) {
+        cerr << "DEPRECATED: --discard_unmerged has no effect now, see the introduction for merging." << endl;
     }
 
     Options opt;
@@ -169,7 +175,8 @@ int main(int argc, char* argv[]){
 
     // merge PE
     opt.merge.enabled = cmd.exist("merge");
-    opt.merge.discardUnmerged = cmd.exist("discard_unmerged");
+    opt.merge.out = cmd.get<string>("merged_out");
+    opt.merge.includeUnmerged = cmd.exist("include_unmerged");
 
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");

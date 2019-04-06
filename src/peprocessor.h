@@ -79,6 +79,7 @@ private:
     WriterThread* mRightWriter;
     WriterThread* mUnpairedLeftWriter;
     WriterThread* mUnpairedRightWriter;
+    WriterThread* mMergedWriter;
     Duplicate* mDuplicate;
 };
 

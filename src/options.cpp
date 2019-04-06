@@ -64,32 +64,50 @@ bool Options::validate() {
         if(in2.empty() && !interleavedInput) {
             error_exit("read2 input should be specified by --in2 for merging mode");
         }
-        if(!out2.empty()) {
-            cerr << "Merging mode. Ignore argument --out2 = " << out2 << endl;
-            out2 = "";
-        }
         // enable correction if it's not enabled
         if(!correction.enabled)
             correction.enabled = true;
+        if(merge.out.empty() && !outputToSTDOUT && !out1.empty() && out2.empty()) {
+            cerr << "You specified --out1, but haven't specified --merged_out in merging mode. Using --out1 to store the merging output to be compatible with fastp 0.19.8" << endl << endl;
+            merge.out = out1;
+            out1 = "";
+        }
+        if(merge.includeUnmerged) {
+            if(!out1.empty()) {
+                cerr << "You specified --include_unmerged in merging mode. Ignoring argument --out1 = " << out1 << endl;
+                out1 = "";
+            }
+            if(!out2.empty()) {
+                cerr << "You specified --include_unmerged in merging mode. Ignoring argument --out2 = " << out2 << endl;
+                out2 = "";
+            }
+            if(!unpaired1.empty()) {
+                cerr << "You specified --include_unmerged in merging mode. Ignoring argument --unpaired1 = " << unpaired1 << endl;
+                unpaired1 = "";
+            }
+            if(!unpaired2.empty()) {
+                cerr << "You specified --include_unmerged in merging mode. Ignoring argument --unpaired1 = " << unpaired2 << endl;
+                unpaired2 = "";
+            }
+        }
+        if(merge.out.empty() && !outputToSTDOUT) {
+            error_exit("In merging mode, you should either specify --merged_out or enable --stdout");
+        }
     }
 
     // if output to STDOUT, then...
     if(outputToSTDOUT) {
-        cerr << "Streaming uncompressed output to STDOUT..." << endl;
-        if(!in1.empty() && !in2.empty())
-            cerr << "Enable interleaved output mode for paired-end input." << endl;
-        if(!out1.empty()) {
-            cerr << "Ignore argument --out1 = " << out1 << endl;
-            out1 = "";
-        }
-        if(!out2.empty()) {
-            cerr << "Ignore argument --out2 = " << out2 << endl;
-            out2 = "";
-        }
         if(split.enabled) {
-            cerr << "Ignore split mode" << endl;
-            split.enabled = false;
+            error_exit("splitting mode cannot work with stdout mode");
         }
+        cerr << "Streaming uncompressed ";
+        if(merge.enabled)
+            cerr << "merged";
+        else if(isPaired())
+            cerr << "interleaved";
+        cerr << " reads to STDOUT..." << endl;
+        if(isPaired() && !merge.enabled)
+            cerr << "Enable interleaved output mode for paired-end input." << endl;
         cerr << endl;
     }
 
@@ -98,7 +116,7 @@ bool Options::validate() {
     }
 
     if(!in2.empty() || interleavedInput) {
-        if(!out1.empty() && out2.empty() && !merge.enabled) {
+        if(!out1.empty() && out2.empty()) {
             error_exit("paired-end input, read1 output should be specified together with read2 output (--out2 needed) ");
         }
         if(out1.empty() && !out2.empty()) {
@@ -128,21 +146,21 @@ bool Options::validate() {
     }
     if(!isPaired()) {
         if(!unpaired1.empty()) {
-            cerr << "Not paired-end mode. Ignore argument --unpaired1 = " << unpaired1 << endl;
+            cerr << "Not paired-end mode. Ignoring argument --unpaired1 = " << unpaired1 << endl;
             unpaired1 = "";
         }
         if(!unpaired2.empty()) {
-            cerr << "Not paired-end mode. Ignore argument --unpaired2 = " << unpaired2 << endl;
+            cerr << "Not paired-end mode. Ignoring argument --unpaired2 = " << unpaired2 << endl;
             unpaired2 = "";
         }
     }
     if(split.enabled) {
         if(!unpaired1.empty()) {
-            cerr << "Outputing unpaired reads is not supported in splitting mode. Ignore argument --unpaired1 = " << unpaired1 << endl;
+            cerr << "Outputing unpaired reads is not supported in splitting mode. Ignoring argument --unpaired1 = " << unpaired1 << endl;
             unpaired1 = "";
         }
         if(!unpaired2.empty()) {
-            cerr << "Outputing unpaired reads is not supported in splitting mode. Ignore argument --unpaired2 = " << unpaired2 << endl;
+            cerr << "Outputing unpaired reads is not supported in splitting mode. Ignoring argument --unpaired2 = " << unpaired2 << endl;
             unpaired2 = "";
         }
     }
@@ -273,7 +291,7 @@ bool Options::validate() {
     }
 
     if(correction.enabled && !isPaired()) {
-        cerr << "WARNING: base correction is only appliable for paired end data, ignored -c/--correction" << endl;
+        cerr << "WARNING: base correction is only appliable for paired end data, ignoring -c/--correction" << endl;
         correction.enabled = false;
     }
 

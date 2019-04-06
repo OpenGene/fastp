@@ -21,11 +21,12 @@ class MergeOptions {
 public:
     MergeOptions() {
         enabled = false;
-        discardUnmerged = false;
+        includeUnmerged = false;
     }
 public:
     bool enabled;
-    bool discardUnmerged;
+    bool includeUnmerged;
+    string out;
 };
 
 class DuplicationOptions {
