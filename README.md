@@ -252,13 +252,17 @@ By default, fastp uses 1/20 reads for sequence counting, and you can change this
 `fastp` not only gives the counts of overrepresented sequence, but also gives the information that how they distribute over cycles. A figure is provided for each detected overrepresented sequence, from which you can know where this sequence is mostly found.
 
 # merge paired-end reads
-For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode, the output will be a single file.
+For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode:   
+
+* `--merged_out` shouuld be given to specify the file to store merged reads, otherwise you should enable `--stdout` to stream the merged reads to STDOUT. The merged reads are also filtered.
+* `--out1` and `--out2` will be the reads that cannot be merged successfully, but both pass all the filters.
+* `--unpaired1` will be the reads that cannot be merged, `read1` passes filters but `read2` doesn't.
+* `--unpaired2` will be the reads that cannot be merged, `read2` passes filters but `read1` doesn't.
+* `--include_unmerged` can be enabled to make reads of `--out1`, `--out2`, `--unpaired1` and `--unpaired2` redirected to `--merged_out`. So you will get a single output file. This option is disabled by default.
 
 In the output file, a tag like `merged_xxx_yyy`will be added to each read name to indicate that how many base pairs are from read1 and from read2, respectively. For example, `
 @NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15` 
 means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the bases in read1 since they usually have higher quality than read2.
-
-For the pairs of reads that cannot be merged successfully, they will be both included in the output by default. But you can specify the `--discard_unmerged` option to discard the unmerged reads.
 
 Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)` and `overlap_diff_limit (default 5)`.
 
@@ -270,9 +274,12 @@ options:
   -i, --in1                          read1 input file name (string)
   -o, --out1                         read1 output file name (string [=])
   -I, --in2                          read2 input file name (string [=])
-  -O, --out2                         read2 output file name (string [=])
-  -m, --merge                        for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.
-      --discard_unmerged                     in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.
+  -O, --out2                           read2 output file name (string [=])
+      --unpaired1                      for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it. (string [=])
+      --unpaired2                      for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --umpaired1 (default mode), both unpaired reads will be written to this same file. (string [=])
+  -m, --merge                          for paired-end input, merge each pair of reads into a single read if they are overlapped. The merged reads will be written to the file given by --merged_out, the unmerged reads will be written to the files specified by --out1 and --out2. The merging mode is disabled by default.
+      --merged_out                     in the merging mode, specify the file name to store merged output, or specify --stdout to stream the merged output (string [=])
+      --include_unmerged               in the merging mode, write the unmerged or unpaired reads to the file specified by --merge. Disabled by default.
   -6, --phred64                      indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
   -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4. (int [=4])
       --stdin                          input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
