@@ -296,6 +296,8 @@ public:
     string unpaired1;
     // file name of unpaired read2 output
     string unpaired2;
+    // file name of failed reads output
+    string failedOut;
     // json file
     string jsonFile;
     // html file

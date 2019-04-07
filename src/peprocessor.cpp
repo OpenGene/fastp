@@ -31,6 +31,7 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mUnpairedLeftWriter =  NULL;
     mUnpairedRightWriter = NULL;
     mMergedWriter = NULL;
+    mFailedWriter = NULL;
 
     mDuplicate = NULL;
     if(mOptions->duplicate.enabled) {
@@ -58,6 +59,9 @@ void PairEndProcessor::initOutput() {
             mMergedWriter = new WriterThread(mOptions, mOptions->merge.out);
     }
 
+    if(!mOptions->failedOut.empty())
+        mFailedWriter = new WriterThread(mOptions, mOptions->failedOut);
+
     if(mOptions->out1.empty())
         return;
     
@@ -78,6 +82,10 @@ void PairEndProcessor::closeOutput() {
     if(mMergedWriter) {
         delete mMergedWriter;
         mMergedWriter = NULL;
+    }
+    if(mFailedWriter) {
+        delete mFailedWriter;
+        mFailedWriter = NULL;
     }
     if(mUnpairedLeftWriter) {
         delete mUnpairedLeftWriter;
@@ -123,6 +131,7 @@ bool PairEndProcessor::process(){
     std::thread* unpairedLeftWriterThread = NULL;
     std::thread* unpairedRightWriterThread = NULL;
     std::thread* mergedWriterThread = NULL;
+    std::thread* failedWriterThread = NULL;
     if(mLeftWriter)
         leftWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mLeftWriter));
     if(mRightWriter)
@@ -133,6 +142,8 @@ bool PairEndProcessor::process(){
         unpairedRightWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mUnpairedRightWriter));
     if(mMergedWriter)
         mergedWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mMergedWriter));
+    if(mFailedWriter)
+        failedWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mFailedWriter));
 
     producer.join();
     for(int t=0; t<mOptions->thread; t++){
@@ -150,6 +161,8 @@ bool PairEndProcessor::process(){
             unpairedRightWriterThread->join();
         if(mergedWriterThread)
             mergedWriterThread->join();
+        if(failedWriterThread)
+            failedWriterThread->join();
     }
 
     if(mOptions->verbose)
@@ -270,6 +283,8 @@ bool PairEndProcessor::process(){
         delete unpairedRightWriterThread;
     if(mergedWriterThread)
         delete mergedWriterThread;
+    if(failedWriterThread)
+        delete failedWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -296,6 +311,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     string unpairedOut2;
     string singleOutput;
     string mergedOutput;
+    string failedOut;
     int readPassed = 0;
     int mergedCount = 0;
     for(int p=0;p<pack->count;p++){
@@ -439,10 +455,24 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             } else if( r1 != NULL &&  result1 == PASS_FILTER) {
                 if(mUnpairedLeftWriter) {
                     unpairedOut1 += r1->toString();
+                    if(mFailedWriter)
+                        failedOut += or2->toStringWithTag(FAILED_TYPES[result2]);
+                } else {
+                    if(mFailedWriter) {
+                        failedOut += or1->toStringWithTag("paired_read_is_failing");
+                        failedOut += or2->toStringWithTag(FAILED_TYPES[result2]);
+                    }
                 }
             } else if( r2 != NULL && result2 == PASS_FILTER) {
                 if(mUnpairedLeftWriter || mUnpairedRightWriter) {
                     unpairedOut2 += r2->toString();
+                    if(mFailedWriter)
+                        failedOut += or1->toStringWithTag(FAILED_TYPES[result1]);
+                } else {
+                    if(mFailedWriter) {
+                        failedOut += or1->toStringWithTag(FAILED_TYPES[result1]);
+                        failedOut += or2->toStringWithTag("paired_read_is_failing");
+                    }
                 }
             }
         }
@@ -476,9 +506,16 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
     if(mMergedWriter && !mergedOutput.empty()) {
         // write merged data
-        char* ldata = new char[mergedOutput.size()];
-        memcpy(ldata, mergedOutput.c_str(), mergedOutput.size());
-        mMergedWriter->input(ldata, mergedOutput.size());
+        char* mdata = new char[mergedOutput.size()];
+        memcpy(mdata, mergedOutput.c_str(), mergedOutput.size());
+        mMergedWriter->input(mdata, mergedOutput.size());
+    }
+
+    if(mFailedWriter && !failedOut.empty()) {
+        // write failed data
+        char* fdata = new char[failedOut.size()];
+        memcpy(fdata, failedOut.c_str(), failedOut.size());
+        mFailedWriter->input(fdata, failedOut.size());
     }
 
     // normal output by left/right writer thread
@@ -758,6 +795,8 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
             mUnpairedRightWriter->setInputCompleted();
         if(mMergedWriter)
             mMergedWriter->setInputCompleted();
+        if(mFailedWriter)
+            mFailedWriter->setInputCompleted();
     }
     
     if(mOptions->verbose) {

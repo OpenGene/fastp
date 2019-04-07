@@ -80,6 +80,7 @@ private:
     WriterThread* mUnpairedLeftWriter;
     WriterThread* mUnpairedRightWriter;
     WriterThread* mMergedWriter;
+    WriterThread* mFailedWriter;
     Duplicate* mDuplicate;
 };
 

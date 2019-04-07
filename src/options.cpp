@@ -68,7 +68,7 @@ bool Options::validate() {
         if(!correction.enabled)
             correction.enabled = true;
         if(merge.out.empty() && !outputToSTDOUT && !out1.empty() && out2.empty()) {
-            cerr << "You specified --out1, but haven't specified --merged_out in merging mode. Using --out1 to store the merging output to be compatible with fastp 0.19.8" << endl << endl;
+            cerr << "You specified --out1, but haven't specified --merged_out in merging mode. Using --out1 to store the merged reads to be compatible with fastp 0.19.8" << endl << endl;
             merge.out = out1;
             out1 = "";
         }
@@ -172,6 +172,11 @@ bool Options::validate() {
     if(!unpaired2.empty()) {
         if(dontOverwrite && file_exists(unpaired2)) {
             error_exit(unpaired2 + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+    }
+    if(!failedOut.empty()) {
+        if(dontOverwrite && file_exists(failedOut)) {
+            error_exit(failedOut + " already exists and you have set to not rewrite output files by --dont_overwrite");
         }
     }
 
