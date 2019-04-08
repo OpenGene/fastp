@@ -269,6 +269,8 @@ For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--
 * `--unpaired2` will be the reads that cannot be merged, `read2` passes filters but `read1` doesn't.
 * `--include_unmerged` can be enabled to make reads of `--out1`, `--out2`, `--unpaired1` and `--unpaired2` redirected to `--merged_out`. So you will get a single output file. This option is disabled by default.
 
+`--failed_out` can still be given to store the reads (either merged or unmerged) failed to passing filters.
+
 In the output file, a tag like `merged_xxx_yyy`will be added to each read name to indicate that how many base pairs are from read1 and from read2, respectively. For example, `
 @NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15` 
 means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the bases in read1 since they usually have higher quality than read2.
