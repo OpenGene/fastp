@@ -617,7 +617,7 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
     string matchedAdapter = matchKnownAdapter(adapter);
     if(!matchedAdapter.empty()) {
         map<string, string> knownAdapters = getKnownAdapter();
-        cerr << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
+        cerr << knownAdapters[matchedAdapter] << endl << matchedAdapter << endl;
         return matchedAdapter;
     } else {
         if(reachedLeaf) {
