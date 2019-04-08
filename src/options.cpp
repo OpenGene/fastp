@@ -93,6 +93,22 @@ bool Options::validate() {
         if(merge.out.empty() && !outputToSTDOUT) {
             error_exit("In merging mode, you should either specify --merged_out or enable --stdout");
         }
+        if(!merge.out.empty()) {
+            if(merge.out == out1)
+                error_exit("--merged_out and --out1 shouldn't have same file name");
+            if(merge.out == out2)
+                error_exit("--merged_out and --out2 shouldn't have same file name");
+            if(merge.out == unpaired1)
+                error_exit("--merged_out and --unpaired1 shouldn't have same file name");
+            if(merge.out == unpaired2)
+                error_exit("--merged_out and --unpaired2 shouldn't have same file name");
+        }
+    } else {
+        // not in merging mode
+        if(!merge.out.empty()) {
+            cerr << "You haven't enabled merging mode (-m/--merge), ignoring argument --merged_out = " << merge.out << endl;
+            merge.out = "";
+        }
     }
 
     // if output to STDOUT, then...
@@ -168,16 +184,34 @@ bool Options::validate() {
         if(dontOverwrite && file_exists(unpaired1)) {
             error_exit(unpaired1 + " already exists and you have set to not rewrite output files by --dont_overwrite");
         }
+        if(unpaired1 == out1)
+            error_exit("--unpaired1 and --out1 shouldn't have same file name");
+        if(unpaired1 == out2)
+            error_exit("--unpaired1 and --out2 shouldn't have same file name");
     }
     if(!unpaired2.empty()) {
         if(dontOverwrite && file_exists(unpaired2)) {
             error_exit(unpaired2 + " already exists and you have set to not rewrite output files by --dont_overwrite");
         }
+        if(unpaired2 == out1)
+            error_exit("--unpaired2 and --out1 shouldn't have same file name");
+        if(unpaired2 == out2)
+            error_exit("--unpaired2 and --out2 shouldn't have same file name");
     }
     if(!failedOut.empty()) {
         if(dontOverwrite && file_exists(failedOut)) {
             error_exit(failedOut + " already exists and you have set to not rewrite output files by --dont_overwrite");
         }
+        if(failedOut == out1)
+            error_exit("--failed_out and --out1 shouldn't have same file name");
+        if(failedOut == out2)
+            error_exit("--failed_out and --out2 shouldn't have same file name");
+        if(failedOut == unpaired1)
+            error_exit("--failed_out and --unpaired1 shouldn't have same file name");
+        if(failedOut == unpaired2)
+            error_exit("--failed_out and --unpaired2 shouldn't have same file name");
+        if(failedOut == merge.out)
+            error_exit("--failed_out and --merged_out shouldn't have same file name");
     }
 
     if(dontOverwrite) {
