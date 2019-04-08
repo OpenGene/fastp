@@ -101,12 +101,21 @@ sudo make install
 ## input from STDIN
 * specify `--stdin` if you want to read the STDIN for processing.
 * if the STDIN is an interleaved paired-end stream, specify `--interleaved_in` to indicate that.
+## store the unpaired reads for PE data
+* you can specify `--unpaired1` to store the reads that read1 passes filters but its paired read2 doesn't, as well as `--unpaired2` for unpaired read2.
+* `--unpaired1` and `--unpaired2` can be the same, so the unpaired read1/read2 will be written to the same single file.
+## store the reads that fail the filters
+* give `--failed_out` to specify the file name to store the failed reads.
+* if one read failed and is written to `--failed_out`, its `failure reason` will be appended to its read name. For example, `failed_quality_filter`, `failed_too_short` etc.
+* for PE data, if unpaired reads are not stored (by giving --unpaired1 or --unpaired2), the failed pair of reads will be put together. If one read passes the filters but its pair doesn't, the `failure reason` will be `paired_read_is_failing`.
 ## process only part of the data
 If you don't want to process all the data, you can specify `--reads_to_process` to limit the reads to be processed. This is useful if you want to have a fast preview of the data quality, or you want to create a subset of the filtered data.
 ## do not overwrite exiting files
 You can enable the option `--dont_overwrite` to protect the existing files not to be overwritten by `fastp`. In this case, `fastp` will report an error and quit if it finds any of the output files (read1, read2, json report, html report) already exists before.
 ## split the output to multiple files for parallel processing
 See [output splitting](#output-splitting)
+## merge PE reads
+See [merge paired-end reads](#merge-paired-end-reads)
 
 # filtering
 Multiple filters have been implemented.
@@ -277,6 +286,7 @@ options:
   -O, --out2                           read2 output file name (string [=])
       --unpaired1                      for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it. (string [=])
       --unpaired2                      for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --umpaired1 (default mode), both unpaired reads will be written to this same file. (string [=])
+      --failed_out                     specify the file to store reads that cannot pass the filters. (string [=])
   -m, --merge                          for paired-end input, merge each pair of reads into a single read if they are overlapped. The merged reads will be written to the file given by --merged_out, the unmerged reads will be written to the files specified by --out1 and --out2. The merging mode is disabled by default.
       --merged_out                     in the merging mode, specify the file name to store merged output, or specify --stdout to stream the merged output (string [=])
       --include_unmerged               in the merging mode, write the unmerged or unpaired reads to the file specified by --merge. Disabled by default.
