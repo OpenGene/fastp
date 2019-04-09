@@ -30,7 +30,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 1. filter out bad reads (too low quality, too short, or too many N...)
 2. cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
 3. trim all reads in front and tail
-4. cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
+4. cut adapters. Adapter sequences can be automatically detected, which means you don't have to input the adapter sequences to trim them.
 5. correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
 6. trim polyG in 3' ends, which is commonly seen in NovaSeq/NextSeq data. Trim polyX in 3' ends to remove unwanted polyX tailing (i.e. polyA tailing for mRNA-Seq data)
 7. preprocess unique molecular identifier (UMI) enabled data, shift UMI to sequence name.
@@ -151,6 +151,20 @@ Adapter trimming is enabled by default, but you can disable it by `-A` or `--dis
 * For PE data, `fastp` will run a little slower if you specify the sequence adapters or enable adapter auto-detection, but usually result in a slightly cleaner output, since the overlap analysis may fail due to sequencing errors or adapter dimers.
 * The most widely used adapter is the Illumina TruSeq adapters. If your data is from the TruSeq library, you can add `--adapter_sequence=AGATCGGAAGAGCACACGTCTGAACTCCAGTCA --adapter_sequence_r2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT` to your command lines, or enable auto detection for PE data by specifing `detect_adapter_for_pe`.
 * `fastp` contains some built-in known adapter sequences for better auto-detection. If you want to make some adapters to be a part of the built-in adapters, please file an issue.
+
+You can also specify `--adapter_fasta` to give a FASTA file to tell `fastp` to trim multiple adapters in this FASTA file. Here is a sample of such adapter FASTA file:
+```
+>Illumina TruSeq Adapter Read 1
+AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
+>Illumina TruSeq Adapter Read 2
+AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+>polyA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+```
+
+The adapter sequence in this file should be at least 10bp long. And you can give whatever you want to trim, rather than regular sequencing adapters (i.e. polyA).
+
+`fastp` first trims the auto-detected adapter or the adapter sequences given by `--adapter_sequence | --adapter_sequence_r2`, then trims the adapters given by `--adapter_fasta` one by one. 
 
 The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
 
