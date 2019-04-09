@@ -213,15 +213,22 @@ inline  string str_keep_alpha(const  string& s)
 
 
 // Remove invalid sequence characters from a string
-inline  string str_keep_valid_sequence(const  string& s)
+inline void str_keep_valid_sequence(  string& s, bool forceUpperCase = false)
 {
-     string new_str;
+    size_t total = 0;
+    const char case_gap = 'a' - 'A';
     for( size_t it =0; it < s.size(); it++) {
-        if(  isalpha(s[it]) || s[it] == '-' || s[it] == '*' ) {
-            new_str += s[it];
+        char c = s[it];
+        if(forceUpperCase && c>='a' && c<='z') {
+            c -= case_gap;
+        }
+        if(  isalpha(c) || c == '-' || c == '*' ) {
+            s[total] = c;
+            total ++;
         }
     }
-    return new_str;
+
+    s.resize(total);
 }
 
 inline int find_with_right_pos(const string& str, const string& pattern, int start=0) {

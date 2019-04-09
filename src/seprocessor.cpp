@@ -225,8 +225,14 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
                 PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen);
         }
 
-        if(r1 != NULL && mOptions->adapter.enabled && mOptions->adapter.hasSeqR1){
-            AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence);
+        if(r1 != NULL && mOptions->adapter.enabled){
+            bool trimmed = false;
+            if(mOptions->adapter.hasSeqR1)
+                trimmed = AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
+            bool incTrimmedCounter = !trimmed;
+            if(mOptions->adapter.hasFasta) {
+                AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, incTrimmedCounter);
+            }
         }
 
         if(r1 != NULL) {

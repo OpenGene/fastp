@@ -204,8 +204,11 @@ public:
     string sequenceR2;
     string detectedAdapter1;
     string detectedAdapter2;
+    vector<string> seqsInFasta;
+    string fastaFile;
     bool hasSeqR1;
     bool hasSeqR2;
+    bool hasFasta;
     bool detectAdapterForPE;
 };
 
@@ -282,6 +285,7 @@ public:
     void initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold = 0);
     vector<string> makeListFromFileByLine(string filename);
     bool shallDetectAdapter(bool isR2 = false);
+    void loadFastaAdapters();
 
 public:
     // file name of read1 input

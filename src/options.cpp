@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include "fastareader.h"
 
 Options::Options(){
     in1 = "";
@@ -39,6 +40,30 @@ bool Options::adapterCuttingEnabled() {
             return true;
     }
     return false;
+}
+
+void Options::loadFastaAdapters() {
+    if(adapter.fastaFile.empty()) {
+        adapter.hasFasta = false;
+        return;
+    }
+
+    check_file_valid(adapter.fastaFile);
+
+    FastaReader reader(adapter.fastaFile);
+    reader.readAll();
+
+    map<string, string> contigs = reader.contigs();
+    map<string, string>::iterator iter;
+    for(iter = contigs.begin(); iter != contigs.end(); iter++) {
+        adapter.seqsInFasta.push_back(iter->second);
+    }
+
+    if(adapter.seqsInFasta.size() > 0) {
+        adapter.hasFasta = true;
+    } else 
+        adapter.hasFasta = false;
+
 }
 
 bool Options::validate() {
