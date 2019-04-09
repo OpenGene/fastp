@@ -162,7 +162,7 @@ AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 ```
 
-The adapter sequence in this file should be at least 10bp long. And you can give whatever you want to trim, rather than regular sequencing adapters (i.e. polyA).
+The adapter sequence in this file should be at least 6bp long, otherwise it will be skipped. And you can give whatever you want to trim, rather than regular sequencing adapters (i.e. polyA).
 
 `fastp` first trims the auto-detected adapter or the adapter sequences given by `--adapter_sequence | --adapter_sequence_r2`, then trims the adapters given by `--adapter_fasta` one by one. 
 

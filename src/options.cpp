@@ -56,7 +56,12 @@ void Options::loadFastaAdapters() {
     map<string, string> contigs = reader.contigs();
     map<string, string>::iterator iter;
     for(iter = contigs.begin(); iter != contigs.end(); iter++) {
-        adapter.seqsInFasta.push_back(iter->second);
+        if(iter->second.length()>=6) {
+            adapter.seqsInFasta.push_back(iter->second);
+        }
+        else {
+            cerr << "skip too short adapter sequence in " <<  adapter.fastaFile << " (6bp required): " << iter->second << endl;
+        }
     }
 
     if(adapter.seqsInFasta.size() > 0) {

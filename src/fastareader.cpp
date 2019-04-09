@@ -85,8 +85,7 @@ void FastaReader::readNext()
     mCurrentSequence = ssSeq.str();
     string header = ssHeader.str();
 
-    int space = header.find(" ");
-    mCurrentID = header.substr(0, space);
+    mCurrentID = header;
 }
 
 bool FastaReader::hasNext() {
