@@ -19,6 +19,7 @@ int Filter::passFilter(Read* r) {
     int rlen = r->length();
     int lowQualNum = 0;
     int nBaseNum = 0;
+    int totalQual = 0;
 
     // need to recalculate lowQualNum and nBaseNum if the corresponding filters are enabled
     if(mOptions->qualfilter.enabled || mOptions->lengthFilter.enabled) {
@@ -28,6 +29,8 @@ int Filter::passFilter(Read* r) {
         for(int i=0; i<rlen; i++) {
             char base = seqstr[i];
             char qual = qualstr[i];
+
+            totalQual += qual - 33;
 
             if(qual < mOptions->qualfilter.qualifiedQual)
                 lowQualNum ++;
@@ -39,6 +42,8 @@ int Filter::passFilter(Read* r) {
 
     if(mOptions->qualfilter.enabled) {
         if(lowQualNum > (mOptions->qualfilter.unqualifiedPercentLimit * rlen / 100.0) )
+            return FAIL_QUALITY;
+        else if(mOptions->qualfilter.avgQualReq > 0 && (totalQual / rlen)<mOptions->qualfilter.avgQualReq)
             return FAIL_QUALITY;
         else if(nBaseNum > mOptions->qualfilter.nBaseLimit )
             return FAIL_N_BASE;

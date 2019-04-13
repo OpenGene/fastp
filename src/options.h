@@ -255,6 +255,8 @@ public:
     int unqualifiedPercentLimit;
     // if n_base_number > nBaseLimit, then discard this read
     int nBaseLimit;
+    // if average qual score < avgQualReq, then discard this read
+    int avgQualReq;
 };
 
 class ReadLengthFilteringOptions {

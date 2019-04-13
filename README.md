@@ -126,6 +126,9 @@ To filter reads by its percentage of unqualified bases, two options should be pr
 * `-q, --qualified_quality_phred`       the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. 
 * `-u, --unqualified_percent_limit`    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%
 
+You can also filter reads by its average quality score
+* `-e, --average_qual`   if one read's average quality score <avg_qual, then this read/pair is discarded. Default 0 means no requirement (int [=0])
+
 ## length filter
 Length filtering is enabled by default, but you can disable it by `-L` or `--disable_length_filtering`. The minimum length requirement is specified with `-l` or `--length_required`.
 
@@ -356,6 +359,8 @@ options:
   -q, --qualified_quality_phred      the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. (int [=15])
   -u, --unqualified_percent_limit    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40% (int [=40])
   -n, --n_base_limit                 if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5 (int [=5])
+  -e, --average_qual                 if one read's average quality score <avg_qual, then this read/pair is discarded. Default 0 means no requirement (int [=0])
+
   
   # length filtering options
   -L, --disable_length_filtering     length filtering is enabled by default. If this option is specified, length filtering is disabled

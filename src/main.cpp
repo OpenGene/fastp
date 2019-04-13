@@ -93,6 +93,7 @@ int main(int argc, char* argv[]){
     cmd.add<int>("qualified_quality_phred", 'q', "the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified.", false, 15);
     cmd.add<int>("unqualified_percent_limit", 'u', "how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%", false, 40);
     cmd.add<int>("n_base_limit", 'n', "if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5", false, 5);
+    cmd.add<int>("average_qual", 'e', "if one read's average quality score <avg_qual, then this read/pair is discarded. Default 0 means no requirement", false, 0);
 
     // length filtering
     cmd.add("disable_length_filtering", 'L', "length filtering is enabled by default. If this option is specified, length filtering is disabled");
@@ -295,6 +296,7 @@ int main(int argc, char* argv[]){
     opt.qualfilter.enabled = !cmd.exist("disable_quality_filtering");
     opt.qualfilter.qualifiedQual = num2qual(cmd.get<int>("qualified_quality_phred"));
     opt.qualfilter.unqualifiedPercentLimit = cmd.get<int>("unqualified_percent_limit");
+    opt.qualfilter.avgQualReq = cmd.get<int>("average_qual");
     opt.qualfilter.nBaseLimit = cmd.get<int>("n_base_limit");
 
     // length filtering
