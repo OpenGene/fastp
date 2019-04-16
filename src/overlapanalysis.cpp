@@ -38,12 +38,12 @@ OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2, int diffLimit
         for (i=0; i<overlap_len; i++) {
             if (str1[offset + i] != str2[i]){
                 diff += 1;
-                if (diff >= overlapDiffLimit && i < complete_compare_require)
+                if (diff > overlapDiffLimit && i < complete_compare_require)
                     break;
             }
         }
         
-        if (diff < overlapDiffLimit || (diff >= overlapDiffLimit && i>complete_compare_require)){
+        if (diff <= overlapDiffLimit || (diff > overlapDiffLimit && i>complete_compare_require)){
             OverlapResult ov;
             ov.overlapped = true;
             ov.offset = offset;
@@ -72,12 +72,12 @@ OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2, int diffLimit
         for (i=0; i<overlap_len; i++) {
             if (str1[i] != str2[-offset + i]){
                 diff += 1;
-                if (diff >= overlapDiffLimit && i < complete_compare_require)
+                if (diff > overlapDiffLimit && i < complete_compare_require)
                     break;
             }
         }
         
-        if (diff < overlapDiffLimit || (diff >= overlapDiffLimit && i>complete_compare_require)){
+        if (diff <= overlapDiffLimit || (diff > overlapDiffLimit && i>complete_compare_require)){
             OverlapResult ov;
             ov.overlapped = true;
             ov.offset = offset;
@@ -133,7 +133,7 @@ bool OverlapAnalysis::test(){
     string qual1("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
     string qual2("#########################################################################################");
     
-    OverlapResult ov = OverlapAnalysis::analyze(r1, r2, 5, 30, 0.2);
+    OverlapResult ov = OverlapAnalysis::analyze(r1, r2, 2, 30, 0.2);
 
     Read read1("name1", r1, "+", qual1);
     Read read2("name2", r2, "+", qual2);
