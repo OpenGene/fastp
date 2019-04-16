@@ -27,6 +27,7 @@ public:
     int lowQualCount(int qual=20);
     int length();
     string toString();
+    string toStringWithTag(string tag);
     void resize(int len);
     void convertPhred64To33();
     void trimFront(int len);

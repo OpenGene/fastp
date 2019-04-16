@@ -21,11 +21,12 @@ class MergeOptions {
 public:
     MergeOptions() {
         enabled = false;
-        discardUnmerged = false;
+        includeUnmerged = false;
     }
 public:
     bool enabled;
-    bool discardUnmerged;
+    bool includeUnmerged;
+    string out;
 };
 
 class DuplicationOptions {
@@ -203,8 +204,11 @@ public:
     string sequenceR2;
     string detectedAdapter1;
     string detectedAdapter2;
+    vector<string> seqsInFasta;
+    string fastaFile;
     bool hasSeqR1;
     bool hasSeqR2;
+    bool hasFasta;
     bool detectAdapterForPE;
 };
 
@@ -251,6 +255,8 @@ public:
     int unqualifiedPercentLimit;
     // if n_base_number > nBaseLimit, then discard this read
     int nBaseLimit;
+    // if average qual score < avgQualReq, then discard this read
+    int avgQualReq;
 };
 
 class ReadLengthFilteringOptions {
@@ -282,6 +288,7 @@ public:
     void initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold = 0);
     vector<string> makeListFromFileByLine(string filename);
     bool shallDetectAdapter(bool isR2 = false);
+    void loadFastaAdapters();
 
 public:
     // file name of read1 input
@@ -290,8 +297,14 @@ public:
     string in2;
     // file name of read1 output
     string out1;
-    // file name of read1 output
+    // file name of read2 output
     string out2;
+    // file name of unpaired read1 output
+    string unpaired1;
+    // file name of unpaired read2 output
+    string unpaired2;
+    // file name of failed reads output
+    string failedOut;
     // json file
     string jsonFile;
     // html file
@@ -351,6 +364,7 @@ public:
     // overlap analysis threshold
     int overlapRequire;
     int overlapDiffLimit;
+    int overlapDiffPercentLimit;
     // output debug information
     bool verbose;
     // merge options

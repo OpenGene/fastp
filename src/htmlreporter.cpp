@@ -351,8 +351,11 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "<div class='section_title' onclick=showOrHide('after_filtering')><a name='summary'>After filtering</a></div>\n";
     ofs << "<div id='after_filtering'>\n";
 
-    if(postStats1) {
-        postStats1 -> reportHtml(ofs, "After filtering", "read1");
+    if(postStats1) {  
+        string name = "read1";
+        if(mOptions->merge.enabled)
+            name = "merged";
+        postStats1 -> reportHtml(ofs, "After filtering", name);
     }
 
     if(postStats2 && !mOptions->merge.enabled) {

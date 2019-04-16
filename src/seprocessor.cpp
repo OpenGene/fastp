@@ -20,6 +20,7 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
     mZipFile = NULL;
     mUmiProcessor = new UmiProcessor(opt);
     mLeftWriter =  NULL;
+    mFailedWriter = NULL;
 
     mDuplicate = NULL;
     if(mOptions->duplicate.enabled) {
@@ -36,6 +37,8 @@ SingleEndProcessor::~SingleEndProcessor() {
 }
 
 void SingleEndProcessor::initOutput() {
+    if(!mOptions->failedOut.empty())
+        mFailedWriter = new WriterThread(mOptions, mOptions->failedOut);
     if(mOptions->out1.empty())
         return;
     mLeftWriter = new WriterThread(mOptions, mOptions->out1);
@@ -45,6 +48,10 @@ void SingleEndProcessor::closeOutput() {
     if(mLeftWriter) {
         delete mLeftWriter;
         mLeftWriter = NULL;
+    }
+    if(mFailedWriter) {
+        delete mFailedWriter;
+        mFailedWriter = NULL;
     }
 }
 
@@ -78,8 +85,11 @@ bool SingleEndProcessor::process(){
     }
 
     std::thread* leftWriterThread = NULL;
+    std::thread* failedWriterThread = NULL;
     if(mLeftWriter)
         leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mLeftWriter));
+    if(mFailedWriter)
+        failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mFailedWriter));
 
     producer.join();
     for(int t=0; t<mOptions->thread; t++){
@@ -89,6 +99,8 @@ bool SingleEndProcessor::process(){
     if(!mOptions->split.enabled) {
         if(leftWriterThread)
             leftWriterThread->join();
+        if(failedWriterThread)
+            failedWriterThread->join();
     }
 
     if(mOptions->verbose)
@@ -169,6 +181,8 @@ bool SingleEndProcessor::process(){
 
     if(leftWriterThread)
         delete leftWriterThread;
+    if(failedWriterThread)
+        delete failedWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -178,6 +192,7 @@ bool SingleEndProcessor::process(){
 
 bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     string outstr;
+    string failedOut;
     int readPassed = 0;
     for(int p=0;p<pack->count;p++){
 
@@ -201,16 +216,23 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         if(mOptions->umi.enabled)
             mUmiProcessor->process(or1);
 
+        int frontTrimmed = 0;
         // trim in head and tail, and apply quality cut in sliding window
-        Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
+        Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1, frontTrimmed);
 
         if(r1 != NULL) {
             if(mOptions->polyGTrim.enabled)
                 PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen);
         }
 
-        if(r1 != NULL && mOptions->adapter.enabled && mOptions->adapter.hasSeqR1){
-            AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence);
+        if(r1 != NULL && mOptions->adapter.enabled){
+            bool trimmed = false;
+            if(mOptions->adapter.hasSeqR1)
+                trimmed = AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
+            bool incTrimmedCounter = !trimmed;
+            if(mOptions->adapter.hasFasta) {
+                AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, incTrimmedCounter);
+            }
         }
 
         if(r1 != NULL) {
@@ -233,6 +255,8 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             // stats the read after filtering
             config->getPostStats1()->statRead(r1);
             readPassed++;
+        } else if(mFailedWriter) {
+            failedOut += or1->toStringWithTag(FAILED_TYPES[result]);
         }
 
         delete or1;
@@ -250,12 +274,17 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         if(!mOptions->out1.empty())
             config->getWriter1()->writeString(outstr);
     } 
-    else {
-        if(mLeftWriter) {
-            char* ldata = new char[outstr.size()];
-            memcpy(ldata, outstr.c_str(), outstr.size());
-            mLeftWriter->input(ldata, outstr.size());
-        }
+
+    if(mLeftWriter) {
+        char* ldata = new char[outstr.size()];
+        memcpy(ldata, outstr.c_str(), outstr.size());
+        mLeftWriter->input(ldata, outstr.size());
+    }
+    if(mFailedWriter && !failedOut.empty()) {
+        // write failed data
+        char* fdata = new char[failedOut.size()];
+        memcpy(fdata, failedOut.c_str(), failedOut.size());
+        mFailedWriter->input(fdata, failedOut.size());
     }
     if(!mOptions->split.enabled)
         mOutputMtx.unlock();
@@ -468,6 +497,8 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
     if(mFinishedThreads == mOptions->thread) {
         if(mLeftWriter)
             mLeftWriter->setInputCompleted();
+        if(mFailedWriter)
+            mFailedWriter->setInputCompleted();
     }
 
     if(mOptions->verbose) {

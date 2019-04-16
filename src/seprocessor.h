@@ -68,6 +68,7 @@ private:
     ofstream* mOutStream;
     UmiProcessor* mUmiProcessor;
     WriterThread* mLeftWriter;
+    WriterThread* mFailedWriter;
     Duplicate* mDuplicate;
 };
 

@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define FASTP_VER "0.19.8"
+#define FASTP_VER "0.19.11"
 
 #define _DEBUG false
 
@@ -53,6 +53,17 @@ static const int FAIL_COMPLEXITY = 24;
 
 // how many types in total we support
 static const int FILTER_RESULT_TYPES = 32;
+
+const static char* FAILED_TYPES[FILTER_RESULT_TYPES] = {
+	"passed", "", "", "",
+	"failed_polyx_filter", "", "", "",
+	"failed_bad_overlap", "", "", "",
+	"failed_too_many_n_bases", "", "", "",
+	"failed_too_short", "failed_too_long", "", "",
+	"failed_quality_filter", "", "", "",
+	"failed_low_complexity", "", "", "",
+	"", "", "", ""
+};
 
 
 #endif /* COMMON_H */

@@ -35,12 +35,16 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
-    cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.");
-    cmd.add("discard_unmerged", 0, "in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.");
+    cmd.add<string>("unpaired1", 0, "for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it.", false, "");
+    cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --umpaired1 (default mode), both unpaired reads will be written to this same file.", false, "");
+    cmd.add<string>("failed_out", 0, "specify the file to store reads that cannot pass the filters.", false, "");
+    cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. The merged reads will be written to the file given by --merged_out, the unmerged reads will be written to the files specified by --out1 and --out2. The merging mode is disabled by default.");
+    cmd.add<string>("merged_out", 0, "in the merging mode, specify the file name to store merged output, or specify --stdout to stream the merged output", false, "");
+    cmd.add("include_unmerged", 0, "in the merging mode, write the unmerged or unpaired reads to the file specified by --merge. Disabled by default.");
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4.", false, 4);
     cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
-    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by default.");
+    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end output. Disabled by default.");
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
@@ -50,6 +54,7 @@ int main(int argc, char* argv[]){
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
     cmd.add<string>("adapter_sequence", 'a', "the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped.", false, "auto");
     cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "auto");
+    cmd.add<string>("adapter_fasta", 0, "specify a FASTA file to trim both read1 and read2 (if PE) by all the sequences in this FASTA file", false, "");
     cmd.add("detect_adapter_for_pe", 0, "by default, the auto-detection for adapter is for SE data input only, turn on this option to enable it for PE data.");
 
     // trimming
@@ -88,6 +93,7 @@ int main(int argc, char* argv[]){
     cmd.add<int>("qualified_quality_phred", 'q', "the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified.", false, 15);
     cmd.add<int>("unqualified_percent_limit", 'u', "how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%", false, 40);
     cmd.add<int>("n_base_limit", 'n', "if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5", false, 5);
+    cmd.add<int>("average_qual", 'e', "if one read's average quality score <avg_qual, then this read/pair is discarded. Default 0 means no requirement", false, 0);
 
     // length filtering
     cmd.add("disable_length_filtering", 'L', "length filtering is enabled by default. If this option is specified, length filtering is disabled");
@@ -105,8 +111,9 @@ int main(int argc, char* argv[]){
     
     // base correction in overlapped regions of paired end data
     cmd.add("correction", 'c', "enable base correction in overlapped regions (only for PE data), default is disabled");
-    cmd.add<int>("overlap_len_require", 0, "the minimum length of the overlapped region for overlap analysis based adapter trimming and correction. 30 by default.", false, 30);
-    cmd.add<int>("overlap_diff_limit", 0, "the maximum difference of the overlapped region for overlap analysis based adapter trimming and correction. 5 by default.", false, 5);
+    cmd.add<int>("overlap_len_require", 0, "the minimum length to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 30 by default.", false, 30);
+    cmd.add<int>("overlap_diff_limit", 0, "the maximum number of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 5 by default.", false, 5);
+    cmd.add<int>("overlap_diff_percent_limit", 0, "the maximum percentage of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. Default 20 means 20%.", false, 20);
 
     // umi
     cmd.add("umi", 'U', "enable unique molecular identifier (UMI) preprocessing");
@@ -136,12 +143,17 @@ int main(int argc, char* argv[]){
     cmd.add("cut_by_quality5", 0, "DEPRECATED, use --cut_front instead.");
     cmd.add("cut_by_quality3", 0, "DEPRECATED, use --cut_tail instead.");
     cmd.add("cut_by_quality_aggressive", 0, "DEPRECATED, use --cut_right instead.");
+    cmd.add("discard_unmerged", 0, "DEPRECATED, no effect now, see the introduction for merging.");
     
     cmd.parse_check(argc, argv);
 
     if(argc == 1) {
         cerr << cmd.usage() <<endl;
         return 0;
+    }
+
+    if(cmd.exist("discard_unmerged")) {
+        cerr << "DEPRECATED: --discard_unmerged has no effect now, see the introduction for merging." << endl;
     }
 
     Options opt;
@@ -151,6 +163,12 @@ int main(int argc, char* argv[]){
     opt.in2 = cmd.get<string>("in2");
     opt.out1 = cmd.get<string>("out1");
     opt.out2 = cmd.get<string>("out2");
+    opt.unpaired1 = cmd.get<string>("unpaired1");
+    opt.unpaired2 = cmd.get<string>("unpaired2");
+    opt.failedOut = cmd.get<string>("failed_out");
+    // write to the same file
+    if(opt.unpaired2.empty())
+        opt.unpaired2 = opt.unpaired1;
     opt.compression = cmd.get<int>("compression");
     opt.readsToProcess = cmd.get<int>("reads_to_process");
     opt.phred64 = cmd.exist("phred64");
@@ -162,15 +180,20 @@ int main(int argc, char* argv[]){
 
     // merge PE
     opt.merge.enabled = cmd.exist("merge");
-    opt.merge.discardUnmerged = cmd.exist("discard_unmerged");
+    opt.merge.out = cmd.get<string>("merged_out");
+    opt.merge.includeUnmerged = cmd.exist("include_unmerged");
 
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");
     opt.adapter.detectAdapterForPE = cmd.exist("detect_adapter_for_pe");
     opt.adapter.sequence = cmd.get<string>("adapter_sequence");
     opt.adapter.sequenceR2 = cmd.get<string>("adapter_sequence_r2");
+    opt.adapter.fastaFile = cmd.get<string>("adapter_fasta");
     if(opt.adapter.sequenceR2=="auto" && !opt.adapter.detectAdapterForPE && opt.adapter.sequence != "auto") {
         opt.adapter.sequenceR2 = opt.adapter.sequence;
+    }
+    if(!opt.adapter.fastaFile.empty()) {
+        opt.loadFastaAdapters();
     }
 
     // trimming
@@ -274,6 +297,7 @@ int main(int argc, char* argv[]){
     opt.qualfilter.enabled = !cmd.exist("disable_quality_filtering");
     opt.qualfilter.qualifiedQual = num2qual(cmd.get<int>("qualified_quality_phred"));
     opt.qualfilter.unqualifiedPercentLimit = cmd.get<int>("unqualified_percent_limit");
+    opt.qualfilter.avgQualReq = cmd.get<int>("average_qual");
     opt.qualfilter.nBaseLimit = cmd.get<int>("n_base_limit");
 
     // length filtering
@@ -289,6 +313,7 @@ int main(int argc, char* argv[]){
     opt.correction.enabled = cmd.exist("correction");
     opt.overlapRequire = cmd.get<int>("overlap_len_require");
     opt.overlapDiffLimit = cmd.get<int>("overlap_diff_limit");
+    opt.overlapDiffPercentLimit = cmd.get<int>("overlap_diff_percent_limit");
 
     // threading
     opt.thread = cmd.get<int>("thread");

@@ -8,8 +8,8 @@ BaseCorrector::BaseCorrector(){
 BaseCorrector::~BaseCorrector(){
 }
 
-int BaseCorrector::correctByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr) {
-    OverlapResult ov = OverlapAnalysis::analyze(r1, r2);
+int BaseCorrector::correctByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, int diffLimit, int overlapRequire, double diffPercentLimit) {
+    OverlapResult ov = OverlapAnalysis::analyze(r1, r2, diffLimit, overlapRequire, diffPercentLimit);
     return correctByOverlapAnalysis(r1, r2, fr, ov);
 }
 
@@ -92,7 +92,7 @@ bool BaseCorrector::test() {
         "+",
         "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE/EEEEEEEEEEEEE");
 
-    correctByOverlapAnalysis(&r1, &r2, NULL);
+    correctByOverlapAnalysis(&r1, &r2, NULL, 5, 30, 0.2);
 
     if(r1.mSeq.mStr != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCCCGGGG")
         return false;

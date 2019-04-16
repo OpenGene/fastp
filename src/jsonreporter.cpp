@@ -155,14 +155,17 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         preStats1 -> reportJson(ofs, "\t");
     }
 
-    if(postStats1) {
-        ofs << "\t" << "\"read1_after_filtering\": " ;
-        postStats1 -> reportJson(ofs, "\t");
-    }
-
     if(preStats2) {
         ofs << "\t" << "\"read2_before_filtering\": " ;
         preStats2 -> reportJson(ofs, "\t");
+    }
+
+    if(postStats1) {
+        string name = "read1_after_filtering";
+        if(mOptions->merge.enabled)
+            name = "merged_and_filtered";
+        ofs << "\t" << "\"" << name << "\": " ;
+        postStats1 -> reportJson(ofs, "\t");
     }
 
     if(postStats2 && !mOptions->merge.enabled) {

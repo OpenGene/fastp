@@ -33,7 +33,7 @@ public:
     static FilterResult* merge(vector<FilterResult*>& list);
     void print();
     // for single end
-    void addAdapterTrimmed(string adapter, bool isR2 = false);
+    void addAdapterTrimmed(string adapter, bool isR2 = false, bool incTrimmedCounter = true);
     // for paired end
     void addAdapterTrimmed(string adapter1, string adapter2);
     void addPolyXTrimmed(int base, int length);

@@ -109,10 +109,11 @@ long FilterResult::getCorrectionNum(char from, char to) {
     return mCorrectionMatrix[f*8 + t];
 }
 
-void FilterResult::addAdapterTrimmed(string adapter, bool isR2) {
+void FilterResult::addAdapterTrimmed(string adapter, bool isR2, bool incTrimmedCounter ) {
     if(adapter.empty())
         return;
-    mTrimmedAdapterRead++;
+    if(incTrimmedCounter)
+        mTrimmedAdapterRead++;
     mTrimmedAdapterBases += adapter.length();
     if(!isR2) {
         if(mAdapter1.count(adapter) >0 )

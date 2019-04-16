@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include "fastareader.h"
 
 Options::Options(){
     in1 = "";
@@ -21,6 +22,7 @@ Options::Options(){
     insertSizeMax = 512;
     overlapRequire = 30;
     overlapDiffLimit = 5;
+    overlapDiffPercentLimit = 20;
     verbose = false;
     seqLen1 = 151;
     seqLen2 = 151;
@@ -43,6 +45,35 @@ bool Options::adapterCuttingEnabled() {
 
 bool Options::polyXTrimmingEnabled() {
     return polyXTrim.enabled;
+}
+
+void Options::loadFastaAdapters() {
+    if(adapter.fastaFile.empty()) {
+        adapter.hasFasta = false;
+        return;
+    }
+
+    check_file_valid(adapter.fastaFile);
+
+    FastaReader reader(adapter.fastaFile);
+    reader.readAll();
+
+    map<string, string> contigs = reader.contigs();
+    map<string, string>::iterator iter;
+    for(iter = contigs.begin(); iter != contigs.end(); iter++) {
+        if(iter->second.length()>=6) {
+            adapter.seqsInFasta.push_back(iter->second);
+        }
+        else {
+            cerr << "skip too short adapter sequence in " <<  adapter.fastaFile << " (6bp required): " << iter->second << endl;
+        }
+    }
+
+    if(adapter.seqsInFasta.size() > 0) {
+        adapter.hasFasta = true;
+    } else {
+        adapter.hasFasta = false;
+    }
 }
 
 bool Options::validate() {
@@ -68,29 +99,66 @@ bool Options::validate() {
         if(in2.empty() && !interleavedInput) {
             error_exit("read2 input should be specified by --in2 for merging mode");
         }
-        if(!out2.empty()) {
-            cerr << "Merging mode. Ignore argument --out2 = " << out2 << endl;
-            out2 = "";
+        // enable correction if it's not enabled
+        if(!correction.enabled)
+            correction.enabled = true;
+        if(merge.out.empty() && !outputToSTDOUT && !out1.empty() && out2.empty()) {
+            cerr << "You specified --out1, but haven't specified --merged_out in merging mode. Using --out1 to store the merged reads to be compatible with fastp 0.19.8" << endl << endl;
+            merge.out = out1;
+            out1 = "";
+        }
+        if(merge.includeUnmerged) {
+            if(!out1.empty()) {
+                cerr << "You specified --include_unmerged in merging mode. Ignoring argument --out1 = " << out1 << endl;
+                out1 = "";
+            }
+            if(!out2.empty()) {
+                cerr << "You specified --include_unmerged in merging mode. Ignoring argument --out2 = " << out2 << endl;
+                out2 = "";
+            }
+            if(!unpaired1.empty()) {
+                cerr << "You specified --include_unmerged in merging mode. Ignoring argument --unpaired1 = " << unpaired1 << endl;
+                unpaired1 = "";
+            }
+            if(!unpaired2.empty()) {
+                cerr << "You specified --include_unmerged in merging mode. Ignoring argument --unpaired1 = " << unpaired2 << endl;
+                unpaired2 = "";
+            }
+        }
+        if(merge.out.empty() && !outputToSTDOUT) {
+            error_exit("In merging mode, you should either specify --merged_out or enable --stdout");
+        }
+        if(!merge.out.empty()) {
+            if(merge.out == out1)
+                error_exit("--merged_out and --out1 shouldn't have same file name");
+            if(merge.out == out2)
+                error_exit("--merged_out and --out2 shouldn't have same file name");
+            if(merge.out == unpaired1)
+                error_exit("--merged_out and --unpaired1 shouldn't have same file name");
+            if(merge.out == unpaired2)
+                error_exit("--merged_out and --unpaired2 shouldn't have same file name");
+        }
+    } else {
+        // not in merging mode
+        if(!merge.out.empty()) {
+            cerr << "You haven't enabled merging mode (-m/--merge), ignoring argument --merged_out = " << merge.out << endl;
+            merge.out = "";
         }
     }
 
     // if output to STDOUT, then...
     if(outputToSTDOUT) {
-        cerr << "Streaming uncompressed output to STDOUT..." << endl;
-        if(!in1.empty() && !in2.empty())
-            cerr << "Enable interleaved output mode for paired-end input." << endl;
-        if(!out1.empty()) {
-            cerr << "Ignore argument --out1 = " << out1 << endl;
-            out1 = "";
-        }
-        if(!out2.empty()) {
-            cerr << "Ignore argument --out2 = " << out2 << endl;
-            out2 = "";
-        }
         if(split.enabled) {
-            cerr << "Ignore split mode" << endl;
-            split.enabled = false;
+            error_exit("splitting mode cannot work with stdout mode");
         }
+        cerr << "Streaming uncompressed ";
+        if(merge.enabled)
+            cerr << "merged";
+        else if(isPaired())
+            cerr << "interleaved";
+        cerr << " reads to STDOUT..." << endl;
+        if(isPaired() && !merge.enabled)
+            cerr << "Enable interleaved output mode for paired-end input." << endl;
         cerr << endl;
     }
 
@@ -99,7 +167,7 @@ bool Options::validate() {
     }
 
     if(!in2.empty() || interleavedInput) {
-        if(!out1.empty() && out2.empty() && !merge.enabled) {
+        if(!out1.empty() && out2.empty()) {
             error_exit("paired-end input, read1 output should be specified together with read2 output (--out2 needed) ");
         }
         if(out1.empty() && !out2.empty()) {
@@ -126,6 +194,59 @@ bool Options::validate() {
         if(dontOverwrite && file_exists(out2)) {
             error_exit(out2 + " already exists and you have set to not rewrite output files by --dont_overwrite");
         }
+    }
+    if(!isPaired()) {
+        if(!unpaired1.empty()) {
+            cerr << "Not paired-end mode. Ignoring argument --unpaired1 = " << unpaired1 << endl;
+            unpaired1 = "";
+        }
+        if(!unpaired2.empty()) {
+            cerr << "Not paired-end mode. Ignoring argument --unpaired2 = " << unpaired2 << endl;
+            unpaired2 = "";
+        }
+    }
+    if(split.enabled) {
+        if(!unpaired1.empty()) {
+            cerr << "Outputing unpaired reads is not supported in splitting mode. Ignoring argument --unpaired1 = " << unpaired1 << endl;
+            unpaired1 = "";
+        }
+        if(!unpaired2.empty()) {
+            cerr << "Outputing unpaired reads is not supported in splitting mode. Ignoring argument --unpaired2 = " << unpaired2 << endl;
+            unpaired2 = "";
+        }
+    }
+    if(!unpaired1.empty()) {
+        if(dontOverwrite && file_exists(unpaired1)) {
+            error_exit(unpaired1 + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+        if(unpaired1 == out1)
+            error_exit("--unpaired1 and --out1 shouldn't have same file name");
+        if(unpaired1 == out2)
+            error_exit("--unpaired1 and --out2 shouldn't have same file name");
+    }
+    if(!unpaired2.empty()) {
+        if(dontOverwrite && file_exists(unpaired2)) {
+            error_exit(unpaired2 + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+        if(unpaired2 == out1)
+            error_exit("--unpaired2 and --out1 shouldn't have same file name");
+        if(unpaired2 == out2)
+            error_exit("--unpaired2 and --out2 shouldn't have same file name");
+    }
+    if(!failedOut.empty()) {
+        if(dontOverwrite && file_exists(failedOut)) {
+            error_exit(failedOut + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+        if(failedOut == out1)
+            error_exit("--failed_out and --out1 shouldn't have same file name");
+        if(failedOut == out2)
+            error_exit("--failed_out and --out2 shouldn't have same file name");
+        if(failedOut == unpaired1)
+            error_exit("--failed_out and --unpaired1 shouldn't have same file name");
+        if(failedOut == unpaired2)
+            error_exit("--failed_out and --unpaired2 shouldn't have same file name");
+        if(failedOut == merge.out)
+            error_exit("--failed_out and --merged_out shouldn't have same file name");
     }
 
     if(dontOverwrite) {
@@ -165,6 +286,9 @@ bool Options::validate() {
     if(qualfilter.qualifiedQual - 33 < 0 || qualfilter.qualifiedQual - 33 > 93)
         error_exit("qualitified phred (--qualified_quality_phred) should be 0 ~ 93, suggest 10 ~ 20");
 
+    if(qualfilter.avgQualReq < 0 || qualfilter.avgQualReq  > 93)
+        error_exit("average quality score requirement (--average_qual) should be 0 ~ 93, suggest 20 ~ 30");
+
     if(qualfilter.unqualifiedPercentLimit < 0 || qualfilter.unqualifiedPercentLimit > 100)
         error_exit("unqualified percent limit (--unqualified_percent_limit) should be 0 ~ 100, suggest 20 ~ 60");
 
@@ -173,6 +297,9 @@ bool Options::validate() {
 
     if(lengthFilter.requiredLength < 0 )
         error_exit("length requirement (--length_required) should be >0, suggest 15 ~ 100");
+
+    if(overlapDiffPercentLimit < 0 || overlapDiffPercentLimit > 100)
+        error_exit("the maximum percentage of mismatched bases to detect overlapped region (--overlap_diff_percent_limit) should be 0 ~ 100, suggest 20 ~ 60");
 
     if(split.enabled ) {
         if(split.digits < 0 || split.digits > 10)
@@ -244,7 +371,7 @@ bool Options::validate() {
     }
 
     if(correction.enabled && !isPaired()) {
-        cerr << "WARNING: base correction is only appliable for paired end data, ignored -c/--correction" << endl;
+        cerr << "WARNING: base correction is only appliable for paired end data, ignoring -c/--correction" << endl;
         correction.enabled = false;
     }
 

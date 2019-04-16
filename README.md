@@ -30,7 +30,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 1. filter out bad reads (too low quality, too short, or too many N...)
 2. cut low quality bases for per read in its 5' and 3' by evaluating the mean quality from a sliding window (like Trimmomatic but faster).
 3. trim all reads in front and tail
-4. cut adapters. Adapter sequences can be automatically detected,which means you don't have to input the adapter sequences to trim them.
+4. cut adapters. Adapter sequences can be automatically detected, which means you don't have to input the adapter sequences to trim them.
 5. correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
 6. trim polyG in 3' ends, which is commonly seen in NovaSeq/NextSeq data. Trim polyX in 3' ends to remove unwanted polyX tailing (i.e. polyA tailing for mRNA-Seq data)
 7. preprocess unique molecular identifier (UMI) enabled data, shift UMI to sequence name.
@@ -101,12 +101,21 @@ sudo make install
 ## input from STDIN
 * specify `--stdin` if you want to read the STDIN for processing.
 * if the STDIN is an interleaved paired-end stream, specify `--interleaved_in` to indicate that.
+## store the unpaired reads for PE data
+* you can specify `--unpaired1` to store the reads that read1 passes filters but its paired read2 doesn't, as well as `--unpaired2` for unpaired read2.
+* `--unpaired1` and `--unpaired2` can be the same, so the unpaired read1/read2 will be written to the same single file.
+## store the reads that fail the filters
+* give `--failed_out` to specify the file name to store the failed reads.
+* if one read failed and is written to `--failed_out`, its `failure reason` will be appended to its read name. For example, `failed_quality_filter`, `failed_too_short` etc.
+* for PE data, if unpaired reads are not stored (by giving --unpaired1 or --unpaired2), the failed pair of reads will be put together. If one read passes the filters but its pair doesn't, the `failure reason` will be `paired_read_is_failing`.
 ## process only part of the data
 If you don't want to process all the data, you can specify `--reads_to_process` to limit the reads to be processed. This is useful if you want to have a fast preview of the data quality, or you want to create a subset of the filtered data.
 ## do not overwrite exiting files
 You can enable the option `--dont_overwrite` to protect the existing files not to be overwritten by `fastp`. In this case, `fastp` will report an error and quit if it finds any of the output files (read1, read2, json report, html report) already exists before.
 ## split the output to multiple files for parallel processing
 See [output splitting](#output-splitting)
+## merge PE reads
+See [merge paired-end reads](#merge-paired-end-reads)
 
 # filtering
 Multiple filters have been implemented.
@@ -116,6 +125,9 @@ Quality filtering is enabled by default, but you can disable it by `-Q` or `disa
 To filter reads by its percentage of unqualified bases, two options should be provided:
 * `-q, --qualified_quality_phred`       the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. 
 * `-u, --unqualified_percent_limit`    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%
+
+You can also filter reads by its average quality score
+* `-e, --average_qual`   if one read's average quality score <avg_qual, then this read/pair is discarded. Default 0 means no requirement (int [=0])
 
 ## length filter
 Length filtering is enabled by default, but you can disable it by `-L` or `--disable_length_filtering`. The minimum length requirement is specified with `-l` or `--length_required`.
@@ -143,6 +155,20 @@ Adapter trimming is enabled by default, but you can disable it by `-A` or `--dis
 * The most widely used adapter is the Illumina TruSeq adapters. If your data is from the TruSeq library, you can add `--adapter_sequence=AGATCGGAAGAGCACACGTCTGAACTCCAGTCA --adapter_sequence_r2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT` to your command lines, or enable auto detection for PE data by specifing `detect_adapter_for_pe`.
 * `fastp` contains some built-in known adapter sequences for better auto-detection. If you want to make some adapters to be a part of the built-in adapters, please file an issue.
 
+You can also specify `--adapter_fasta` to give a FASTA file to tell `fastp` to trim multiple adapters in this FASTA file. Here is a sample of such adapter FASTA file:
+```
+>Illumina TruSeq Adapter Read 1
+AGATCGGAAGAGCACACGTCTGAACTCCAGTCA
+>Illumina TruSeq Adapter Read 2
+AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+>polyA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+```
+
+The adapter sequence in this file should be at least 6bp long, otherwise it will be skipped. And you can give whatever you want to trim, rather than regular sequencing adapters (i.e. polyA).
+
+`fastp` first trims the auto-detected adapter or the adapter sequences given by `--adapter_sequence | --adapter_sequence_r2`, then trims the adapters given by `--adapter_fasta` one by one. 
+
 The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
 
 # per read cutting by quality score
@@ -163,7 +189,7 @@ If you don't set window size and mean quality threshold for these function respe
 # base correction for PE data
 `fastp` perform `overlap analysis` for PE data, which try to find an overlap of each pair of reads. If an proper overlap is found, it can correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality. If a base is corrected, the quality of its paired base will be assigned to it so that they will share the same quality.   
 
-This function is not enabled by default, specify `-c` or `--correction` to enable it. This function is based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)` and `overlap_diff_limit (default 5)`.
+This function is not enabled by default, specify `-c` or `--correction` to enable it. This function is based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_limit_percent (default 20%)`.
 
 # global trimming
 `fastp` supports global trimming, which means trim all reads in the front or the tail. This function is useful since sometimes you want to drop some cycles of a sequencing run.
@@ -252,15 +278,21 @@ By default, fastp uses 1/20 reads for sequence counting, and you can change this
 `fastp` not only gives the counts of overrepresented sequence, but also gives the information that how they distribute over cycles. A figure is provided for each detected overrepresented sequence, from which you can know where this sequence is mostly found.
 
 # merge paired-end reads
-For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode, the output will be a single file.
+For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode:   
+
+* `--merged_out` shouuld be given to specify the file to store merged reads, otherwise you should enable `--stdout` to stream the merged reads to STDOUT. The merged reads are also filtered.
+* `--out1` and `--out2` will be the reads that cannot be merged successfully, but both pass all the filters.
+* `--unpaired1` will be the reads that cannot be merged, `read1` passes filters but `read2` doesn't.
+* `--unpaired2` will be the reads that cannot be merged, `read2` passes filters but `read1` doesn't.
+* `--include_unmerged` can be enabled to make reads of `--out1`, `--out2`, `--unpaired1` and `--unpaired2` redirected to `--merged_out`. So you will get a single output file. This option is disabled by default.
+
+`--failed_out` can still be given to store the reads (either merged or unmerged) failed to passing filters.
 
 In the output file, a tag like `merged_xxx_yyy`will be added to each read name to indicate that how many base pairs are from read1 and from read2, respectively. For example, `
 @NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15` 
 means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the bases in read1 since they usually have higher quality than read2.
 
-For the pairs of reads that cannot be merged successfully, they will be both included in the output by default. But you can specify the `--discard_unmerged` option to discard the unmerged reads.
-
-Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)` and `overlap_diff_limit (default 5)`.
+Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_limit_percent (default 20%)`.
 
 # all options
 ```shell
@@ -270,9 +302,13 @@ options:
   -i, --in1                          read1 input file name (string)
   -o, --out1                         read1 output file name (string [=])
   -I, --in2                          read2 input file name (string [=])
-  -O, --out2                         read2 output file name (string [=])
-  -m, --merge                        for paired-end input, merge each pair of reads into a single read if they are overlapped. Disabled by default.
-      --discard_unmerged                     in the merging mode, discard the pairs of reads if they cannot be merged successfully. Disabled by default.
+  -O, --out2                           read2 output file name (string [=])
+      --unpaired1                      for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it. (string [=])
+      --unpaired2                      for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --umpaired1 (default mode), both unpaired reads will be written to this same file. (string [=])
+      --failed_out                     specify the file to store reads that cannot pass the filters. (string [=])
+  -m, --merge                          for paired-end input, merge each pair of reads into a single read if they are overlapped. The merged reads will be written to the file given by --merged_out, the unmerged reads will be written to the files specified by --out1 and --out2. The merging mode is disabled by default.
+      --merged_out                     in the merging mode, specify the file name to store merged output, or specify --stdout to stream the merged output (string [=])
+      --include_unmerged               in the merging mode, write the unmerged or unpaired reads to the file specified by --merge. Disabled by default.
   -6, --phred64                      indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)
   -z, --compression                  compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4. (int [=4])
       --stdin                          input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
@@ -285,6 +321,7 @@ options:
   -A, --disable_adapter_trimming     adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled
   -a, --adapter_sequence               the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped. (string [=auto])
       --adapter_sequence_r2            the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence> (string [=])
+      --adapter_fasta                  specify a FASTA file to trim both read1 and read2 (if PE) by all the sequences in this FASTA file (string [=])
       --detect_adapter_for_pe          by default, the adapter sequence auto-detection is enabled for SE data only, turn on this option to enable it for PE data.
     
   # global trimming options
@@ -322,6 +359,8 @@ options:
   -q, --qualified_quality_phred      the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. (int [=15])
   -u, --unqualified_percent_limit    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40% (int [=40])
   -n, --n_base_limit                 if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5 (int [=5])
+  -e, --average_qual                 if one read's average quality score <avg_qual, then this read/pair is discarded. Default 0 means no requirement (int [=0])
+
   
   # length filtering options
   -L, --disable_length_filtering     length filtering is enabled by default. If this option is specified, length filtering is disabled
@@ -339,9 +378,10 @@ options:
 
   # base correction by overlap analysis options
   -c, --correction                   enable base correction in overlapped regions (only for PE data), default is disabled
-      --overlap_len_require          the minimum length of the overlapped region for overlap analysis based adapter trimming and correction. 30 by default. (int [=30])
-      --overlap_diff_limit           the maximum difference of the overlapped region for overlap analysis based adapter trimming and correction. 5 by default. (int [=5])
-  
+      --overlap_len_require            the minimum length to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 30 by default. (int [=30])
+      --overlap_diff_limit             the maximum number of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 5 by default. (int [=5])
+      --overlap_diff_percent_limit     the maximum percentage of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. Default 20 means 20%. (int [=20])
+
   # UMI processing
   -U, --umi                          enable unique molecular identifier (UMI) preprocessing
       --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none (string [=])
