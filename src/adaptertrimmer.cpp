@@ -7,8 +7,8 @@ AdapterTrimmer::AdapterTrimmer(){
 AdapterTrimmer::~AdapterTrimmer(){
 }
 
-bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr) {
-    OverlapResult ov = OverlapAnalysis::analyze(r1, r2);
+bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, int diffLimit, int overlapRequire, double diffPercentLimit) {
+    OverlapResult ov = OverlapAnalysis::analyze(r1, r2, diffLimit, overlapRequire, diffPercentLimit);
     return trimByOverlapAnalysis(r1, r2, fr, ov);
 }
 

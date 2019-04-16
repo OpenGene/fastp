@@ -189,7 +189,7 @@ If you don't set window size and mean quality threshold for these function respe
 # base correction for PE data
 `fastp` perform `overlap analysis` for PE data, which try to find an overlap of each pair of reads. If an proper overlap is found, it can correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality. If a base is corrected, the quality of its paired base will be assigned to it so that they will share the same quality.   
 
-This function is not enabled by default, specify `-c` or `--correction` to enable it. This function is based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)` and `overlap_diff_limit (default 5)`.
+This function is not enabled by default, specify `-c` or `--correction` to enable it. This function is based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_limit_percent (default 20%)`.
 
 # global trimming
 `fastp` supports global trimming, which means trim all reads in the front or the tail. This function is useful since sometimes you want to drop some cycles of a sequencing run.
@@ -292,7 +292,7 @@ In the output file, a tag like `merged_xxx_yyy`will be added to each read name t
 @NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15` 
 means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the bases in read1 since they usually have higher quality than read2.
 
-Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)` and `overlap_diff_limit (default 5)`.
+Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_limit_percent (default 20%)`.
 
 # all options
 ```shell
@@ -378,9 +378,10 @@ options:
 
   # base correction by overlap analysis options
   -c, --correction                   enable base correction in overlapped regions (only for PE data), default is disabled
-      --overlap_len_require          the minimum length of the overlapped region for overlap analysis based adapter trimming and correction. 30 by default. (int [=30])
-      --overlap_diff_limit           the maximum difference of the overlapped region for overlap analysis based adapter trimming and correction. 5 by default. (int [=5])
-  
+      --overlap_len_require            the minimum length to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 30 by default. (int [=30])
+      --overlap_diff_limit             the maximum maximum number of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 5 by default. (int [=5])
+      --overlap_diff_percent_limit     the maximum percentage of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. Default 20 means 20%. (int [=20])
+
   # UMI processing
   -U, --umi                          enable unique molecular identifier (UMI) preprocessing
       --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none (string [=])

@@ -354,7 +354,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         }
         bool isizeEvaluated = false;
         if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)){
-            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, mOptions->overlapDiffPercentLimit/100.0);
             // we only use thread 0 to evaluae ISIZE
             if(config->getThreadId() == 0) {
                 statInsertSize(r1, r2, ov, frontTrimmed1, frontTrimmed2);
@@ -381,7 +381,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         }
 
         if(config->getThreadId() == 0 && !isizeEvaluated && r1 != NULL && r2!=NULL) {
-            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, mOptions->overlapDiffPercentLimit/100.0);
             statInsertSize(r1, r2, ov, frontTrimmed1, frontTrimmed2);
             isizeEvaluated = true;
         }
@@ -402,7 +402,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         // merging mode
         bool mergeProcessed = false;
         if(mOptions->merge.enabled && r1 && r2) {
-            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, mOptions->overlapDiffPercentLimit/100.0);
             if(ov.overlapped) {
                 merged = OverlapAnalysis::merge(r1, r2, ov);
                 int result = mFilter->passFilter(merged);

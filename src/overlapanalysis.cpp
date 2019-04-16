@@ -7,12 +7,12 @@ OverlapAnalysis::OverlapAnalysis(){
 OverlapAnalysis::~OverlapAnalysis(){
 }
 
-OverlapResult OverlapAnalysis::analyze(Read* r1, Read* r2, int overlapDiffLimit, int overlapRequire) {
-    return analyze(r1->mSeq, r2->mSeq, overlapDiffLimit, overlapRequire);
+OverlapResult OverlapAnalysis::analyze(Read* r1, Read* r2, int overlapDiffLimit, int overlapRequire, double diffPercentLimit) {
+    return analyze(r1->mSeq, r2->mSeq, overlapDiffLimit, overlapRequire, diffPercentLimit);
 }
 
 // ported from the python code of AfterQC
-OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2, int overlapDiffLimit, int overlapRequire) {
+OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2, int diffLimit, int overlapRequire, double diffPercentLimit) {
     Sequence rcr2 = ~r2;
     int len1 = r1.length();
     int len2 = rcr2.length();
@@ -31,6 +31,7 @@ OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2, int overlapDi
     while (offset < len1-overlapRequire) {
         // the overlap length of r1 & r2 when r2 is move right for offset
         overlap_len = min(len1 - offset, len2);
+        int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
 
         diff = 0;
         int i = 0;
@@ -64,6 +65,7 @@ OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2, int overlapDi
     while (offset > -(len2-overlapRequire)){
         // the overlap length of r1 & r2 when r2 is move right for offset
         overlap_len = min(len1,  len2- abs(offset));
+        int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
 
         diff = 0;
         int i = 0;
@@ -131,7 +133,7 @@ bool OverlapAnalysis::test(){
     string qual1("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
     string qual2("#########################################################################################");
     
-    OverlapResult ov = OverlapAnalysis::analyze(r1, r2);
+    OverlapResult ov = OverlapAnalysis::analyze(r1, r2, 5, 30, 0.2);
 
     Read read1("name1", r1, "+", qual1);
     Read read2("name2", r2, "+", qual2);

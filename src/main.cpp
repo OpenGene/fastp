@@ -111,8 +111,9 @@ int main(int argc, char* argv[]){
     
     // base correction in overlapped regions of paired end data
     cmd.add("correction", 'c', "enable base correction in overlapped regions (only for PE data), default is disabled");
-    cmd.add<int>("overlap_len_require", 0, "the minimum length of the overlapped region for overlap analysis based adapter trimming and correction. 30 by default.", false, 30);
-    cmd.add<int>("overlap_diff_limit", 0, "the maximum difference of the overlapped region for overlap analysis based adapter trimming and correction. 5 by default.", false, 5);
+    cmd.add<int>("overlap_len_require", 0, "the minimum length to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 30 by default.", false, 30);
+    cmd.add<int>("overlap_diff_limit", 0, "the maximum maximum number of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 5 by default.", false, 5);
+    cmd.add<int>("overlap_diff_percent_limit", 0, "the maximum percentage of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. Default 20 means 20%.", false, 20);
 
     // umi
     cmd.add("umi", 'U', "enable unique molecular identifier (UMI) preprocessing");
@@ -312,6 +313,7 @@ int main(int argc, char* argv[]){
     opt.correction.enabled = cmd.exist("correction");
     opt.overlapRequire = cmd.get<int>("overlap_len_require");
     opt.overlapDiffLimit = cmd.get<int>("overlap_diff_limit");
+    opt.overlapDiffPercentLimit = cmd.get<int>("overlap_diff_percent_limit");
 
     // threading
     opt.thread = cmd.get<int>("thread");

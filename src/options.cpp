@@ -22,6 +22,7 @@ Options::Options(){
     insertSizeMax = 512;
     overlapRequire = 30;
     overlapDiffLimit = 5;
+    overlapDiffPercentLimit = 20;
     verbose = false;
     seqLen1 = 151;
     seqLen2 = 151;
@@ -292,6 +293,9 @@ bool Options::validate() {
 
     if(lengthFilter.requiredLength < 0 )
         error_exit("length requirement (--length_required) should be >0, suggest 15 ~ 100");
+
+    if(overlapDiffPercentLimit < 0 || overlapDiffPercentLimit > 100)
+        error_exit("the maximum percentage of mismatched bases to detect overlapped region (--overlap_diff_percent_limit) should be 0 ~ 100, suggest 20 ~ 60");
 
     if(split.enabled ) {
         if(split.digits < 0 || split.digits > 10)
