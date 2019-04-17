@@ -14,8 +14,8 @@ int BaseCorrector::correctByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr
 }
 
 int BaseCorrector::correctByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, OverlapResult ov) {
-    // we only correct overlap with up to 5 mismatches
-    if(ov.diff == 0 || ov.diff > 5)
+    // we only correct overlap
+    if(ov.diff == 0 || !ov.overlapped)
         return 0;
 
     int ol = ov.overlap_len;

@@ -14,7 +14,7 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr,
 
 bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, OverlapResult ov, int frontTrimmed1, int frontTrimmed2) {
     int ol = ov.overlap_len;
-    if(ov.diff<=5 && ov.overlapped && ov.offset < 0 && ol > r1->length()/3) {
+    if(ov.overlapped && ov.offset < 0) {
 
         //5'      ......frontTrimmed1......|------------------------------------------|----- 3'
         //3' -----|-------------------------------------------|......frontTrimmed2.....      5'
