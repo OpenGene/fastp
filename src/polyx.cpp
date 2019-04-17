@@ -1,4 +1,5 @@
 #include "polyx.h"
+#include "common.h"
 
 PolyX::PolyX(){
 }
@@ -53,8 +54,8 @@ void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq) {
 
     int rlen = r->length();
 
+
     int atcgNumbers[4] = {0, 0, 0, 0};
-    char atcgBases[4] = {'A', 'T', 'C', 'G'};
     int pos = 0;
     for(pos=0; pos<rlen; pos++) {
         switch(data[rlen - pos - 1]) {
@@ -104,20 +105,26 @@ void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq) {
                 poly = b;
             }
         }
-        char polyBase = atcgBases[poly];
+        char polyBase = ATCG_BASES[poly];
         while(data[rlen - pos - 1] != polyBase && pos>=0)
             pos--;
 
         r->resize(rlen - pos - 1);
+        if(fr)
+          fr->addPolyXTrimmed(poly, pos + 1);
     }
 }
 
 bool PolyX::test() {
+
     Read r("@name",
         "ATTTTAAAAAAAAAATAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAT",
         "+",
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
-    PolyX::trimPolyX(&r, NULL, 10);
+
+    FilterResult fr(NULL, false);
+    PolyX::trimPolyX(&r, &fr, 10);
     r.print();
-    return r.mSeq.mStr == "ATTTT";
+
+    return r.mSeq.mStr == "ATTTT" && fr.getTotalPolyXTrimmedReads() == 1 && fr.getTotalPolyXTrimmedBases() == 51;
 }

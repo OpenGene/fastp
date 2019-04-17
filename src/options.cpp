@@ -43,6 +43,10 @@ bool Options::adapterCuttingEnabled() {
     return false;
 }
 
+bool Options::polyXTrimmingEnabled() {
+    return polyXTrim.enabled;
+}
+
 void Options::loadFastaAdapters() {
     if(adapter.fastaFile.empty()) {
         adapter.hasFasta = false;
@@ -67,9 +71,9 @@ void Options::loadFastaAdapters() {
 
     if(adapter.seqsInFasta.size() > 0) {
         adapter.hasFasta = true;
-    } else 
+    } else {
         adapter.hasFasta = false;
-
+    }
 }
 
 bool Options::validate() {
