@@ -36,7 +36,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
     cmd.add<string>("unpaired1", 0, "for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it.", false, "");
-    cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --umpaired1 (default mode), both unpaired reads will be written to this same file.", false, "");
+    cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --unpaired1 (default mode), both unpaired reads will be written to this same file.", false, "");
     cmd.add<string>("failed_out", 0, "specify the file to store reads that cannot pass the filters.", false, "");
     cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. The merged reads will be written to the file given by --merged_out, the unmerged reads will be written to the files specified by --out1 and --out2. The merging mode is disabled by default.");
     cmd.add<string>("merged_out", 0, "in the merging mode, specify the file name to store merged output, or specify --stdout to stream the merged output", false, "");
