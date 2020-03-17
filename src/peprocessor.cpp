@@ -338,6 +338,11 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             continue;
         }
 
+        // fix MGI
+        if(mOptions->fixMGI) {
+            or1->fixMGI();
+            or2->fixMGI();
+        }
         // umi processing
         if(mOptions->umi.enabled)
             mUmiProcessor->process(or1, or2);

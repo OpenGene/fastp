@@ -211,6 +211,11 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             delete or1;
             continue;
         }
+
+        // fix MGI
+        if(mOptions->fixMGI) {
+            or1->fixMGI();
+        }
         
         // umi processing
         if(mOptions->umi.enabled)

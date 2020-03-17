@@ -26,6 +26,7 @@ Options::Options(){
     verbose = false;
     seqLen1 = 151;
     seqLen2 = 151;
+    fixMGI = false;
 }
 
 void Options::init() {

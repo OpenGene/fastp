@@ -135,6 +135,17 @@ string Read::toStringWithTag(string tag) {
 	return mName + " " + tag + "\n" + mSeq.mStr + "\n" + mStrand + "\n" + mQuality + "\n";
 }
 
+bool Read::fixMGI() {
+	int len = mName.length();
+	if(mName[len-1]=='1' || mName[len-1]=='2') {
+		if(mName[len-2] == '/') {
+			mName = mName.substr(0, len-2) + " " + mName.substr(len-2, 2);
+			return true;
+		}
+	}
+	return false;
+}
+
 bool Read::test(){
 	Read r("@NS500713:64:HFKJJBGXY:1:11101:20469:1097 1:N:0:TATAGCCT+GGTCCCGA",
 		"CTCTTGGACTCTAACACTGTTTTTTCTTATGAAAACACAGGAGTGATGACTAGTTGAGTGCATTCTTATGAGACTCATAGTCATTCTATGATGTAGTTTTCCTTAGGAGGACATTTTTTACATGAAATTATTAACCTAAATAGAGTTGATC",

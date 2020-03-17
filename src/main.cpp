@@ -48,6 +48,7 @@ int main(int argc, char* argv[]){
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
+    cmd.add("fix_mgi_id", 0, "the MGI FASTQ ID format is not compatible with many BAM operation tools, enable this option to fix it.");
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
 
     // adapter
@@ -177,6 +178,7 @@ int main(int argc, char* argv[]){
     opt.outputToSTDOUT = cmd.exist("stdout");
     opt.interleavedInput = cmd.exist("interleaved_in");
     opt.verbose = cmd.exist("verbose");
+    opt.fixMGI = cmd.exist("fix_mgi_id");
 
     // merge PE
     opt.merge.enabled = cmd.exist("merge");

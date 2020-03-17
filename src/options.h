@@ -325,6 +325,8 @@ public:
     bool interleavedInput;
     // only process first N reads
     int readsToProcess;
+    // fix the MGI ID tailing issue
+    bool fixMGI;
     // worker thread number
     int thread;
     // trimming options
