@@ -406,7 +406,7 @@ void HtmlReporter::printCSS(ofstream& ofs){
 }
 
 void HtmlReporter::printJS(ofstream& ofs){
-    ofs << "<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>" << endl;
+    ofs << "<script src='http://opengene.org/plotly-1.2.0.min.js'></script>" << endl;
     ofs << "\n<script type=\"text/javascript\">" << endl;
     ofs << "    function showOrHide(divname) {" << endl;
     ofs << "        div = document.getElementById(divname);" << endl;
