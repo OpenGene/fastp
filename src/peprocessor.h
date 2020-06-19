@@ -81,6 +81,7 @@ private:
     WriterThread* mUnpairedRightWriter;
     WriterThread* mMergedWriter;
     WriterThread* mFailedWriter;
+    WriterThread* mOverlappedWriter;
     Duplicate* mDuplicate;
 };
 

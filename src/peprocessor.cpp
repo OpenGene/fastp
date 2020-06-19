@@ -32,6 +32,7 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mUnpairedRightWriter = NULL;
     mMergedWriter = NULL;
     mFailedWriter = NULL;
+    mOverlappedWriter = NULL;
 
     mDuplicate = NULL;
     if(mOptions->duplicate.enabled) {
@@ -62,6 +63,9 @@ void PairEndProcessor::initOutput() {
     if(!mOptions->failedOut.empty())
         mFailedWriter = new WriterThread(mOptions, mOptions->failedOut);
 
+    if(!mOptions->overlappedOut.empty())
+        mOverlappedWriter = new WriterThread(mOptions, mOptions->overlappedOut);
+
     if(mOptions->out1.empty())
         return;
     
@@ -86,6 +90,10 @@ void PairEndProcessor::closeOutput() {
     if(mFailedWriter) {
         delete mFailedWriter;
         mFailedWriter = NULL;
+    }
+    if(mOverlappedWriter) {
+        delete mOverlappedWriter;
+        mOverlappedWriter = NULL;
     }
     if(mUnpairedLeftWriter) {
         delete mUnpairedLeftWriter;
@@ -132,6 +140,7 @@ bool PairEndProcessor::process(){
     std::thread* unpairedRightWriterThread = NULL;
     std::thread* mergedWriterThread = NULL;
     std::thread* failedWriterThread = NULL;
+    std::thread* overlappedWriterThread = NULL;
     if(mLeftWriter)
         leftWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mLeftWriter));
     if(mRightWriter)
@@ -144,6 +153,8 @@ bool PairEndProcessor::process(){
         mergedWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mMergedWriter));
     if(mFailedWriter)
         failedWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mFailedWriter));
+    if(mOverlappedWriter)
+        overlappedWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mOverlappedWriter));
 
     producer.join();
     for(int t=0; t<mOptions->thread; t++){
@@ -163,6 +174,8 @@ bool PairEndProcessor::process(){
             mergedWriterThread->join();
         if(failedWriterThread)
             failedWriterThread->join();
+        if(overlappedWriterThread)
+            overlappedWriterThread->join();
     }
 
     if(mOptions->verbose)
@@ -285,6 +298,8 @@ bool PairEndProcessor::process(){
         delete mergedWriterThread;
     if(failedWriterThread)
         delete failedWriterThread;
+    if(overlappedWriterThread)
+        delete overlappedWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -312,6 +327,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     string singleOutput;
     string mergedOutput;
     string failedOut;
+    string overlappedOut;
     int readPassed = 0;
     int mergedCount = 0;
     for(int p=0;p<pack->count;p++){
@@ -382,6 +398,15 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                     AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, !trimmed1);
                     AdapterTrimmer::trimByMultiSequences(r2, config->getFilterResult(), mOptions->adapter.seqsInFasta, true, !trimmed2);
                 }
+            }
+        }
+
+        if(r1 != NULL && r2!=NULL && mOverlappedWriter) {
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, 0);
+            if(ov.overlapped) {
+                Read* overlappedRead = new Read(r1->mName, r1->mSeq.mStr.substr(ov.offset, ov.overlap_len), r1->mStrand, r1->mQuality.substr(ov.offset, ov.overlap_len));
+                overlappedOut += overlappedRead->toString();
+                delete overlappedRead;
             }
         }
 
@@ -527,6 +552,13 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         char* fdata = new char[failedOut.size()];
         memcpy(fdata, failedOut.c_str(), failedOut.size());
         mFailedWriter->input(fdata, failedOut.size());
+    }
+
+    if(mOverlappedWriter && !overlappedOut.empty()) {
+        // write failed data
+        char* odata = new char[overlappedOut.size()];
+        memcpy(odata, overlappedOut.c_str(), overlappedOut.size());
+        mOverlappedWriter->input(odata, overlappedOut.size());
     }
 
     // normal output by left/right writer thread
@@ -808,6 +840,8 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
             mMergedWriter->setInputCompleted();
         if(mFailedWriter)
             mFailedWriter->setInputCompleted();
+        if(mOverlappedWriter)
+            mOverlappedWriter->setInputCompleted();
     }
     
     if(mOptions->verbose) {

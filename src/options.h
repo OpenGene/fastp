@@ -306,6 +306,8 @@ public:
     // file name of failed reads output
     string failedOut;
     // json file
+    string overlappedOut;
+    // json file
     string jsonFile;
     // html file
     string htmlFile;

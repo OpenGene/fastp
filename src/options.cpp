@@ -196,6 +196,12 @@ bool Options::validate() {
             error_exit(out2 + " already exists and you have set to not rewrite output files by --dont_overwrite");
         }
     }
+    if(!overlappedOut.empty()) {
+        //check_file_writable(out2);
+        if(dontOverwrite && file_exists(overlappedOut)) {
+            error_exit(overlappedOut + " already exists and you have set to not rewrite output files by --dont_overwrite");
+        }
+    }
     if(!isPaired()) {
         if(!unpaired1.empty()) {
             cerr << "Not paired-end mode. Ignoring argument --unpaired1 = " << unpaired1 << endl;
@@ -204,6 +210,10 @@ bool Options::validate() {
         if(!unpaired2.empty()) {
             cerr << "Not paired-end mode. Ignoring argument --unpaired2 = " << unpaired2 << endl;
             unpaired2 = "";
+        }
+        if(!overlappedOut.empty()) {
+            cerr << "Not paired-end mode. Ignoring argument --overlapped_out = " << overlappedOut << endl;
+            overlappedOut = "";
         }
     }
     if(split.enabled) {
