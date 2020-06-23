@@ -210,7 +210,7 @@ bool PairEndProcessor::process(){
         cerr << "Read1 after filtering:"<<endl;
         finalPostStats1->print();
         cerr << endl;
-        cerr << "Read2 aftering filtering:"<<endl;
+        cerr << "Read2 after filtering:"<<endl;
         finalPostStats2->print();
     } else {
         cerr << "Merged and filtered:"<<endl;
