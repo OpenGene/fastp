@@ -267,7 +267,7 @@ inline void loginfo(const string s){
     logmtx.lock();
     time_t tt = time(NULL);
     tm* t= localtime(&tt);
-    cerr<<"["<<t->tm_hour<<":"<<t->tm_min<<":"<<t->tm_sec<<"] "<<s<<endl;
+    fprintf(stderr, "[%02d:%02d:%02d]\n", t->tm_hour, t->tm_min, t->tm_sec);
     logmtx.unlock();
 }
 
