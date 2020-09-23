@@ -7,23 +7,44 @@ https://badges.debian.net/badges/debian/unstable/fastp/version.svg)](https://pac
 [![Build Status](https://travis-ci.org/OpenGene/fastp.svg?branch=master)](https://travis-ci.org/OpenGene/fastp)
 # fastp
 A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance. 
-* [features](#features)
-* [simple usage](#simple-usage)
-* [examples of report](#examples-of-report)
-* [download, compile and install](#get-fastp)
-* [input and output](#input-and-output)
-* [filtering by quality, length, complexity, etc.](#filtering)
-* [adapter trimming](#adapters)
-* [per read cutting by quality score](#per-read-cutting-by-quality-score)
-* [base correction for paired end (PE) data](#base-correction-for-pe-data)
-* [globa trimming](#global-trimming)
-* [polyG tail trimming](#polyg-tail-trimming) and [polyX tail trimming](#polyx-tail-trimming)
-* [unique molecular identifier (UMI) processing](#unique-molecular-identifier-umi-processing)
-* [output splitting](#output-splitting)
-* [overrepresented sequence analysis](#overrepresented-sequence-analysis)
-* [merge paired-end reads](#merge-paired-end-reads)
-* [all options](#all-options)
-* [citation](#citation)
+- [fastp](#fastp)
+- [features](#features)
+- [simple usage](#simple-usage)
+- [examples of report](#examples-of-report)
+- [get fastp](#get-fastp)
+  - [install with Bioconda](#install-with-bioconda)
+  - [or download binary (only for Linux systems, http://opengene.org/fastp/fastp)](#or-download-binary-only-for-linux-systems-httpopengeneorgfastpfastp)
+  - [or compile from source](#or-compile-from-source)
+  - [compile from source for windows user with MinGW64-distro](#compile-from-source-for-windows-user-with-mingw64-distro)
+- [input and output](#input-and-output)
+  - [output to STDOUT](#output-to-stdout)
+  - [input from STDIN](#input-from-stdin)
+  - [store the unpaired reads for PE data](#store-the-unpaired-reads-for-pe-data)
+  - [store the reads that fail the filters](#store-the-reads-that-fail-the-filters)
+  - [process only part of the data](#process-only-part-of-the-data)
+  - [do not overwrite exiting files](#do-not-overwrite-exiting-files)
+  - [split the output to multiple files for parallel processing](#split-the-output-to-multiple-files-for-parallel-processing)
+  - [merge PE reads](#merge-pe-reads)
+- [filtering](#filtering)
+  - [quality filter](#quality-filter)
+  - [length filter](#length-filter)
+  - [low complexity filter](#low-complexity-filter)
+  - [Other filter](#other-filter)
+- [adapters](#adapters)
+- [per read cutting by quality score](#per-read-cutting-by-quality-score)
+- [base correction for PE data](#base-correction-for-pe-data)
+- [global trimming](#global-trimming)
+- [polyG tail trimming](#polyg-tail-trimming)
+- [polyX tail trimming](#polyx-tail-trimming)
+- [unique molecular identifier (UMI) processing](#unique-molecular-identifier-umi-processing)
+  - [UMI example](#umi-example)
+- [output splitting](#output-splitting)
+  - [splitting by limiting file number](#splitting-by-limiting-file-number)
+  - [splitting by limiting the lines of each file](#splitting-by-limiting-the-lines-of-each-file)
+- [overrepresented sequence analysis](#overrepresented-sequence-analysis)
+- [merge paired-end reads](#merge-paired-end-reads)
+- [all options](#all-options)
+- [citation](#citation)
 
 # features
 0. comprehensive quality profiling for both before and after filtering data (quality curves, base contents, KMER, Q20/Q30, GC Ratio, duplication, adapter contents...)
@@ -86,6 +107,18 @@ make
 # Install
 sudo make install
 ```
+
+## compile from source for windows user with MinGW64-distro
+
+Get compiler from https://nuwen.net/mingw.html and install as `How to install` section.
+
+```shell
+git clone -b master --depth=1 https://github.com/OpenGene/fastp.git
+cd fastp
+make
+## add fastp to your PATH
+```
+
 `fastp` only relies on `zlib`, which is already available on most Linux-like systems. If you get an error like `undefined reference to gzbuffer` when compiling `fastp`, you may have to update the `zlib` (http://zlib.net)
 
 # input and output
