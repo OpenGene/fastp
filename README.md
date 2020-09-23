@@ -115,7 +115,7 @@ Get compiler from https://nuwen.net/mingw.html and install as `How to install` s
 git clone -b master --depth=1 https://github.com/OpenGene/fastp.git
 cd fastp
 make
-sudo make install
+## add fastp to your PATH
 ```
 
 
