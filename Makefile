@@ -28,8 +28,14 @@ ${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp make_obj_dir
 
 .PHONY:clean
 clean:
-	rm obj/*.o
-	rm $(TARGET)
+	@if test -d $(DIR_OBJ) ; \
+	then \
+		find $(DIR_OBJ) -name *.o -delete; \
+	fi
+	@if test -e $(TARGET) ; \
+	then \
+		rm $(TARGET) ; \
+	fi
 
 make_obj_dir:
 	@if test ! -d $(DIR_OBJ) ; \
