@@ -13,7 +13,8 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 - [examples of report](#examples-of-report)
 - [get fastp](#get-fastp)
   - [install with Bioconda](#install-with-bioconda)
-  - [or download binary (only for Linux systems, http://opengene.org/fastp/fastp)](#or-download-binary-only-for-linux-systems-httpopengeneorgfastpfastp)
+  - [or download binary for Linux X86_X64 systems](#or-download-binary-for-linux-x86_x64-systems)
+  - [or download binary for windows / Arm Liunx (not stable)](#or-download-binary-for-windows--arm-liunx-not-stable)
   - [or compile from source](#or-compile-from-source)
   - [compile from source for windows user with MinGW64-distro](#compile-from-source-for-windows-user-with-mingw64-distro)
 - [input and output](#input-and-output)
@@ -89,12 +90,26 @@ https://anaconda.org/bioconda/fastp/badges/version.svg)](https://anaconda.org/bi
 # note: the fastp version in bioconda may be not the latest
 conda install -c bioconda fastp
 ```
-## or download binary (only for Linux systems, http://opengene.org/fastp/fastp)
+## or download binary for Linux X86_X64 systems
 ```shell
 # this binary was compiled on CentOS, and tested on CentOS/Ubuntu
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 ```
+## or download binary for windows / Arm Liunx (not stable)
+```shell
+# for windows
+mkdir -p opengene/fastp/bin && cd opengene/fastp/bin
+wget https://github.com/KimBioInfoStudio/fastp/releases/download/v0.21.0/fastp_win_x86x64.zip
+unzip fastp_win_x86x64.zip
+chmod a+x fastp
+# for arm linux (not satble)
+mkdir -p opengene/fastp/bin && cd opengene/fastp/bin
+wget https://github.com/KimBioInfoStudio/fastp/releases/download/v0.21.0/fastp_linux_x32_armv6l.zip
+unzip fastp_linux_x32_armv6l.zip
+chmod a+x fastp
+```
+
 ## or compile from source
 ```shell
 # get source (you can also use browser to download from master or releases)
@@ -118,6 +133,7 @@ cd fastp
 make
 ## add fastp to your PATH
 ```
+
 
 `fastp` only relies on `zlib`, which is already available on most Linux-like systems. If you get an error like `undefined reference to gzbuffer` when compiling `fastp`, you may have to update the `zlib` (http://zlib.net)
 
