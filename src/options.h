@@ -70,10 +70,14 @@ public:
     PolyGTrimmerOptions() {
         enabled = false;
         minLen = 10;
+        allowOneMismatchForEach = 8;
+        maxMismatch = 5;
     }
 public:
     bool enabled;
     int minLen;
+    int allowOneMismatchForEach;
+    int maxMismatch;
 };
 
 class PolyXTrimmerOptions {
@@ -81,10 +85,14 @@ public:
     PolyXTrimmerOptions() {
         enabled = false;
         minLen = 10;
+        allowOneMismatchForEach = 8;
+        maxMismatch = 5;
     }
 public:
     bool enabled;
     int minLen;
+    int allowOneMismatchForEach;
+    int maxMismatch;
 };
 
 class UMIOptions {
@@ -161,6 +169,7 @@ class AdapterOptions {
 public:
     AdapterOptions() {
         enabled = true;
+        allowOneMismatchForEach = 8;
         hasSeqR1 = false;
         hasSeqR2 = false;
     }
@@ -170,6 +179,7 @@ public:
     string sequenceR2;
     string detectedAdapter1;
     string detectedAdapter2;
+    int allowOneMismatchForEach;
     bool hasSeqR1;
     bool hasSeqR2;
 };

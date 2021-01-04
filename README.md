@@ -237,12 +237,13 @@ options:
       --interleaved_in                 indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.
       --reads_to_process             specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
       --dont_overwrite               don't overwrite existing files. Overwritting is allowed by default.
-  
+
   # adapter trimming options
   -A, --disable_adapter_trimming     adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled
-  -a, --adapter_sequence               the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped. (string [=auto])
-      --adapter_sequence_r2            the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence> (string [=])
-    
+  -a, --adapter_sequence             the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped. (string [=auto])
+      --adapter_sequence_r2          the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence> (string [=])
+      --adapter_mm_freq              allowed mismatched within every n bases to detect adapter. 8 by defaults. (int [=8])
+
   # global trimming options
   -f, --trim_front1                  trimming how many bases in front for read1, default is 0 (int [=0])
   -t, --trim_tail1                   trimming how many bases in tail for read1, default is 0 (int [=0])
@@ -251,50 +252,54 @@ options:
 
   # polyG tail trimming, useful for NextSeq/NovaSeq data
   -g, --trim_poly_g                  force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data
-      --poly_g_min_len                 the minimum length to detect polyG in the read tail. 10 by default. (int [=10])
+      --poly_g_min_len               the minimum length to detect polyG in the read tail. 10 by default. (int [=10])
+      --poly_g_mm_freq               allowed mismatched within every n bases to detect polyG. 8 by defaults. (int [=8])
+      --poly_g_mm_max                the maximum number of mismatched allowed in detecting polyG. 5 by defaults. (int [=5])
   -G, --disable_trim_poly_g          disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data
 
   # polyX tail trimming
-  -x, --trim_poly_x                    enable polyX trimming in 3' ends.
-      --poly_x_min_len                 the minimum length to detect polyX in the read tail. 10 by default. (int [=10])
-  
+  -x, --trim_poly_x                  enable polyX trimming in 3' ends.
+      --poly_x_min_len               the minimum length to detect polyX in the read tail. 10 by default. (int [=10])
+      --poly_x_mm_freq               allowed mismatched within every n bases to detect polyX. 8 by defaults. (int [=8])
+      --poly_x_mm_max                the maximum number of mismatched allowed in detecting polyX. 5 by defaults. (int [=5])
+
   # per read cutting by quality options
   -5, --cut_by_quality5              enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)
   -3, --cut_by_quality3              enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)
   -W, --cut_window_size              the size of the sliding window for sliding window trimming, default is 4 (int [=4])
   -M, --cut_mean_quality             the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20 (int [=20])
-  
+
   # quality filtering options
   -Q, --disable_quality_filtering    quality filtering is enabled by default. If this option is specified, quality filtering is disabled
   -q, --qualified_quality_phred      the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. (int [=15])
   -u, --unqualified_percent_limit    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40% (int [=40])
   -n, --n_base_limit                 if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5 (int [=5])
-  
+
   # length filtering options
   -L, --disable_length_filtering     length filtering is enabled by default. If this option is specified, length filtering is disabled
   -l, --length_required              reads shorter than length_required will be discarded, default is 15. (int [=15])
       --length_limit                 reads longer than length_limit will be discarded, default 0 means no limitation. (int [=0])
 
   # low complexity filtering
-  -y, --low_complexity_filter          enable low complexity filter. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]).
-  -Y, --complexity_threshold           the threshold for low complexity filter (0~100). Default is 30, which means 30% complexity is required. (int [=30])
+  -y, --low_complexity_filter        enable low complexity filter. The complexity is defined as the percentage of base that is different from its next base (base[i] != base[i+1]).
+  -Y, --complexity_threshold         the threshold for low complexity filter (0~100). Default is 30, which means 30% complexity is required. (int [=30])
 
   # filter reads with unwanted indexes (to remove possible contamination)
-      --filter_by_index1               specify a file contains a list of barcodes of index1 to be filtered out, one barcode per line (string [=])
-      --filter_by_index2               specify a file contains a list of barcodes of index2 to be filtered out, one barcode per line (string [=])
-      --filter_by_index_threshold      the allowed difference of index barcode for index filtering, default 0 means completely identical. (int [=0])
+      --filter_by_index1             specify a file contains a list of barcodes of index1 to be filtered out, one barcode per line (string [=])
+      --filter_by_index2             specify a file contains a list of barcodes of index2 to be filtered out, one barcode per line (string [=])
+      --filter_by_index_threshold    the allowed difference of index barcode for index filtering, default 0 means completely identical. (int [=0])
 
   # base correction by overlap analysis options
   -c, --correction                   enable base correction in overlapped regions (only for PE data), default is disabled
       --overlap_len_require          the minimum length of the overlapped region for overlap analysis based adapter trimming and correction. 30 by default. (int [=30])
       --overlap_diff_limit           the maximum difference of the overlapped region for overlap analysis based adapter trimming and correction. 5 by default. (int [=5])
-  
+
   # UMI processing
   -U, --umi                          enable unique molecular identifer (UMI) preprocessing
       --umi_loc                      specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none (string [=])
       --umi_len                      if the UMI is in read1/read2, its length should be provided (int [=0])
       --umi_prefix                   if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default (string [=])
-      --umi_skip                       if the UMI is in read1/read2, fastp can skip several bases following UMI, default is 0 (int [=0])
+      --umi_skip                     if the UMI is in read1/read2, fastp can skip several bases following UMI, default is 0 (int [=0])
 
   # overrepresented sequence analysis
   -p, --overrepresentation_analysis    enable overrepresented sequence analysis.
@@ -304,15 +309,15 @@ options:
   -j, --json                         the json format report file name (string [=fastp.json])
   -h, --html                         the html format report file name (string [=fastp.html])
   -R, --report_title                 should be quoted with ' or ", default is "fastp report" (string [=fastp report])
-  
+
   # threading options
   -w, --thread                       worker thread number, default is 2 (int [=2])
-  
+
   # output splitting options
   -s, --split                        split output by limiting total split file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (int [=0])
   -S, --split_by_lines               split output by limiting lines of each file with this option(>=1000), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (long [=0])
   -d, --split_prefix_digits          the digits for the sequential number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding (int [=4])
-  
+
   # help
   -?, --help                         print this message
 ```

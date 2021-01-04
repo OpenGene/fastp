@@ -196,7 +196,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             delete or1;
             continue;
         }
-        
+
         // umi processing
         if(mOptions->umi.enabled)
             mUmiProcessor->process(or1);
@@ -206,13 +206,13 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         if(r1 != NULL) {
             if(mOptions->polyGTrim.enabled)
-                PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen);
+                PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen, mOptions->polyGTrim.allowOneMismatchForEach, mOptions->polyGTrim.maxMismatch);
             if(mOptions->polyXTrim.enabled)
-                PolyX::trimPolyX(r1, config->getFilterResult(), mOptions->polyXTrim.minLen);
+                PolyX::trimPolyX(r1, config->getFilterResult(), mOptions->polyXTrim.minLen, mOptions->polyXTrim.allowOneMismatchForEach, mOptions->polyXTrim.maxMismatch);
         }
 
         if(r1 != NULL && mOptions->adapter.enabled && mOptions->adapter.hasSeqR1){
-            AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence);
+            AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, mOptions->adapter.allowOneMismatchForEach);
         }
 
         int result = mFilter->passFilter(r1);

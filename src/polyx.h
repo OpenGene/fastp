@@ -15,10 +15,10 @@ public:
     PolyX();
     ~PolyX();
 
-    static void trimPolyG(Read* r1, Read* r2, FilterResult* fr, int compareReq);
-    static void trimPolyG(Read* r1, FilterResult* fr, int compareReq);
-    static void trimPolyX(Read* r1, Read* r2, FilterResult* fr, int compareReq);
-    static void trimPolyX(Read* r1, FilterResult* fr, int compareReq);
+    static void trimPolyG(Read* r1, Read* r2, FilterResult* fr, int compareReq, int allowOneMismatchForEach, int maxMismatch);
+    static void trimPolyG(Read* r1, FilterResult* fr, int compareReq, int allowOneMismatchForEach, int maxMismatch);
+    static void trimPolyX(Read* r1, Read* r2, FilterResult* fr, int compareReq, int allowOneMismatchForEach, int maxMismatch);
+    static void trimPolyX(Read* r1, FilterResult* fr, int compareReq, int allowOneMismatchForEach, int maxMismatch);
     static bool test();
 
 

@@ -48,6 +48,7 @@ int main(int argc, char* argv[]){
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
     cmd.add<string>("adapter_sequence", 'a', "the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped.", false, "auto");
     cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "");
+    cmd.add<int>("adapter_mm_freq", 0, "allowed mismatched within every n bases to detect adapter. 8 by defaults.", false, 8);
 
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
@@ -59,10 +60,14 @@ int main(int argc, char* argv[]){
     cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
     cmd.add<int>("poly_g_min_len", 0, "the minimum length to detect polyG in the read tail. 10 by default.", false, 10);
     cmd.add("disable_trim_poly_g", 'G', "disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
-    
+    cmd.add<int>("poly_g_mm_freq", 0, "allowed mismatched within every n bases to detect polyG. 8 by defaults.", false, 8);
+    cmd.add<int>("poly_g_mm_max", 0, "the maximum number of mismatched allowed in detecting polyG. 5 by defaults.", false, 5);
+
     // polyX tail trimming
     cmd.add("trim_poly_x", 'x', "enable polyX trimming in 3' ends.");
     cmd.add<int>("poly_x_min_len", 0, "the minimum length to detect polyX in the read tail. 10 by default.", false, 10);
+    cmd.add<int>("poly_x_mm_freq", 0, "allowed mismatched within every n bases to detect polyX. 8 by defaults.", false, 8);
+    cmd.add<int>("poly_x_mm_max", 0, "the maximum number of mismatched allowed in detecting polyX. 5 by defaults.", false, 5);
 
     // sliding window cutting for each reads
     cmd.add("cut_by_quality5", '5', "enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)");
@@ -146,6 +151,7 @@ int main(int argc, char* argv[]){
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");
     opt.adapter.sequence = cmd.get<string>("adapter_sequence");
     opt.adapter.sequenceR2 = cmd.get<string>("adapter_sequence_r2");
+    opt.adapter.allowOneMismatchForEach = cmd.get<int>("adapter_mm_freq");
     if(opt.adapter.sequenceR2.empty() && opt.adapter.sequence != "auto") {
         opt.adapter.sequenceR2 = opt.adapter.sequence;
     }
@@ -178,6 +184,8 @@ int main(int argc, char* argv[]){
         opt.polyXTrim.enabled = true;
     }
     opt.polyXTrim.minLen = cmd.get<int>("poly_x_min_len");
+    opt.polyXTrim.allowOneMismatchForEach = cmd.get<int>("poly_x_mm_freq");
+    opt.polyXTrim.maxMismatch = cmd.get<int>("poly_x_mm_max");
 
     // sliding window cutting by quality
     opt.qualityCut.enabled5 = cmd.exist("cut_by_quality5");

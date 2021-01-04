@@ -38,9 +38,8 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr,
     return false;
 }
 
-bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterseq, bool isR2) {
+bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterseq, int allowOneMismatchForEach, bool isR2) {
     const int matchReq = 4;
-    const int allowOneMismatchForEach = 8;
 
     int rlen = r->length();
     int alen = adapterseq.length();
@@ -93,6 +92,6 @@ bool AdapterTrimmer::test() {
         "+",
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
     string adapter = "TTTTCCACGGGGATACTACTG";
-    bool trimmed = AdapterTrimmer::trimBySequence(&r, NULL, adapter);
+    bool trimmed = AdapterTrimmer::trimBySequence(&r, NULL, adapter, 8);
     return r.mSeq.mStr == "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAA";
 }
