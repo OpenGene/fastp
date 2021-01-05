@@ -419,11 +419,6 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         }
 
         if(r1 != NULL && r2!=NULL) {
-            if(mOptions->polyXTrim.enabled)
-                PolyX::trimPolyX(r1, r2, config->getFilterResult(), mOptions->polyXTrim.minLen);
-        }
-
-        if(r1 != NULL && r2!=NULL) {
             if( mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length())
                 r1->resize(mOptions->trim.maxLen1);
             if( mOptions->trim.maxLen2 > 0 && mOptions->trim.maxLen2 < r2->length())
