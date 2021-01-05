@@ -117,7 +117,8 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     // report read length change
     if(mOptions->isPaired()) {
         outputRow(ofs, "mean length before filtering:", to_string(preStats1->getMeanLength()) + "bp, " + to_string(preStats2->getMeanLength()) + "bp");
-        outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp, " + to_string(postStats2->getMeanLength()) + "bp");
+        if(!mOptions->merge.enabled)
+            outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp, " + to_string(postStats2->getMeanLength()) + "bp");
     } else  {
         outputRow(ofs, "mean length before filtering:", to_string(preStats1->getMeanLength()) + "bp");
         outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp");
@@ -208,7 +209,8 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
 }
 
 void HtmlReporter::reportInsertSize(ofstream& ofs, int isizeLimit) {
-
+    if(isizeLimit<1)
+        isizeLimit = 1;
     int total = min(mOptions->insertSizeMax, isizeLimit);
     long *x = new long[total];
     double allCount = 0;
@@ -237,7 +239,7 @@ void HtmlReporter::reportInsertSize(ofstream& ofs, int isizeLimit) {
     ofs << " or &gt;" << isizeLimit;
     ofs << ", or contain too much sequencing errors to be detected as overlapped.";
     ofs <<"</div>\n";
-    
+
     ofs << "\n<script type=\"text/javascript\">" << endl;
     string json_str = "var data=[";
 
@@ -266,7 +268,7 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
     ofs << "<div id='duplication_figure'>\n";
     ofs << "<div class='figure' id='plot_duplication' style='height:400px;'></div>\n";
     ofs << "</div>\n";
-    
+
     ofs << "\n<script type=\"text/javascript\">" << endl;
     string json_str = "var data=[";
 
@@ -350,10 +352,13 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "<div id='after_filtering'>\n";
 
     if(postStats1) {
-        postStats1 -> reportHtml(ofs, "After filtering", "read1");
+        string name = "read1";
+        if(mOptions->merge.enabled)
+            name = "merged";
+        postStats1 -> reportHtml(ofs, "After filtering", name);
     }
 
-    if(postStats2) {
+    if(postStats2 && !mOptions->merge.enabled) {
         postStats2 -> reportHtml(ofs, "After filtering", "read2");
     }
 
@@ -401,7 +406,10 @@ void HtmlReporter::printCSS(ofstream& ofs){
 }
 
 void HtmlReporter::printJS(ofstream& ofs){
-    ofs << "<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>" << endl;
+    ofs << "<script src='http://opengene.org/plotly-1.2.0.min.js'></script>" << endl;
+    ofs << "\n<script type='text/javascript'>" << endl;
+    ofs << "    window.Plotly || document.write('<script src=\"https://cdn.plot.ly/plotly-1.2.0.min.js\"><\\/script>')" << endl;
+    ofs << "</script>" << endl;
     ofs << "\n<script type=\"text/javascript\">" << endl;
     ofs << "    function showOrHide(divname) {" << endl;
     ofs << "        div = document.getElementById(divname);" << endl;

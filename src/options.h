@@ -17,6 +17,18 @@ using namespace std;
 #define UMI_LOC_PER_INDEX 5
 #define UMI_LOC_PER_READ 6
 
+class MergeOptions {
+public:
+    MergeOptions() {
+        enabled = false;
+        includeUnmerged = false;
+    }
+public:
+    bool enabled;
+    bool includeUnmerged;
+    string out;
+};
+
 class DuplicationOptions {
 public:
     DuplicationOptions() {
@@ -124,20 +136,41 @@ public:
 class QualityCutOptions {
 public:
     QualityCutOptions() {
-        enabled5 = false;
-        enabled3 = false;
-        windowSize = 4;
-        quality = 20;
+        enabledFront = false;
+        enabledTail = false;
+        enabledRight = false;
+        windowSizeShared = 4;
+        qualityShared = 20;
+        windowSizeFront = windowSizeShared;
+        qualityFront = qualityShared;
+        windowSizeTail = windowSizeShared;
+        qualityTail = qualityShared;
+        windowSizeRight = windowSizeShared;
+        qualityRight = qualityShared;
     }
 public:
     // enable 5' cutting by quality
-    bool enabled5;
+    bool enabledFront;
     // enable 3' cutting by quality
-    bool enabled3;
-    // the sliding window size for cutting by quality
-    int windowSize;
-    // the mean quality requirement for cutting by quality
-    int quality;
+    bool enabledTail;
+    // enable agressive cutting mode
+    bool enabledRight;
+    // the sliding window size
+    int windowSizeShared;
+    // the mean quality requirement
+    int qualityShared;
+    // the sliding window size for cutting by quality in 5'
+    int windowSizeFront;
+    // the mean quality requirement for cutting by quality in 5'
+    int qualityFront;
+    // the sliding window size for cutting by quality in 3'
+    int windowSizeTail;
+    // the mean quality requirement for cutting by quality in 3'
+    int qualityTail;
+    // the sliding window size for cutting by quality in aggressive mode
+    int windowSizeRight;
+    // the mean quality requirement for cutting by quality in aggressive mode
+    int qualityRight;
 };
 
 class SplitOptions {
@@ -172,6 +205,7 @@ public:
         allowOneMismatchForEach = 8;
         hasSeqR1 = false;
         hasSeqR2 = false;
+        detectAdapterForPE = false;
     }
 public:
     bool enabled;
@@ -180,8 +214,12 @@ public:
     string detectedAdapter1;
     string detectedAdapter2;
     int allowOneMismatchForEach;
+    vector<string> seqsInFasta;
+    string fastaFile;
     bool hasSeqR1;
     bool hasSeqR2;
+    bool hasFasta;
+    bool detectAdapterForPE;
 };
 
 class TrimmingOptions {
@@ -191,6 +229,8 @@ public:
         tail1 = 0;
         front2 = 0;
         tail2 = 0;
+        maxLen1 = 0;
+        maxLen2 = 0;
     }
 public:
     // trimming first cycles for read1
@@ -201,6 +241,10 @@ public:
     int front2;
     // trimming last cycles for read2
     int tail2;
+    // max length of read1
+    int maxLen1;
+    // max length of read2
+    int maxLen2;
 };
 
 class QualityFilteringOptions {
@@ -221,6 +265,8 @@ public:
     int unqualifiedPercentLimit;
     // if n_base_number > nBaseLimit, then discard this read
     int nBaseLimit;
+    // if average qual score < avgQualReq, then discard this read
+    int avgQualReq;
 };
 
 class ReadLengthFilteringOptions {
@@ -246,10 +292,13 @@ public:
     bool isPaired();
     bool validate();
     bool adapterCuttingEnabled();
+    bool polyXTrimmingEnabled();
     string getAdapter1();
     string getAdapter2();
     void initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold = 0);
     vector<string> makeListFromFileByLine(string filename);
+    bool shallDetectAdapter(bool isR2 = false);
+    void loadFastaAdapters();
 
 public:
     // file name of read1 input
@@ -258,8 +307,16 @@ public:
     string in2;
     // file name of read1 output
     string out1;
-    // file name of read1 output
+    // file name of read2 output
     string out2;
+    // file name of unpaired read1 output
+    string unpaired1;
+    // file name of unpaired read2 output
+    string unpaired2;
+    // file name of failed reads output
+    string failedOut;
+    // json file
+    string overlappedOut;
     // json file
     string jsonFile;
     // html file
@@ -280,6 +337,8 @@ public:
     bool interleavedInput;
     // only process first N reads
     int readsToProcess;
+    // fix the MGI ID tailing issue
+    bool fixMGI;
     // worker thread number
     int thread;
     // trimming options
@@ -319,8 +378,11 @@ public:
     // overlap analysis threshold
     int overlapRequire;
     int overlapDiffLimit;
+    int overlapDiffPercentLimit;
     // output debug information
     bool verbose;
+    // merge options
+    MergeOptions merge;
 
 };
 

@@ -21,8 +21,8 @@ bool Evaluator::isTwoColorSystem() {
     if(!r)
         return false;
 
-    // NEXTSEQ500, NEXTSEQ 550, NOVASEQ
-    if(starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@A0")) {
+    // NEXTSEQ500, NEXTSEQ 550/550DX, NOVASEQ
+    if(starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@NDX") || starts_with(r->mName, "@A0")) {
         delete r;
         return true;
     }
@@ -407,8 +407,11 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
 
 }
 
-string Evaluator::evalAdapterAndReadNum(long& readNum) {
-    FastqReader reader(mOptions->in1);
+string Evaluator::evalAdapterAndReadNum(long& readNum, bool isR2) {
+    string filename = mOptions->in1;
+    if(isR2)
+        filename = mOptions->in2;
+    FastqReader reader(filename);
     // stat up to 256K reads
     const long READ_LIMIT = 256*1024;
     const long BASE_LIMIT = 151 * READ_LIMIT;
@@ -537,7 +540,7 @@ string Evaluator::evalAdapterAndReadNum(long& readNum) {
         string seq = int2seq(key, keylen);
         if(key == 0)
             continue;
-        int count = counts[key];
+        long count = counts[key];
         if(count<10 || count*size < total * FOLD_THRESHOLD)
             break;
         // skip low complexity seq
@@ -614,7 +617,7 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
     string matchedAdapter = matchKnownAdapter(adapter);
     if(!matchedAdapter.empty()) {
         map<string, string> knownAdapters = getKnownAdapter();
-        cerr << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
+        cerr << knownAdapters[matchedAdapter] << endl << matchedAdapter << endl;
         return matchedAdapter;
     } else {
         if(reachedLeaf) {

@@ -35,26 +35,38 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
+    cmd.add<string>("unpaired1", 0, "for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it.", false, "");
+    cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --unpaired1 (default mode), both unpaired reads will be written to this same file.", false, "");
+    cmd.add<string>("overlapped_out", 0, "for each read pair, output the overlapped region if it has no any mismatched base.", false, "");
+    cmd.add<string>("failed_out", 0, "specify the file to store reads that cannot pass the filters.", false, "");
+    cmd.add("merge", 'm', "for paired-end input, merge each pair of reads into a single read if they are overlapped. The merged reads will be written to the file given by --merged_out, the unmerged reads will be written to the files specified by --out1 and --out2. The merging mode is disabled by default.");
+    cmd.add<string>("merged_out", 0, "in the merging mode, specify the file name to store merged output, or specify --stdout to stream the merged output", false, "");
+    cmd.add("include_unmerged", 0, "in the merging mode, write the unmerged or unpaired reads to the file specified by --merge. Disabled by default.");
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4.", false, 4);
     cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
-    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.");
-    cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by defaut.");
+    cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end output. Disabled by default.");
+    cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
+    cmd.add("fix_mgi_id", 0, "the MGI FASTQ ID format is not compatible with many BAM operation tools, enable this option to fix it.");
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
 
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
     cmd.add<string>("adapter_sequence", 'a', "the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped.", false, "auto");
-    cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "");
+    cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "auto");
+    cmd.add<string>("adapter_fasta", 0, "specify a FASTA file to trim both read1 and read2 (if PE) by all the sequences in this FASTA file", false, "");
+    cmd.add("detect_adapter_for_pe", 0, "by default, the auto-detection for adapter is for SE data input only, turn on this option to enable it for PE data.");
     cmd.add<int>("adapter_mm_freq", 0, "allowed mismatched within every n bases to detect adapter. 8 by defaults.", false, 8);
 
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
     cmd.add<int>("trim_tail1", 't', "trimming how many bases in tail for read1, default is 0", false, 0);
+    cmd.add<int>("max_len1", 'b', "if read1 is longer than max_len1, then trim read1 at its tail to make it as long as max_len1. Default 0 means no limitation", false, 0);
     cmd.add<int>("trim_front2", 'F', "trimming how many bases in front for read2. If it's not specified, it will follow read1's settings", false, 0);
     cmd.add<int>("trim_tail2", 'T', "trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings", false, 0);
+    cmd.add<int>("max_len2", 'B', "if read2 is longer than max_len2, then trim read2 at its tail to make it as long as max_len2. Default 0 means no limitation. If it's not specified, it will follow read1's settings", false, 0);
 
     // polyG tail trimming
     cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
@@ -69,17 +81,26 @@ int main(int argc, char* argv[]){
     cmd.add<int>("poly_x_mm_freq", 0, "allowed mismatched within every n bases to detect polyX. 8 by defaults.", false, 8);
     cmd.add<int>("poly_x_mm_max", 0, "the maximum number of mismatched allowed in detecting polyX. 5 by defaults.", false, 5);
 
-    // sliding window cutting for each reads
-    cmd.add("cut_by_quality5", '5', "enable per read cutting by quality in front (5'), default is disabled (WARNING: this will interfere deduplication for both PE/SE data)");
-    cmd.add("cut_by_quality3", '3', "enable per read cutting by quality in tail (3'), default is disabled (WARNING: this will interfere deduplication for SE data)");
-    cmd.add<int>("cut_window_size", 'W', "the size of the sliding window for sliding window trimming, default is 4", false, 4);
-    cmd.add<int>("cut_mean_quality", 'M', "the bases in the sliding window with mean quality below cutting_quality will be cut, default is Q20", false, 20);
+    // cutting by quality
+    cmd.add("cut_front", '5', "move a sliding window from front (5') to tail, drop the bases in the window if its mean quality < threshold, stop otherwise.");
+    cmd.add("cut_tail", '3', "move a sliding window from tail (3') to front, drop the bases in the window if its mean quality < threshold, stop otherwise.");
+    cmd.add("cut_right", 'r', "move a sliding window from front to tail, if meet one window with mean quality < threshold, drop the bases in the window and the right part, and then stop.");
+    cmd.add<int>("cut_window_size", 'W', "the window size option shared by cut_front, cut_tail or cut_sliding. Range: 1~1000, default: 4", false, 4);
+    cmd.add<int>("cut_mean_quality", 'M', "the mean quality requirement option shared by cut_front, cut_tail or cut_sliding. Range: 1~36 default: 20 (Q20)", false, 20);
+    cmd.add<int>("cut_front_window_size", 0, "the window size option of cut_front, default to cut_window_size if not specified", false, 4);
+    cmd.add<int>("cut_front_mean_quality", 0, "the mean quality requirement option for cut_front, default to cut_mean_quality if not specified", false, 20);
+    cmd.add<int>("cut_tail_window_size", 0, "the window size option of cut_tail, default to cut_window_size if not specified", false, 4);
+    cmd.add<int>("cut_tail_mean_quality", 0, "the mean quality requirement option for cut_tail, default to cut_mean_quality if not specified", false, 20);
+    cmd.add<int>("cut_right_window_size", 0, "the window size option of cut_right, default to cut_window_size if not specified", false, 4);
+    cmd.add<int>("cut_right_mean_quality", 0, "the mean quality requirement option for cut_right, default to cut_mean_quality if not specified", false, 20);
+
 
     // quality filtering
     cmd.add("disable_quality_filtering", 'Q', "quality filtering is enabled by default. If this option is specified, quality filtering is disabled");
     cmd.add<int>("qualified_quality_phred", 'q', "the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified.", false, 15);
     cmd.add<int>("unqualified_percent_limit", 'u', "how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%", false, 40);
     cmd.add<int>("n_base_limit", 'n', "if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5", false, 5);
+    cmd.add<int>("average_qual", 'e', "if one read's average quality score <avg_qual, then this read/pair is discarded. Default 0 means no requirement", false, 0);
 
     // length filtering
     cmd.add("disable_length_filtering", 'L', "length filtering is enabled by default. If this option is specified, length filtering is disabled");
@@ -97,11 +118,12 @@ int main(int argc, char* argv[]){
     
     // base correction in overlapped regions of paired end data
     cmd.add("correction", 'c', "enable base correction in overlapped regions (only for PE data), default is disabled");
-    cmd.add<int>("overlap_len_require", 0, "the minimum length of the overlapped region for overlap analysis based adapter trimming and correction. 30 by default.", false, 30);
-    cmd.add<int>("overlap_diff_limit", 0, "the maximum difference of the overlapped region for overlap analysis based adapter trimming and correction. 5 by default.", false, 5);
+    cmd.add<int>("overlap_len_require", 0, "the minimum length to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 30 by default.", false, 30);
+    cmd.add<int>("overlap_diff_limit", 0, "the maximum number of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. 5 by default.", false, 5);
+    cmd.add<int>("overlap_diff_percent_limit", 0, "the maximum percentage of mismatched bases to detect overlapped region of PE reads. This will affect overlap analysis based PE merge, adapter trimming and correction. Default 20 means 20%.", false, 20);
 
     // umi
-    cmd.add("umi", 'U', "enable unique molecular identifer (UMI) preprocessing");
+    cmd.add("umi", 'U', "enable unique molecular identifier (UMI) preprocessing");
     cmd.add<string>("umi_loc", 0, "specify the location of UMI, can be (index1/index2/read1/read2/per_index/per_read, default is none", false, "");
     cmd.add<int>("umi_len", 0, "if the UMI is in read1/read2, its length should be provided", false, 0);
     cmd.add<string>("umi_prefix", 0, "if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default", false, "");
@@ -124,11 +146,21 @@ int main(int argc, char* argv[]){
     cmd.add<long>("split_by_lines", 'S', "split output by limiting lines of each file with this option(>=1000), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default", false, 0);
     cmd.add<int>("split_prefix_digits", 'd', "the digits for the sequential number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding", false, 4);
 
+    // deprecated options
+    cmd.add("cut_by_quality5", 0, "DEPRECATED, use --cut_front instead.");
+    cmd.add("cut_by_quality3", 0, "DEPRECATED, use --cut_tail instead.");
+    cmd.add("cut_by_quality_aggressive", 0, "DEPRECATED, use --cut_right instead.");
+    cmd.add("discard_unmerged", 0, "DEPRECATED, no effect now, see the introduction for merging.");
+    
     cmd.parse_check(argc, argv);
 
     if(argc == 1) {
         cerr << cmd.usage() <<endl;
         return 0;
+    }
+
+    if(cmd.exist("discard_unmerged")) {
+        cerr << "DEPRECATED: --discard_unmerged has no effect now, see the introduction for merging." << endl;
     }
 
     Options opt;
@@ -138,6 +170,13 @@ int main(int argc, char* argv[]){
     opt.in2 = cmd.get<string>("in2");
     opt.out1 = cmd.get<string>("out1");
     opt.out2 = cmd.get<string>("out2");
+    opt.unpaired1 = cmd.get<string>("unpaired1");
+    opt.unpaired2 = cmd.get<string>("unpaired2");
+    opt.failedOut = cmd.get<string>("failed_out");
+    opt.overlappedOut = cmd.get<string>("overlapped_out");
+    // write to the same file
+    if(opt.unpaired2.empty())
+        opt.unpaired2 = opt.unpaired1;
     opt.compression = cmd.get<int>("compression");
     opt.readsToProcess = cmd.get<int>("reads_to_process");
     opt.phred64 = cmd.exist("phred64");
@@ -146,19 +185,31 @@ int main(int argc, char* argv[]){
     opt.outputToSTDOUT = cmd.exist("stdout");
     opt.interleavedInput = cmd.exist("interleaved_in");
     opt.verbose = cmd.exist("verbose");
+    opt.fixMGI = cmd.exist("fix_mgi_id");
+
+    // merge PE
+    opt.merge.enabled = cmd.exist("merge");
+    opt.merge.out = cmd.get<string>("merged_out");
+    opt.merge.includeUnmerged = cmd.exist("include_unmerged");
 
     // adapter cutting
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");
+    opt.adapter.detectAdapterForPE = cmd.exist("detect_adapter_for_pe");
     opt.adapter.sequence = cmd.get<string>("adapter_sequence");
     opt.adapter.sequenceR2 = cmd.get<string>("adapter_sequence_r2");
     opt.adapter.allowOneMismatchForEach = cmd.get<int>("adapter_mm_freq");
-    if(opt.adapter.sequenceR2.empty() && opt.adapter.sequence != "auto") {
+    opt.adapter.fastaFile = cmd.get<string>("adapter_fasta");
+    if(opt.adapter.sequenceR2=="auto" && !opt.adapter.detectAdapterForPE && opt.adapter.sequence != "auto") {
         opt.adapter.sequenceR2 = opt.adapter.sequence;
+    }
+    if(!opt.adapter.fastaFile.empty()) {
+        opt.loadFastaAdapters();
     }
 
     // trimming
     opt.trim.front1 = cmd.get<int>("trim_front1");
     opt.trim.tail1 = cmd.get<int>("trim_tail1");
+    opt.trim.maxLen1 = cmd.get<int>("max_len1");
     // read2 settings follows read1 if it's not specified
     if(cmd.exist("trim_front2"))
         opt.trim.front2 = cmd.get<int>("trim_front2");
@@ -168,6 +219,10 @@ int main(int argc, char* argv[]){
         opt.trim.tail2 = cmd.get<int>("trim_tail2");
     else
         opt.trim.tail2 = opt.trim.tail1;
+    if(cmd.exist("max_len2"))
+        opt.trim.maxLen2 = cmd.get<int>("max_len2");
+    else
+        opt.trim.maxLen2 = opt.trim.maxLen1;
 
     // polyG tail trimming
     if(cmd.exist("trim_poly_g") && cmd.exist("disable_trim_poly_g")) {
@@ -187,22 +242,74 @@ int main(int argc, char* argv[]){
     opt.polyXTrim.allowOneMismatchForEach = cmd.get<int>("poly_x_mm_freq");
     opt.polyXTrim.maxMismatch = cmd.get<int>("poly_x_mm_max");
 
+
     // sliding window cutting by quality
-    opt.qualityCut.enabled5 = cmd.exist("cut_by_quality5");
-    opt.qualityCut.enabled3 = cmd.exist("cut_by_quality3");
-    opt.qualityCut.windowSize = cmd.get<int>("cut_window_size");
-    opt.qualityCut.quality = cmd.get<int>("cut_mean_quality");
-    // raise a warning if -5/-3 is not enabled but -W/-M is enabled
-    if(cmd.exist("cut_window_size") && !opt.qualityCut.enabled5 && !opt.qualityCut.enabled3) {
-        cerr << "WARNING: you've specified sliding window size (-W/--cut_window_size), but you haven't enabled per read cutting by quality for 5'(-5/--cut_by_quality5) or 3' (-3/--cut_by_quality3), so quality cutting is ignored " << endl << endl;
-    } else if(cmd.exist("cut_mean_quality") && !opt.qualityCut.enabled5 && !opt.qualityCut.enabled3) {
-        cerr << "WARNING: you've specified sliding window mean quality requirement (-M/--cut_mean_quality), but you haven't enabled per read cutting by quality for 5'(-5/--cut_by_quality5) or 3' (-3/--cut_by_quality3), so quality cutting is ignored "<<endl << endl;
+    opt.qualityCut.enabledFront = cmd.exist("cut_front");
+    // back compatible with old versions
+    if(!opt.qualityCut.enabledFront){
+        opt.qualityCut.enabledFront = cmd.exist("cut_by_quality5");
+        if(opt.qualityCut.enabledFront)
+            cerr << "WARNING: cut_by_quality5 is deprecated, please use cut_front instead." << endl;
+    }
+    opt.qualityCut.enabledTail = cmd.exist("cut_tail");
+    // back compatible with old versions
+    if(!opt.qualityCut.enabledFront){
+        opt.qualityCut.enabledFront = cmd.exist("cut_by_quality3");
+        if(opt.qualityCut.enabledFront)
+            cerr << "WARNING: cut_by_quality3 is deprecated, please use cut_tail instead." << endl;
+    }
+    opt.qualityCut.enabledRight = cmd.exist("cut_right");
+    // back compatible with old versions
+    if(!opt.qualityCut.enabledRight){
+        opt.qualityCut.enabledRight = cmd.exist("cut_by_quality_aggressive");
+        if(opt.qualityCut.enabledRight)
+            cerr << "WARNING: cut_by_quality_aggressive is deprecated, please use cut_right instead." << endl;
+    }
+
+    opt.qualityCut.windowSizeShared = cmd.get<int>("cut_window_size");
+    opt.qualityCut.qualityShared = cmd.get<int>("cut_mean_quality");
+
+    if(cmd.exist("cut_front_window_size"))
+        opt.qualityCut.windowSizeFront = cmd.get<int>("cut_front_window_size");
+    else
+        opt.qualityCut.windowSizeFront = opt.qualityCut.windowSizeShared;
+    if(cmd.exist("cut_front_mean_quality"))
+        opt.qualityCut.qualityFront = cmd.get<int>("cut_front_mean_quality");
+    else
+        opt.qualityCut.qualityFront = opt.qualityCut.qualityShared;
+
+    if(cmd.exist("cut_tail_window_size"))
+        opt.qualityCut.windowSizeTail = cmd.get<int>("cut_tail_window_size");
+    else
+        opt.qualityCut.windowSizeTail = opt.qualityCut.windowSizeShared;
+    if(cmd.exist("cut_tail_mean_quality"))
+        opt.qualityCut.qualityTail = cmd.get<int>("cut_tail_mean_quality");
+    else
+        opt.qualityCut.qualityTail = opt.qualityCut.qualityShared;
+
+    if(cmd.exist("cut_right_window_size"))
+        opt.qualityCut.windowSizeRight = cmd.get<int>("cut_right_window_size");
+    else
+        opt.qualityCut.windowSizeRight = opt.qualityCut.windowSizeShared;
+    if(cmd.exist("cut_right_mean_quality"))
+        opt.qualityCut.qualityRight = cmd.get<int>("cut_right_mean_quality");
+    else
+        opt.qualityCut.qualityRight = opt.qualityCut.qualityShared;
+
+    // raise a warning if cutting option is not enabled but -W/-M is enabled
+    if(!opt.qualityCut.enabledFront && !opt.qualityCut.enabledTail && !opt.qualityCut.enabledRight) {
+        if(cmd.exist("cut_window_size") || cmd.exist("cut_mean_quality") 
+            || cmd.exist("cut_front_window_size") || cmd.exist("cut_front_mean_quality") 
+            || cmd.exist("cut_tail_window_size") || cmd.exist("cut_tail_mean_quality") 
+            || cmd.exist("cut_right_window_size") || cmd.exist("cut_right_mean_quality"))
+            cerr << "WARNING: you specified the options for cutting by quality, but forogt to enable any of cut_front/cut_tail/cut_right. This will have no effect." << endl;
     }
 
     // quality filtering
     opt.qualfilter.enabled = !cmd.exist("disable_quality_filtering");
     opt.qualfilter.qualifiedQual = num2qual(cmd.get<int>("qualified_quality_phred"));
     opt.qualfilter.unqualifiedPercentLimit = cmd.get<int>("unqualified_percent_limit");
+    opt.qualfilter.avgQualReq = cmd.get<int>("average_qual");
     opt.qualfilter.nBaseLimit = cmd.get<int>("n_base_limit");
 
     // length filtering
@@ -218,6 +325,7 @@ int main(int argc, char* argv[]){
     opt.correction.enabled = cmd.exist("correction");
     opt.overlapRequire = cmd.get<int>("overlap_len_require");
     opt.overlapDiffLimit = cmd.get<int>("overlap_diff_limit");
+    opt.overlapDiffPercentLimit = cmd.get<int>("overlap_diff_percent_limit");
 
     // threading
     opt.thread = cmd.get<int>("thread");
@@ -317,20 +425,38 @@ int main(int argc, char* argv[]){
     long readNum = 0;
 
     // using evaluator to guess how many reads in total
-    if(opt.adapter.enabled && !opt.isPaired() && opt.adapter.sequence == "auto") {
+    if(opt.shallDetectAdapter(false)) {
         if(!supportEvaluation)
             cerr << "Adapter auto-detection is disabled for STDIN mode" << endl;
         else {
-            cerr << "Detecting adapter..." << endl;
-            string adapt = eva.evalAdapterAndReadNum(readNum);
+            cerr << "Detecting adapter sequence for read1..." << endl;
+            string adapt = eva.evalAdapterAndReadNum(readNum, false);
             if(adapt.length() > 60 )
                 adapt.resize(0, 60);
             if(adapt.length() > 0 ) {
                 opt.adapter.sequence = adapt;
                 opt.adapter.detectedAdapter1 = adapt;
             } else {
-                cerr << "No adapter detected" << endl;
+                cerr << "No adapter detected for read1" << endl;
                 opt.adapter.sequence = "";
+            }
+            cerr << endl;
+        }
+    }
+    if(opt.shallDetectAdapter(true)) {
+        if(!supportEvaluation)
+            cerr << "Adapter auto-detection is disabled for STDIN mode" << endl;
+        else {
+            cerr << "Detecting adapter sequence for read2..." << endl;
+            string adapt = eva.evalAdapterAndReadNum(readNum, true);
+            if(adapt.length() > 60 )
+                adapt.resize(0, 60);
+            if(adapt.length() > 0 ) {
+                opt.adapter.sequenceR2 = adapt;
+                opt.adapter.detectedAdapter2 = adapt;
+            } else {
+                cerr << "No adapter detected for read2" << endl;
+                opt.adapter.sequenceR2 = "";
             }
             cerr << endl;
         }

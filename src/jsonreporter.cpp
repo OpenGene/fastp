@@ -90,7 +90,7 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs << "\t\t\t" << "\"q20_rate\":" << (post_total_bases == 0?0.0:(double)post_q20_bases / (double)post_total_bases) << "," << endl; 
     ofs << "\t\t\t" << "\"q30_rate\":" << (post_total_bases == 0?0.0:(double)post_q30_bases / (double)post_total_bases) << "," << endl; 
     ofs << "\t\t\t" << "\"read1_mean_length\":" << postStats1->getMeanLength() << "," << endl;
-    if(mOptions->isPaired())
+    if(mOptions->isPaired() && !mOptions->merge.enabled)
         ofs << "\t\t\t" << "\"read2_mean_length\":" << postStats2->getMeanLength() << "," << endl;
     ofs << "\t\t\t" << "\"gc_content\":" << (post_total_bases == 0?0.0:(double)post_total_gc / (double)post_total_bases)  << endl; 
     ofs << "\t\t" << "}";
@@ -145,14 +145,14 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         result -> reportAdapterJson(ofs, "\t");
     }
 
+    if(result && mOptions->polyXTrimmingEnabled()) {
+        ofs << "\t" << "\"polyx_trimming\": " ;
+        result -> reportPolyXTrimJson(ofs, "\t");
+    }
+
     if(preStats1) {
         ofs << "\t" << "\"read1_before_filtering\": " ;
         preStats1 -> reportJson(ofs, "\t");
-    }
-
-    if(postStats1) {
-        ofs << "\t" << "\"read1_after_filtering\": " ;
-        postStats1 -> reportJson(ofs, "\t");
     }
 
     if(preStats2) {
@@ -160,7 +160,15 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
         preStats2 -> reportJson(ofs, "\t");
     }
 
-    if(postStats2) {
+    if(postStats1) {
+        string name = "read1_after_filtering";
+        if(mOptions->merge.enabled)
+            name = "merged_and_filtered";
+        ofs << "\t" << "\"" << name << "\": " ;
+        postStats1 -> reportJson(ofs, "\t");
+    }
+
+    if(postStats2 && !mOptions->merge.enabled) {
         ofs << "\t" << "\"read2_after_filtering\": " ;
         postStats2 -> reportJson(ofs, "\t");
     }

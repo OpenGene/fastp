@@ -31,7 +31,8 @@ public:
     void initWriter(gzFile gzfile);
     void initWriter(gzFile gzfile1, gzFile gzfile2);
 
-    void addFilterResult(int result);
+    void addFilterResult(int result, int readNum);
+    void addMergedPairs(int pairs);
 
     int getThreadId() {return mThreadId;}
     // for splitting output

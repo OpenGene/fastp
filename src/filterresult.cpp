@@ -9,6 +9,7 @@ FilterResult::FilterResult(Options* opt, bool paired){
     mPaired = paired;
     mTrimmedAdapterRead = 0;
     mTrimmedAdapterBases = 0;
+    mMergedPairs = 0;
     for(int i=0; i<FILTER_RESULT_TYPES; i++) {
         mFilterReadStats[i] = 0;
     }
@@ -21,14 +22,14 @@ FilterResult::~FilterResult() {
     delete mCorrectionMatrix;
 }
 
-void FilterResult::addFilterResult(int result) {
+void FilterResult::addFilterResult(int result, int readNum) {
     if(result < PASS_FILTER || result >= FILTER_RESULT_TYPES)
         return ;
-    // for paired end data, both reads are filtered together
-    if(mPaired)
-        mFilterReadStats[result] += 2;
-    else
-        mFilterReadStats[result]++;
+    mFilterReadStats[result] += readNum;
+}
+
+void FilterResult::addMergedPairs(int pairs) {
+    mMergedPairs += pairs;
 }
 
 FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
@@ -45,6 +46,12 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
         }
         result->mTrimmedAdapterRead += list[i]->mTrimmedAdapterRead;
         result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
+        result->mMergedPairs += list[i]->mMergedPairs;
+
+        for(int b=0; b<4; b++) {
+          result->mTrimmedPolyXReads[b] += list[i]->mTrimmedPolyXReads[b];
+          result->mTrimmedPolyXBases[b] += list[i]->mTrimmedPolyXBases[b];
+        }
 
         // merge adapter stats
         map<string, long>::iterator iter;
@@ -102,10 +109,11 @@ long FilterResult::getCorrectionNum(char from, char to) {
     return mCorrectionMatrix[f*8 + t];
 }
 
-void FilterResult::addAdapterTrimmed(string adapter, bool isR2) {
+void FilterResult::addAdapterTrimmed(string adapter, bool isR2, bool incTrimmedCounter ) {
     if(adapter.empty())
         return;
-    mTrimmedAdapterRead++;
+    if(incTrimmedCounter)
+        mTrimmedAdapterRead++;
     mTrimmedAdapterBases += adapter.length();
     if(!isR2) {
         if(mAdapter1.count(adapter) >0 )
@@ -138,6 +146,26 @@ void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
     }
 }
 
+void FilterResult::addPolyXTrimmed(int base, int length) {
+    mTrimmedPolyXReads[base] += 1;
+    mTrimmedPolyXBases[base] += length;
+}
+
+long FilterResult::getTotalPolyXTrimmedReads() {
+  long sum_reads = 0;
+  for(int b = 0; b < 4; b++)
+    sum_reads += mTrimmedPolyXReads[b];
+  return sum_reads;
+}
+
+long FilterResult::getTotalPolyXTrimmedBases() {
+  long sum_bases = 0;
+  for(int b = 0; b < 4; b++)
+    sum_bases += mTrimmedPolyXBases[b];
+  return sum_bases;
+}
+
+
 void FilterResult::print() {
     cerr <<  "reads passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
     cerr <<  "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
@@ -153,6 +181,10 @@ void FilterResult::print() {
     if(mOptions->adapter.enabled) {
         cerr <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
         cerr <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
+    }
+    if(mOptions->polyXTrim.enabled) {
+        cerr <<  "reads with polyX in 3' end: " << getTotalPolyXTrimmedReads() << endl;
+        cerr <<  "bases trimmed in polyX tail: " << getTotalPolyXTrimmedBases() << endl;
     }
     if(mOptions->correction.enabled) {
         cerr <<  "reads corrected by overlap analysis: " << mCorrectedReads << endl;
@@ -239,6 +271,25 @@ void FilterResult::reportAdapterJson(ofstream& ofs, string padding) {
     }
 
     ofs << padding << "}," << endl;
+}
+
+void writeBaseCountsJson(ofstream& ofs, string pad, string key, long total, long (&counts)[4]) {
+  ofs << pad << "\t\"total_" << key << "\": " << total << "," << endl;
+  ofs << pad << "\t\"" << key << "\":{";
+  for (int b=0; b<4; b++) {
+    if(b > 0)
+      ofs << ", ";
+    ofs << "\"" << ATCG_BASES[b] << "\": " << counts[b];
+  }
+  ofs << "}";
+}
+
+void FilterResult::reportPolyXTrimJson(ofstream& ofs, string padding) {
+    ofs << padding << "{" << endl;
+    writeBaseCountsJson(ofs, padding, "polyx_trimmed_reads", getTotalPolyXTrimmedReads(), mTrimmedPolyXReads);
+    ofs << "," << endl;
+    writeBaseCountsJson(ofs, padding, "polyx_trimmed_bases", getTotalPolyXTrimmedBases(), mTrimmedPolyXBases);
+    ofs << endl << padding << "}," << endl;
 }
 
 /*void FilterResult::reportHtml(ofstream& ofs, long totalReads) {

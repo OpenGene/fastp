@@ -4,7 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "read.h"
-#include "zlib/zlib.h"
+#ifdef DYNAMIC_ZLIB
+  #include <zlib.h>
+#else
+  #include "zlib/zlib.h"
+#endif
 #include "common.h"
 #include <iostream>
 #include <fstream>

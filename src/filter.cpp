@@ -19,6 +19,7 @@ int Filter::passFilter(Read* r) {
     int rlen = r->length();
     int lowQualNum = 0;
     int nBaseNum = 0;
+    int totalQual = 0;
 
     // need to recalculate lowQualNum and nBaseNum if the corresponding filters are enabled
     if(mOptions->qualfilter.enabled || mOptions->lengthFilter.enabled) {
@@ -28,6 +29,8 @@ int Filter::passFilter(Read* r) {
         for(int i=0; i<rlen; i++) {
             char base = seqstr[i];
             char qual = qualstr[i];
+
+            totalQual += qual - 33;
 
             if(qual < mOptions->qualfilter.qualifiedQual)
                 lowQualNum ++;
@@ -39,6 +42,8 @@ int Filter::passFilter(Read* r) {
 
     if(mOptions->qualfilter.enabled) {
         if(lowQualNum > (mOptions->qualfilter.unqualifiedPercentLimit * rlen / 100.0) )
+            return FAIL_QUALITY;
+        else if(mOptions->qualfilter.avgQualReq > 0 && (totalQual / rlen)<mOptions->qualfilter.avgQualReq)
             return FAIL_QUALITY;
         else if(nBaseNum > mOptions->qualfilter.nBaseLimit )
             return FAIL_N_BASE;
@@ -75,9 +80,10 @@ bool Filter::passLowComplexityFilter(Read* r) {
         return false;
 }
 
-Read* Filter::trimAndCut(Read* r, int front, int tail) {
+Read* Filter::trimAndCut(Read* r, int front, int tail, int& frontTrimmed) {
+    frontTrimmed = 0;
     // return the same read for speed if no change needed
-    if(front == 0 && tail == 0 && !mOptions->qualityCut.enabled5 && !mOptions->qualityCut.enabled3)
+    if(front == 0 && tail == 0 && !mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight)
         return r;
 
 
@@ -85,23 +91,24 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
     if (rlen < 0)
         return NULL;
 
-    if(front == 0 && !mOptions->qualityCut.enabled5 && !mOptions->qualityCut.enabled3){
+    if(front == 0 && !mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight){
         r->resize(rlen);
         return r;
-    } else if(!mOptions->qualityCut.enabled5 && !mOptions->qualityCut.enabled3){
+    } else if(!mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight){
         r->mSeq.mStr = r->mSeq.mStr.substr(front, rlen);
         r->mQuality = r->mQuality.substr(front, rlen);
+        frontTrimmed  = front;
         return r;
     }
 
     // need quality cutting
 
-    int w = mOptions->qualityCut.windowSize;
     int l = r->length();
     const char* qualstr = r->mQuality.c_str();
     const char* seq = r->mSeq.mStr.c_str();
     // quality cutting forward
-    if(mOptions->qualityCut.enabled5) {
+    if(mOptions->qualityCut.enabledFront) {
+        int w = mOptions->qualityCut.windowSizeFront;
         int s = front;
         if(l - front - tail - w <= 0)
             return NULL;
@@ -119,7 +126,7 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
                 totalQual -= qualstr[s-1];
             }
             // add 33 for phred33 transforming
-            if((double)totalQual / (double)w >= 33 + mOptions->qualityCut.quality)
+            if((double)totalQual / (double)w >= 33 + mOptions->qualityCut.qualityFront)
                 break;
         }
 
@@ -132,8 +139,45 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
         rlen = l - front - tail;
     }
 
+    // quality cutting in right mode
+    if(mOptions->qualityCut.enabledRight) {
+        int w = mOptions->qualityCut.windowSizeRight;
+        int s = front;
+        if(l - front - tail - w <= 0)
+            return NULL;
+
+        int totalQual = 0;
+
+        // preparing rolling
+        for(int i=0; i<w-1; i++)
+            totalQual += qualstr[s+i];
+
+        bool foundLowQualWindow = false;
+
+        for(s=front; s+w<l-tail; s++) {
+            totalQual += qualstr[s+w-1];
+            // rolling
+            if(s > front) {
+                totalQual -= qualstr[s-1];
+            }
+            // add 33 for phred33 transforming
+            if((double)totalQual / (double)w < 33 + mOptions->qualityCut.qualityRight) {
+                foundLowQualWindow = true;
+                break;
+            }
+        }
+
+        if(foundLowQualWindow ) {
+            // keep the good bases in the window
+            while(s<l-1 && qualstr[s]>=33 + mOptions->qualityCut.qualityRight)
+                s++;
+            rlen = s - front;
+        }
+    }
+
     // quality cutting backward
-    if(mOptions->qualityCut.enabled3) {
+    if(!mOptions->qualityCut.enabledRight && mOptions->qualityCut.enabledTail) {
+        int w = mOptions->qualityCut.windowSizeTail;
         if(l - front - tail - w <= 0)
             return NULL;
 
@@ -151,7 +195,7 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
                 totalQual -= qualstr[t+1];
             }
             // add 33 for phred33 transforming
-            if((double)totalQual / (double)w >= 33 + mOptions->qualityCut.quality)
+            if((double)totalQual / (double)w >= 33 + mOptions->qualityCut.qualityTail)
                 break;
         }
 
@@ -167,6 +211,8 @@ Read* Filter::trimAndCut(Read* r, int front, int tail) {
 
     r->mSeq.mStr = r->mSeq.mStr.substr(front, rlen);
     r->mQuality = r->mQuality.substr(front, rlen);
+
+    frontTrimmed = front;
 
     return r;
 }
@@ -213,12 +259,15 @@ bool Filter::test() {
         "+",
         "/////CCCCCCCCCCCC////CCCCCCCCCCCCCC////E");
     Options opt;
-    opt.qualityCut.enabled5 = true;
-    opt.qualityCut.enabled3 = true;
-    opt.qualityCut.windowSize = 4;
-    opt.qualityCut.quality = 20;
+    opt.qualityCut.enabledFront = true;
+    opt.qualityCut.enabledTail = true;
+    opt.qualityCut.windowSizeFront = 4;
+    opt.qualityCut.qualityFront = 20;
+    opt.qualityCut.windowSizeTail = 4;
+    opt.qualityCut.qualityTail = 20;
     Filter filter(&opt);
-    Read* ret = filter.trimAndCut(&r, 0, 1);
+    int frontTrimmed = 0;
+    Read* ret = filter.trimAndCut(&r, 0, 1, frontTrimmed);
     ret->print();
     
     return ret->mSeq.mStr == "CCCCCCCCCCCCCCCCCCCCCCCCCCCC"

@@ -15,7 +15,7 @@ public:
     BaseCorrector();
     ~BaseCorrector();
 
-    static int correctByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr);
+    static int correctByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, int diffLimit, int overlapRequire, double diffPercentLimit);
     static int correctByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr, OverlapResult ov);
     static bool test();
 };
