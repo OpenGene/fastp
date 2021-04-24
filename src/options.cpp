@@ -27,6 +27,7 @@ Options::Options(){
     seqLen1 = 151;
     seqLen2 = 151;
     fixMGI = false;
+    fastqBufferSize = 1<<20;
 }
 
 void Options::init() {

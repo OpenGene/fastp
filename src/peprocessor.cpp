@@ -709,7 +709,7 @@ void PairEndProcessor::producerTask()
     bool splitSizeReEvaluated = false;
     ReadPair** data = new ReadPair*[PACK_SIZE];
     memset(data, 0, sizeof(ReadPair*)*PACK_SIZE);
-    FastqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64, mOptions->interleavedInput);
+    FastqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64, mOptions->interleavedInput, mOptions->fastqBufferSize);
     int count=0;
     bool needToBreak = false;
     while(true){

@@ -331,6 +331,8 @@ public:
     bool fixMGI;
     // worker thread number
     int thread;
+    // fastq reads buffer size
+    size_t fastqBufferSize;
     // trimming options
     TrimmingOptions trim;
     // quality filtering options

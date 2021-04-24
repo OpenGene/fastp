@@ -2,9 +2,8 @@
 #include "util.h"
 #include <string.h>
 
-#define FQ_BUF_SIZE (1<<20)
 
-FastqReader::FastqReader(string filename, bool hasQuality, bool phred64){
+FastqReader::FastqReader(string filename, bool hasQuality, bool phred64, size_t fastqBufferSize){
 	mFilename = filename;
 	mZipFile = NULL;
 	mZipped = false;
@@ -12,7 +11,8 @@ FastqReader::FastqReader(string filename, bool hasQuality, bool phred64){
 	mStdinMode = false;
 	mPhred64 = phred64;
 	mHasQuality = hasQuality;
-	mBuf = new char[FQ_BUF_SIZE];
+	mFastqBufSize = fastqBufferSize;
+	mBuf = new char[mFastqBufSize];
 	mBufDataLen = 0;
 	mBufUsedLen = 0;
 	mHasNoLineBreakAtEnd = false;
@@ -30,16 +30,23 @@ bool FastqReader::hasNoLineBreakAtEnd() {
 
 void FastqReader::readToBuf() {
 	if(mZipped) {
-		mBufDataLen = gzread(mZipFile, mBuf, FQ_BUF_SIZE);
+		mBufDataLen = gzread(mZipFile, mBuf, mFastqBufSize);
 		if(mBufDataLen == -1) {
 			cerr << "Error to read gzip file" << endl;
 		}
+		// exit if the gzip file broken
+		int z_errnum = 0;
+		const char *errmsg = gzerror(mZipFile, &z_errnum);
+		if (z_errnum == Z_BUF_ERROR) {
+			cerr << errmsg << endl;
+			exit(-1);
+		}
 	} else {
-		mBufDataLen = fread(mBuf, 1, FQ_BUF_SIZE, mFile);
+		mBufDataLen = fread(mBuf, 1, mFastqBufSize, mFile);
 	}
 	mBufUsedLen = 0;
 
-	if(mBufDataLen < FQ_BUF_SIZE) {
+	if(mBufDataLen < mFastqBufSize) {
 		if(mBuf[mBufDataLen-1] != '\n')
 			mHasNoLineBreakAtEnd = true;
 	}
@@ -107,7 +114,7 @@ string FastqReader::getLine(){
 	}
 
 	// this line well contained in this buf, or this is the last buf
-	if(end < mBufDataLen || mBufDataLen < FQ_BUF_SIZE) {
+	if(end < mBufDataLen || mBufDataLen < mFastqBufSize) {
 		int len = end - start;
 		string line(mBuf+start, len);
 
@@ -136,7 +143,7 @@ string FastqReader::getLine(){
 				break;
 		}
 		// this line well contained in this buf, we need to read new buf
-		if(end < mBufDataLen || mBufDataLen < FQ_BUF_SIZE) {
+		if(end < mBufDataLen || mBufDataLen < mFastqBufSize) {
 			int len = end - start;
 			str.append(mBuf+start, len);
 
@@ -276,13 +283,13 @@ FastqReaderPair::FastqReaderPair(FastqReader* left, FastqReader* right){
 	mRight = right;
 }
 
-FastqReaderPair::FastqReaderPair(string leftName, string rightName, bool hasQuality, bool phred64, bool interleaved){
+FastqReaderPair::FastqReaderPair(string leftName, string rightName, bool hasQuality, bool phred64, bool interleaved, size_t fastqBufferSize){
 	mInterleaved = interleaved;
-	mLeft = new FastqReader(leftName, hasQuality, phred64);
+	mLeft = new FastqReader(leftName, hasQuality, phred64, fastqBufferSize);
 	if(mInterleaved)
 		mRight = NULL;
 	else
-		mRight = new FastqReader(rightName, hasQuality, phred64);
+		mRight = new FastqReader(rightName, hasQuality, phred64, fastqBufferSize);
 }
 
 FastqReaderPair::~FastqReaderPair(){

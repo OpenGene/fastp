@@ -51,6 +51,7 @@ int main(int argc, char* argv[]){
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
     cmd.add("fix_mgi_id", 0, "the MGI FASTQ ID format is not compatible with many BAM operation tools, enable this option to fix it.");
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
+    cmd.add<int>("reads_buffer", 0, "specify reads buffer size (MB) for each file.", false, 1);
 
     // adapter
     cmd.add("disable_adapter_trimming", 'A', "adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled");
@@ -174,6 +175,10 @@ int main(int argc, char* argv[]){
         opt.unpaired2 = opt.unpaired1;
     opt.compression = cmd.get<int>("compression");
     opt.readsToProcess = cmd.get<int>("reads_to_process");
+    if(cmd.get<int>("reads_buffer") < 1) {
+        error_exit("reads_buffer should be greater or equal to 1MB.");
+    }
+    opt.fastqBufferSize = size_t(cmd.get<int>("reads_buffer")) << 20;
     opt.phred64 = cmd.exist("phred64");
     opt.dontOverwrite = cmd.exist("dont_overwrite");
     opt.inputFromSTDIN = cmd.exist("stdin");

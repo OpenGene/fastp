@@ -15,7 +15,7 @@
 
 class FastqReader{
 public:
-	FastqReader(string filename, bool hasQuality = true, bool phred64=false);
+	FastqReader(string filename, bool hasQuality = true, bool phred64=false, size_t fastqBufferSize=1<<20);
 	~FastqReader();
 	bool isZipped();
 
@@ -51,13 +51,14 @@ private:
 	int mBufUsedLen;
 	bool mStdinMode;
 	bool mHasNoLineBreakAtEnd;
+	size_t mFastqBufSize;
 
 };
 
 class FastqReaderPair{
 public:
 	FastqReaderPair(FastqReader* left, FastqReader* right);
-	FastqReaderPair(string leftName, string rightName, bool hasQuality = true, bool phred64 = false, bool interleaved = false);
+	FastqReaderPair(string leftName, string rightName, bool hasQuality = true, bool phred64 = false, bool interleaved = false, size_t fastqBufferSize = 1<<20);
 	~FastqReaderPair();
 	ReadPair* read();
 public:
