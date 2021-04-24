@@ -206,7 +206,7 @@ Read* FastqReader::read(){
 			cerr << sequence << endl;
 			cerr << strand << endl;
 			cerr << quality << endl;
-			return NULL;
+			exit(-1);
 		}
 		return new Read(name, sequence, strand, quality, mPhred64);
 	}
