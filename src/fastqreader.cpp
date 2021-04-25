@@ -37,7 +37,7 @@ void FastqReader::readToBuf() {
 		// exit if the gzip file broken
 		int z_errnum = 0;
 		const char *errmsg = gzerror(mZipFile, &z_errnum);
-		if (z_errnum == Z_BUF_ERROR) {
+		if ((z_errnum == Z_BUF_ERROR) || (z_errnum == Z_ERRNO) || (z_errnum == Z_DATA_ERROR) || (z_errnum == Z_STREAM_ERROR) || (z_errnum == Z_MEM_ERROR)) {
 			cerr << errmsg << endl;
 			exit(-1);
 		}
