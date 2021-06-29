@@ -19,7 +19,7 @@ void HtmlReporter::setDupHist(int* dupHist, double* dupMeanGC, double dupRate) {
     mDupRate = dupRate;
 }
 
-void HtmlReporter::setInsertHist(long* insertHist, int insertSizePeak) {
+void HtmlReporter::setInsertHist(atomic_long* insertHist, int insertSizePeak) {
     mInsertHist = insertHist;
     mInsertSizePeak = insertSizePeak;
 }

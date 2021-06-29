@@ -24,8 +24,8 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mUmiProcessor = new UmiProcessor(opt);
 
     int isizeBufLen = mOptions->insertSizeMax + 1;
-    mInsertSizeHist = new long[isizeBufLen];
-    memset(mInsertSizeHist, 0, sizeof(long)*isizeBufLen);
+    mInsertSizeHist = new atomic_long[isizeBufLen];
+    memset(mInsertSizeHist, 0, sizeof(atomic_long)*isizeBufLen);
     mLeftWriter =  NULL;
     mRightWriter = NULL;
     mUnpairedLeftWriter =  NULL;

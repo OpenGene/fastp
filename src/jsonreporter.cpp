@@ -15,7 +15,7 @@ void JsonReporter::setDupHist(int* dupHist, double* dupMeanGC, double dupRate) {
     mDupRate = dupRate;
 }
 
-void JsonReporter::setInsertHist(long* insertHist, int insertSizePeak) {
+void JsonReporter::setInsertHist(atomic_long* insertHist, int insertSizePeak) {
     mInsertHist = insertHist;
     mInsertSizePeak = insertSizePeak;
 }
