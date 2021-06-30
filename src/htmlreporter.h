@@ -9,6 +9,7 @@
 #include "stats.h"
 #include "filterresult.h"
 #include <fstream>
+#include <atomic>
 
 using namespace std;
 
