@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <time.h>
 #include <mutex>
+#include <regex>
 
 using namespace std;
 
@@ -185,6 +186,10 @@ inline void check_file_valid(const  string& s) {
         cerr << "ERROR: '" << s << "' is a folder, not a file, quit now" << endl;
         exit(-1);
     }
+}
+
+inline bool check_filename_valid(const string& s){
+    return 0 < trim(s).length() <= 255 && regex_match(s, regex("^[A-Za-z0-9_\.\-]+$"));
 }
 
 inline void check_file_writable(const  string& s) {

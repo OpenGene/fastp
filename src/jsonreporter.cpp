@@ -26,6 +26,14 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     ofs.open(mOptions->jsonFile, ifstream::out);
     ofs << "{" << endl;
 
+    // sequencing info
+    string sequencingInfo  = mOptions->isPaired()?"paired end":"single end";
+    if(mOptions->isPaired()) {
+        sequencingInfo += " (" + to_string(preStats1->getCycles()) + " cycles + " + to_string(preStats2->getCycles()) + " cycles)";
+    } else {
+        sequencingInfo += " (" + to_string(preStats1->getCycles()) + " cycles)";
+    }
+
     long pre_total_reads = preStats1->getReads();
     if(preStats2)
         pre_total_reads += preStats2->getReads();
@@ -68,7 +76,8 @@ void JsonReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
 
     // summary
     ofs << "\t" << "\"summary\": {" << endl;
-
+    ofs << "\t\t" << "\"fastp_version\": \""<< FASTP_VER << "\"," << endl;
+    ofs << "\t\t" << "\"sequencing\": \""<< sequencingInfo << "\"," << endl;
     ofs << "\t\t" << "\"before_filtering\": {" << endl;
     ofs << "\t\t\t" << "\"total_reads\":" << pre_total_reads << "," << endl; 
     ofs << "\t\t\t" << "\"total_bases\":" << pre_total_bases << "," << endl; 

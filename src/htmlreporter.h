@@ -10,6 +10,8 @@
 #include "filterresult.h"
 #include <fstream>
 #include <atomic>
+#include "common.h"
+#include "util.h"
 
 using namespace std;
 
