@@ -33,3 +33,10 @@ fastp
 *.exe
 *.out
 *.app
+
+# Editor Config
+.vscode
+
+# Test Output
+*.json
+*.html
