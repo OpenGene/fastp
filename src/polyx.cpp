@@ -8,15 +8,12 @@ PolyX::PolyX(){
 PolyX::~PolyX(){
 }
 
-void PolyX::trimPolyG(Read* r1, Read* r2, FilterResult* fr, int compareReq) {
-    trimPolyG(r1, fr, compareReq);
-    trimPolyG(r2, fr, compareReq);
+void PolyX::trimPolyG(Read* r1, Read* r2, FilterResult* fr, int compareReq, int allowOneMismatchForEach, int maxMismatch) {
+    trimPolyG(r1, fr, compareReq, allowOneMismatchForEach, maxMismatch);
+    trimPolyG(r2, fr, compareReq, allowOneMismatchForEach, maxMismatch);
 }
 
-void PolyX::trimPolyG(Read* r, FilterResult* fr, int compareReq) {
-    const int allowOneMismatchForEach = 8;
-    const int maxMismatch = 5;
-
+void PolyX::trimPolyG(Read* r, FilterResult* fr, int compareReq, int allowOneMismatchForEach, int maxMismatch) {
     const char* data = r->mSeq.mStr.c_str();
 
     int rlen = r->length();
@@ -41,15 +38,12 @@ void PolyX::trimPolyG(Read* r, FilterResult* fr, int compareReq) {
     }
 }
 
-void PolyX::trimPolyX(Read* r1, Read* r2, FilterResult* fr, int compareReq) {
-    trimPolyX(r1, fr, compareReq);
-    trimPolyX(r2, fr, compareReq);
+void PolyX::trimPolyX(Read* r1, Read* r2, FilterResult* fr, int compareReq, int allowOneMismatchForEach, int maxMismatch) {
+    trimPolyX(r1, fr, compareReq, allowOneMismatchForEach, maxMismatch);
+    trimPolyX(r2, fr, compareReq, allowOneMismatchForEach, maxMismatch);
 }
 
-void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq) {
-    const int allowOneMismatchForEach = 8;
-    const int maxMismatch = 5;
-
+void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq, int allowOneMismatchForEach, int maxMismatch) {
     const char* data = r->mSeq.mStr.c_str();
 
     int rlen = r->length();
@@ -123,7 +117,7 @@ bool PolyX::test() {
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
 
     FilterResult fr(NULL, false);
-    PolyX::trimPolyX(&r, &fr, 10);
+    PolyX::trimPolyX(&r, NULL, 10, 8, 5);
     r.print();
 
     return r.mSeq.mStr == "ATTTT" && fr.getTotalPolyXTrimmedReads() == 1 && fr.getTotalPolyXTrimmedBases() == 51;

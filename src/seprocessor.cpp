@@ -212,6 +212,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             continue;
         }
 
+
         // fix MGI
         if(mOptions->fixMGI) {
             or1->fixMGI();
@@ -227,7 +228,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         if(r1 != NULL) {
             if(mOptions->polyGTrim.enabled)
-                PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen);
+                PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen, mOptions->polyGTrim.allowOneMismatchForEach, mOptions->polyGTrim.maxMismatch);
         }
 
         if(r1 != NULL && mOptions->adapter.enabled){
@@ -242,8 +243,9 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         if(r1 != NULL) {
             if(mOptions->polyXTrim.enabled)
-                PolyX::trimPolyX(r1, config->getFilterResult(), mOptions->polyXTrim.minLen);
+                PolyX::trimPolyX(r1, config->getFilterResult(), mOptions->polyXTrim.minLen, mOptions->polyXTrim.allowOneMismatchForEach, mOptions->polyXTrim.maxMismatch);
         }
+
 
         if(r1 != NULL) {
             if( mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length())

@@ -45,7 +45,7 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr,
     return false;
 }
 
-bool AdapterTrimmer::trimByMultiSequences(Read* r, FilterResult* fr, vector<string>& adapterList, bool isR2, bool incTrimmedCounter) {
+bool AdapterTrimmer::trimByMultiSequences(Read* r, FilterResult* fr, vector<string>& adapterList, bool isR2, int allowOneMismatchForEach, bool incTrimmedCounter) {
     int matchReq = 4;
     if(adapterList.size() > 16)
         matchReq = 5;
@@ -69,8 +69,7 @@ bool AdapterTrimmer::trimByMultiSequences(Read* r, FilterResult* fr, vector<stri
     return trimmed;
 }
 
-bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterseq, bool isR2, int matchReq) {
-    const int allowOneMismatchForEach = 8;
+bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterseq, bool isR2, int allowOneMismatchForEach, int matchReq) {
 
     int rlen = r->length();
     int alen = adapterseq.length();
@@ -141,6 +140,7 @@ bool AdapterTrimmer::test() {
         "+",
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
     string adapter = "TTTTCCACGGGGATACTACTG";
+
     bool trimmed = AdapterTrimmer::trimBySequence(&r, NULL, adapter);
     if (r.mSeq.mStr != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAA")
         return false;

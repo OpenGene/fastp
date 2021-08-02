@@ -58,6 +58,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "auto");
     cmd.add<string>("adapter_fasta", 0, "specify a FASTA file to trim both read1 and read2 (if PE) by all the sequences in this FASTA file", false, "");
     cmd.add("detect_adapter_for_pe", 0, "by default, the auto-detection for adapter is for SE data input only, turn on this option to enable it for PE data.");
+    cmd.add<int>("adapter_mm_freq", 0, "allowed mismatched within every n bases to detect adapter. 8 by defaults.", false, 8);
 
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
@@ -71,10 +72,14 @@ int main(int argc, char* argv[]){
     cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
     cmd.add<int>("poly_g_min_len", 0, "the minimum length to detect polyG in the read tail. 10 by default.", false, 10);
     cmd.add("disable_trim_poly_g", 'G', "disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
-    
+    cmd.add<int>("poly_g_mm_freq", 0, "allowed mismatched within every n bases to detect polyG. 8 by defaults.", false, 8);
+    cmd.add<int>("poly_g_mm_max", 0, "the maximum number of mismatched allowed in detecting polyG. 5 by defaults.", false, 5);
+
     // polyX tail trimming
     cmd.add("trim_poly_x", 'x', "enable polyX trimming in 3' ends.");
     cmd.add<int>("poly_x_min_len", 0, "the minimum length to detect polyX in the read tail. 10 by default.", false, 10);
+    cmd.add<int>("poly_x_mm_freq", 0, "allowed mismatched within every n bases to detect polyX. 8 by defaults.", false, 8);
+    cmd.add<int>("poly_x_mm_max", 0, "the maximum number of mismatched allowed in detecting polyX. 5 by defaults.", false, 5);
 
     // cutting by quality
     cmd.add("cut_front", '5', "move a sliding window from front (5') to tail, drop the bases in the window if its mean quality < threshold, stop otherwise.");
@@ -192,6 +197,7 @@ int main(int argc, char* argv[]){
     opt.adapter.detectAdapterForPE = cmd.exist("detect_adapter_for_pe");
     opt.adapter.sequence = cmd.get<string>("adapter_sequence");
     opt.adapter.sequenceR2 = cmd.get<string>("adapter_sequence_r2");
+    opt.adapter.allowOneMismatchForEach = cmd.get<int>("adapter_mm_freq");
     opt.adapter.fastaFile = cmd.get<string>("adapter_fasta");
     if(opt.adapter.sequenceR2=="auto" && !opt.adapter.detectAdapterForPE && opt.adapter.sequence != "auto") {
         opt.adapter.sequenceR2 = opt.adapter.sequence;
@@ -233,6 +239,8 @@ int main(int argc, char* argv[]){
         opt.polyXTrim.enabled = true;
     }
     opt.polyXTrim.minLen = cmd.get<int>("poly_x_min_len");
+    opt.polyXTrim.allowOneMismatchForEach = cmd.get<int>("poly_x_mm_freq");
+    opt.polyXTrim.maxMismatch = cmd.get<int>("poly_x_mm_max");
 
 
     // sliding window cutting by quality
