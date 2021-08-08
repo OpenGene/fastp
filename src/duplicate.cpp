@@ -3,172 +3,137 @@
 #include <memory.h>
 #include <math.h>
 
+const int PRIME_ARRAY_LEN = 300;
+
 Duplicate::Duplicate(Options* opt) {
     mOptions = opt;
-    mKeyLenInBase = mOptions->duplicate.keylen;
-    mKeyLenInBit = 1<<(2*mKeyLenInBase);
-    mDups = new uint64[mKeyLenInBit];
-    memset(mDups, 0, sizeof(uint64)*mKeyLenInBit);
-    mCounts = new uint16[mKeyLenInBit];
-    memset(mCounts, 0, sizeof(uint16)*mKeyLenInBit);
-    mGC = new uint8[mKeyLenInBit];
-    memset(mGC, 0, sizeof(uint8)*mKeyLenInBit);
+
+    // 1G mem required
+    mBufLenInBytes = 1L <<29;
+    mBufNum = 2;
+
+    // if deduplication is enabled, we double the buffer size and buffer number to make more accurate deduplication
+    // this will take 4x memory (4G)
+    if(mOptions->duplicate.dedup) {
+        mBufLenInBytes *= 2;
+        mBufNum *= 2;
+    }
+    mBufLenInBits = mBufLenInBytes << 3;
+    mDupBuf = new uint8[mBufLenInBytes * mBufNum];
+    memset(mDupBuf, 0, sizeof(uint8) * mBufLenInBytes * mBufNum);
+
+    mPrimeArrays = new uint64[mBufNum * PRIME_ARRAY_LEN];
+    memset(mPrimeArrays, 0, sizeof(uint64) * mBufNum * PRIME_ARRAY_LEN);
+    initPrimeArrays();
+
+    mTotalReads = 0;
+    mDupReads = 0;
+}
+
+void Duplicate::initPrimeArrays() {
+    uint64 number = 1000;
+    uint64 count = 0;
+    while(count < mBufNum * PRIME_ARRAY_LEN) {
+        number++;
+        bool isPrime = true;
+        for(uint64 i=2; i<=sqrt(number); i++) {
+            if(number%i == 0) {
+                isPrime = false;
+                break;
+            }
+        }
+        if(isPrime) {
+            mPrimeArrays[count] = number;
+            count++;
+            number += 100000;
+        }
+    }
 }
 
 Duplicate::~Duplicate(){
-    delete[] mDups;
-    delete[] mCounts;
+    delete[] mDupBuf;
+    delete[] mPrimeArrays;
 }
 
-uint64 Duplicate::seq2int(const char* data, int start, int keylen, bool& valid) {
-    uint64 ret = 0;
-    for(int i=0; i<keylen; i++) {
-        switch(data[start + i]) {
+void Duplicate::seq2intvector(const char* data, int len, uint64* output, int posOffset) {
+    for(int p=0; p<len; p++) {
+        uint64 base = 0;
+        switch(data[p]) {
             case 'A':
-                ret += 0;
+                base = 11;
                 break;
             case 'T':
-                ret += 1;
+                base = 31;
                 break;
             case 'C':
-                ret += 2;
+                base = 71;
                 break;
             case 'G':
-                ret += 3;
+                base = 101;
                 break;
             default:
-                valid = false;
-                return 0;
+                base = 131;
         }
-        // if it's not the last one, shift it by 2 bits
-        if(i != keylen-1)
-            ret <<= 2;
-    }
-    return ret;
-}
-
-void Duplicate::addRecord(uint32 key, uint64 kmer32, uint8 gc) {
-    if(mCounts[key] == 0) {
-        mCounts[key] = 1;
-        mDups[key] = kmer32;
-        mGC[key] = gc;
-    } else {
-        if(mDups[key] == kmer32)
-            mCounts[key]++;
-        else if(mDups[key] > kmer32) {
-            mDups[key] = kmer32;
-            mCounts[key] = 1;
-            mGC[key] = gc;
+        for(int i=0; i<mBufNum; i++) {
+            int offset = (p+posOffset)*mBufNum + i;
+            offset %= (mBufNum*PRIME_ARRAY_LEN);
+            output[i] += mPrimeArrays[offset] * (base + (p+posOffset));
         }
     }
 }
 
-void Duplicate::statRead(Read* r) {
-    if(r->length() < 32)
-        return;
+bool Duplicate::checkRead(Read* r) {
+    uint64* positions = new uint64[mBufNum];
 
-    int start1 = 0;
-    int start2 = max(0, r->length() - 32 - 5);
+    // init
+    for(int i=0; i<mBufNum; i++)
+        positions[i] = 0;
+    int len = r->length();
+    seq2intvector(r->mSeq.mStr.c_str(), len, positions);
+    bool isDup = applyBloomFilter(positions);
+    delete[] positions;
 
-    const char* data = r->mSeq.mStr.c_str();
-    bool valid = true;
+    mTotalReads++;
+    if(isDup)
+        mDupReads++;
 
-    uint64 ret = seq2int(data, start1, mKeyLenInBase, valid);
-    uint32 key = (uint32)ret;
-    if(!valid)
-        return;
-
-    uint64 kmer32 = seq2int(data, start2, 32, valid);
-    if(!valid)
-        return;
-
-    int gc = 0;
-
-    // not calculated
-    if(mCounts[key] == 0) {
-        for(int i=0; i<r->length(); i++) {
-            if(data[i] == 'C' || data[i] == 'T')
-                gc++;
-        }
-    }
-
-    gc = round(255.0 * (double) gc / (double) r->length());
-
-    addRecord(key, kmer32, (uint8)gc);
+    return isDup;
 }
 
-void Duplicate::statPair(Read* r1, Read* r2) {
-    if(r1->length() < 32 || r2->length() < 32)
-        return;
+bool Duplicate::checkPair(Read* r1, Read* r2) {
+    uint64* positions = new uint64[mBufNum];
+    
+    // init
+    for(int i=0; i<mBufNum; i++)
+        positions[i] = 0;
+    seq2intvector(r1->mSeq.mStr.c_str(), r1->length(), positions);
+    seq2intvector(r2->mSeq.mStr.c_str(), r2->length(), positions, r1->length());
+    bool isDup = applyBloomFilter(positions);
+    delete[] positions;
 
-    const char* data1 = r1->mSeq.mStr.c_str();
-    const char* data2 = r2->mSeq.mStr.c_str();
-    bool valid = true;
+    mTotalReads++;
+    if(isDup)
+        mDupReads++;
 
-    uint64 ret = seq2int(data1, 0, mKeyLenInBase, valid);
-    uint32 key = (uint32)ret;
-    if(!valid)
-        return;
-
-    uint64 kmer32 = seq2int(data2, 0, 32, valid);
-    if(!valid)
-        return;
-
-    int gc = 0;
-
-    // not calculated
-    if(mCounts[key] == 0) {
-        for(int i=0; i<r1->length(); i++) {
-            if(data1[i] == 'G' || data1[i] == 'C')
-                gc++;
-        }
-        for(int i=0; i<r2->length(); i++) {
-            if(data2[i] == 'G' || data2[i] == 'C')
-                gc++;
-        }
-    }
-
-    gc = round(255.0 * (double) gc / (double)( r1->length() + r2->length()));
-
-    addRecord(key, kmer32, gc);
+    return isDup;
 }
 
-double Duplicate::statAll(int* hist, double* meanGC, int histSize) {
-    long totalNum = 0;
-    long dupNum = 0;
-    int* gcStatNum = new int[histSize];
-    memset(gcStatNum, 0, sizeof(int)*histSize);
-    for(int key=0; key<mKeyLenInBit; key++) {
-        int count = mCounts[key];
-        double gc = mGC[key];
+bool Duplicate::applyBloomFilter(uint64* positions) {
+    bool isDup = true;
+    for(int i=0; i<mBufNum; i++) {
+        uint64 pos = positions[i] % mBufLenInBits;
+        uint64 bytePos = pos >> 3;
+        uint32 bitOffset = pos & 0x07;
+        uint8 byte = (0x01) << bitOffset;
 
-        if(count > 0) {
-            totalNum += count;
-            dupNum += count - 1;
-
-            if(count >= histSize){
-                hist[histSize-1]++;
-                meanGC[histSize-1] += gc;
-                gcStatNum[histSize-1]++;
-            }
-            else{
-                hist[count]++;
-                meanGC[count] += gc;
-                gcStatNum[count]++;
-            }
-        }
+        isDup = isDup && (mDupBuf[i * mBufLenInBytes + bytePos] & byte);
+        mDupBuf[i * mBufLenInBytes + bytePos] |= byte;
     }
+    return isDup;
+}
 
-    for(int i=0; i<histSize; i++) {
-        if(gcStatNum[i] > 0) {
-            meanGC[i] = meanGC[i] / 255.0 / gcStatNum[i];
-        }
-    }
-
-    delete[] gcStatNum;
-
-    if(totalNum == 0)
+double Duplicate::getDupRate() {
+    if(mTotalReads == 0)
         return 0.0;
-    else
-        return (double)dupNum / (double)totalNum;
+    return (double)mDupReads/(double)mTotalReads;
 }

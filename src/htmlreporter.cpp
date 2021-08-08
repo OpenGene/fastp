@@ -13,9 +13,7 @@ HtmlReporter::HtmlReporter(Options* opt){
 HtmlReporter::~HtmlReporter(){
 }
 
-void HtmlReporter::setDupHist(int* dupHist, double* dupMeanGC, double dupRate) {
-    mDupHist = dupHist;
-    mDupMeanGC = dupMeanGC;
+void HtmlReporter::setDup(double dupRate) {
     mDupRate = dupRate;
 }
 
@@ -185,7 +183,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
         ofs << "</div>\n";
     }
 
-    if(mOptions->duplicate.enabled) {
+    /*if(mOptions->duplicate.enabled) {
         ofs << "<div class='section_div'>\n";
         ofs << "<div class='section_title' onclick=showOrHide('duplication')><a name='summary'>Duplication</a></div>\n";
         ofs << "<div id='duplication'>\n";
@@ -194,7 +192,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
 
         ofs << "</div>\n";
         ofs << "</div>\n";
-    }
+    }*/
 
     if(mOptions->isPaired()) {
         ofs << "<div class='section_div'>\n";

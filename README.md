@@ -25,6 +25,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
   - [do not overwrite exiting files](#do-not-overwrite-exiting-files)
   - [split the output to multiple files for parallel processing](#split-the-output-to-multiple-files-for-parallel-processing)
   - [merge PE reads](#merge-pe-reads)
+  - [deduplication](#deduplication)
 - [filtering](#filtering)
   - [quality filter](#quality-filter)
   - [length filter](#length-filter)
@@ -327,6 +328,9 @@ means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the ba
 
 Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_limit_percent (default 20%)`. Please note that the reads should meet these three conditions simultaneously.
 
+# deduplication
+Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. The duplication evaluation module has been improved to get more accurate result. Please also note that when deduplication is enabled, the evaluated duplication rate might be slightly different compared to the case that deduplication is not enabled. This is due to duplication evaluation mode applies more calculation (and uses more memory) to get more accurate result.
+
 # all options
 ```shell
 usage: fastp -i <in1> -o <out1> [-I <in1> -O <out2>] [options...]
@@ -336,6 +340,7 @@ options:
   -o, --out1                         read1 output file name (string [=])
   -I, --in2                          read2 input file name (string [=])
   -O, --out2                           read2 output file name (string [=])
+  -D, --dedup                          enable deduplication to drop the duplicated reads/pairs
       --unpaired1                      for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it. (string [=])
       --unpaired2                      for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --unpaired1 (default mode), both unpaired reads will be written to this same file. (string [=])
       --failed_out                     specify the file to store reads that cannot pass the filters. (string [=])

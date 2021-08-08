@@ -135,28 +135,21 @@ bool SingleEndProcessor::process(){
     cerr << "Filtering result:"<<endl;
     finalFilterResult->print();
 
-    int* dupHist = NULL;
-    double* dupMeanTlen = NULL;
-    double* dupMeanGC = NULL;
     double dupRate = 0.0;
     if(mOptions->duplicate.enabled) {
-        dupHist = new int[mOptions->duplicate.histSize];
-        memset(dupHist, 0, sizeof(int) * mOptions->duplicate.histSize);
-        dupMeanGC = new double[mOptions->duplicate.histSize];
-        memset(dupMeanGC, 0, sizeof(double) * mOptions->duplicate.histSize);
-        dupRate = mDuplicate->statAll(dupHist, dupMeanGC, mOptions->duplicate.histSize);
+        dupRate = mDuplicate->getDupRate();
         cerr << endl;
         cerr << "Duplication rate (may be overestimated since this is SE data): " << dupRate * 100.0 << "%" << endl;
     }
 
     // make JSON report
     JsonReporter jr(mOptions);
-    jr.setDupHist(dupHist, dupMeanGC, dupRate);
+    jr.setDup(dupRate);
     jr.report(finalFilterResult, finalPreStats, finalPostStats);
 
     // make HTML report
     HtmlReporter hr(mOptions);
-    hr.setDupHist(dupHist, dupMeanGC, dupRate);
+    hr.setDup(dupRate);
     hr.report(finalFilterResult, finalPreStats, finalPostStats);
 
     // clean up
@@ -170,11 +163,6 @@ bool SingleEndProcessor::process(){
     delete finalPreStats;
     delete finalPostStats;
     delete finalFilterResult;
-
-    if(mOptions->duplicate.enabled) {
-        delete[] dupHist;
-        delete[] dupMeanGC;
-    }
 
     delete[] threads;
     delete[] configs;
@@ -203,8 +191,12 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         config->getPreStats1()->statRead(or1);
 
         // handling the duplication profiling
-        if(mDuplicate)
-            mDuplicate->statRead(or1);
+        bool dedupOut = false;
+        if(mDuplicate) {
+            bool isDup = mDuplicate->checkRead(or1);
+            if(mOptions->duplicate.dedup && isDup)
+                dedupOut = true;
+        }
 
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1)) {
@@ -254,14 +246,16 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         config->addFilterResult(result, 1);
 
-        if( r1 != NULL &&  result == PASS_FILTER) {
-            outstr += r1->toString();
+        if(!dedupOut) {
+            if( r1 != NULL &&  result == PASS_FILTER) {
+                outstr += r1->toString();
 
-            // stats the read after filtering
-            config->getPostStats1()->statRead(r1);
-            readPassed++;
-        } else if(mFailedWriter) {
-            failedOut += or1->toStringWithTag(FAILED_TYPES[result]);
+                // stats the read after filtering
+                config->getPostStats1()->statRead(r1);
+                readPassed++;
+            } else if(mFailedWriter) {
+                failedOut += or1->toStringWithTag(FAILED_TYPES[result]);
+            }
         }
 
         delete or1;

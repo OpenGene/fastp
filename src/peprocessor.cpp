@@ -221,16 +221,9 @@ bool PairEndProcessor::process(){
     cerr << "Filtering result:"<<endl;
     finalFilterResult->print();
 
-    int* dupHist = NULL;
-    double* dupMeanTlen = NULL;
-    double* dupMeanGC = NULL;
     double dupRate = 0.0;
     if(mOptions->duplicate.enabled) {
-        dupHist = new int[mOptions->duplicate.histSize];
-        memset(dupHist, 0, sizeof(int) * mOptions->duplicate.histSize);
-        dupMeanGC = new double[mOptions->duplicate.histSize];
-        memset(dupMeanGC, 0, sizeof(double) * mOptions->duplicate.histSize);
-        dupRate = mDuplicate->statAll(dupHist, dupMeanGC, mOptions->duplicate.histSize);
+        dupRate = mDuplicate->getDupRate();
         cerr << endl;
         cerr << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
     }
@@ -254,13 +247,13 @@ bool PairEndProcessor::process(){
 
     // make JSON report
     JsonReporter jr(mOptions);
-    jr.setDupHist(dupHist, dupMeanGC, dupRate);
+    jr.setDup(dupRate);
     jr.setInsertHist(mInsertSizeHist, peakInsertSize);
     jr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
     // make HTML report
     HtmlReporter hr(mOptions);
-    hr.setDupHist(dupHist, dupMeanGC, dupRate);
+    hr.setDup(dupRate);
     hr.setInsertHist(mInsertSizeHist, peakInsertSize);
     hr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
@@ -277,11 +270,6 @@ bool PairEndProcessor::process(){
     delete finalPreStats2;
     delete finalPostStats2;
     delete finalFilterResult;
-
-    if(mOptions->duplicate.enabled) {
-        delete[] dupHist;
-        delete[] dupMeanGC;
-    }
 
     delete[] threads;
     delete[] configs;
@@ -345,8 +333,12 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         config->getPreStats2()->statRead(or2);
 
         // handling the duplication profiling
-        if(mDuplicate)
-            mDuplicate->statPair(or1, or2);
+        bool dedupOut = false;
+        if(mDuplicate) {
+            bool isDup = mDuplicate->checkPair(or1, or2);
+            if(mOptions->duplicate.dedup && isDup)
+                dedupOut = true;
+        }
 
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)) {
@@ -448,14 +440,14 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             } else if(mOptions->merge.includeUnmerged){
                 int result1 = mFilter->passFilter(r1);
                 config->addFilterResult(result1, 1);
-                if(result1 == PASS_FILTER) {
+                if(result1 == PASS_FILTER && !dedupOut) {
                     mergedOutput += r1->toString();
                     config->getPostStats1()->statRead(r1);
                 }
 
                 int result2 = mFilter->passFilter(r2);
                 config->addFilterResult(result2, 1);
-                if(result2 == PASS_FILTER) {
+                if(result2 == PASS_FILTER && !dedupOut) {
                     mergedOutput += r2->toString();
                     config->getPostStats1()->statRead(r2);
                 }
@@ -472,42 +464,45 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
             config->addFilterResult(max(result1, result2), 2);
 
-            if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
-                
-                if(mOptions->outputToSTDOUT && !mOptions->merge.enabled) {
-                    singleOutput += r1->toString() + r2->toString();
-                } else {
-                    outstr1 += r1->toString();
-                    outstr2 += r2->toString();
-                }
+            if(!dedupOut) {
 
-                // stats the read after filtering
-                if(!mOptions->merge.enabled) {
-                    config->getPostStats1()->statRead(r1);
-                    config->getPostStats2()->statRead(r2);
-                }
-
-                readPassed++;
-            } else if( r1 != NULL &&  result1 == PASS_FILTER) {
-                if(mUnpairedLeftWriter) {
-                    unpairedOut1 += r1->toString();
-                    if(mFailedWriter)
-                        failedOut += or2->toStringWithTag(FAILED_TYPES[result2]);
-                } else {
-                    if(mFailedWriter) {
-                        failedOut += or1->toStringWithTag("paired_read_is_failing");
-                        failedOut += or2->toStringWithTag(FAILED_TYPES[result2]);
+                if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
+                    
+                    if(mOptions->outputToSTDOUT && !mOptions->merge.enabled) {
+                        singleOutput += r1->toString() + r2->toString();
+                    } else {
+                        outstr1 += r1->toString();
+                        outstr2 += r2->toString();
                     }
-                }
-            } else if( r2 != NULL && result2 == PASS_FILTER) {
-                if(mUnpairedLeftWriter || mUnpairedRightWriter) {
-                    unpairedOut2 += r2->toString();
-                    if(mFailedWriter)
-                        failedOut += or1->toStringWithTag(FAILED_TYPES[result1]);
-                } else {
-                    if(mFailedWriter) {
-                        failedOut += or1->toStringWithTag(FAILED_TYPES[result1]);
-                        failedOut += or2->toStringWithTag("paired_read_is_failing");
+
+                    // stats the read after filtering
+                    if(!mOptions->merge.enabled) {
+                        config->getPostStats1()->statRead(r1);
+                        config->getPostStats2()->statRead(r2);
+                    }
+
+                    readPassed++;
+                } else if( r1 != NULL &&  result1 == PASS_FILTER) {
+                    if(mUnpairedLeftWriter) {
+                        unpairedOut1 += r1->toString();
+                        if(mFailedWriter)
+                            failedOut += or2->toStringWithTag(FAILED_TYPES[result2]);
+                    } else {
+                        if(mFailedWriter) {
+                            failedOut += or1->toStringWithTag("paired_read_is_failing");
+                            failedOut += or2->toStringWithTag(FAILED_TYPES[result2]);
+                        }
+                    }
+                } else if( r2 != NULL && result2 == PASS_FILTER) {
+                    if(mUnpairedLeftWriter || mUnpairedRightWriter) {
+                        unpairedOut2 += r2->toString();
+                        if(mFailedWriter)
+                            failedOut += or1->toStringWithTag(FAILED_TYPES[result1]);
+                    } else {
+                        if(mFailedWriter) {
+                            failedOut += or1->toStringWithTag(FAILED_TYPES[result1]);
+                            failedOut += or2->toStringWithTag("paired_read_is_failing");
+                        }
                     }
                 }
             }

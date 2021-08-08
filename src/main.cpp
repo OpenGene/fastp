@@ -35,6 +35,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
+    cmd.add("dedup", 'D', "enable deduplication to drop the duplicated reads/pairs");
     cmd.add<string>("unpaired1", 0, "for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it.", false, "");
     cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --unpaired1 (default mode), both unpaired reads will be written to this same file.", false, "");
     cmd.add<string>("overlapped_out", 0, "for each read pair, output the overlapped region if it has no any mismatched base.", false, "");
@@ -165,6 +166,7 @@ int main(int argc, char* argv[]){
     opt.in2 = cmd.get<string>("in2");
     opt.out1 = cmd.get<string>("out1");
     opt.out2 = cmd.get<string>("out2");
+    opt.duplicate.dedup = cmd.exist("dedup");
     opt.unpaired1 = cmd.get<string>("unpaired1");
     opt.unpaired2 = cmd.get<string>("unpaired2");
     opt.failedOut = cmd.get<string>("failed_out");

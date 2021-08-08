@@ -15,21 +15,25 @@ public:
     Duplicate(Options* opt);
     ~Duplicate();
 
-    void statRead(Read* r1);
-    void statPair(Read* r1, Read* r2);
-    uint64 seq2int(const char* data, int start, int keylen, bool& valid);
-    void addRecord(uint32 key, uint64 kmer32, uint8 gc);
+    bool checkRead(Read* r1);
+    bool checkPair(Read* r1, Read* r2);
+    void seq2intvector(const char* data, int len, uint64* output, int posOffset = 0);
 
-    // make histogram and get duplication rate
-    double statAll(int* hist, double* meanGC, int histSize);
+    double getDupRate();
+
+private:
+    void initPrimeArrays();
+    bool applyBloomFilter(uint64* positions);
 
 private:
     Options* mOptions;
-    int mKeyLenInBase;
-    int mKeyLenInBit;
-    uint64* mDups;
-    uint16* mCounts;
-    uint8* mGC;
+    uint64 mBufLenInBits;
+    uint64 mBufLenInBytes;
+    uint32 mBufNum;
+    uint8* mDupBuf;
+    uint64* mPrimeArrays;
+    uint64 mTotalReads;
+    uint64 mDupReads;
     
 };
 

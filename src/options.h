@@ -35,11 +35,13 @@ public:
         enabled = true;
         keylen = 12;
         histSize = 32;
+        dedup = false;
     }
 public:
     bool enabled;
     int keylen;
     int histSize;
+    bool dedup;
 };
 
 class IndexFilterOptions {
