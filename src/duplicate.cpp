@@ -3,7 +3,7 @@
 #include <memory.h>
 #include <math.h>
 
-const int PRIME_ARRAY_LEN = 300;
+const int PRIME_ARRAY_LEN = 1<<9;
 
 Duplicate::Duplicate(Options* opt) {
     mOptions = opt;
@@ -18,6 +18,9 @@ Duplicate::Duplicate(Options* opt) {
         mBufLenInBytes *= 2;
         mBufNum *= 2;
     }
+
+    mOffsetMask = PRIME_ARRAY_LEN * mBufNum - 1;
+
     mBufLenInBits = mBufLenInBytes << 3;
     mDupBuf = new uint8[mBufLenInBytes * mBufNum];
     memset(mDupBuf, 0, sizeof(uint8) * mBufLenInBytes * mBufNum);
@@ -31,7 +34,7 @@ Duplicate::Duplicate(Options* opt) {
 }
 
 void Duplicate::initPrimeArrays() {
-    uint64 number = 1000;
+    uint64 number = 10000;
     uint64 count = 0;
     while(count < mBufNum * PRIME_ARRAY_LEN) {
         number++;
@@ -45,7 +48,7 @@ void Duplicate::initPrimeArrays() {
         if(isPrime) {
             mPrimeArrays[count] = number;
             count++;
-            number += 100000;
+            number += 10000;
         }
     }
 }
@@ -60,23 +63,23 @@ void Duplicate::seq2intvector(const char* data, int len, uint64* output, int pos
         uint64 base = 0;
         switch(data[p]) {
             case 'A':
-                base = 11;
+                base = 7;
                 break;
             case 'T':
-                base = 31;
+                base = 222;
                 break;
             case 'C':
-                base = 71;
+                base = 74;
                 break;
             case 'G':
-                base = 101;
+                base = 31;
                 break;
             default:
-                base = 131;
+                base = 13;
         }
         for(int i=0; i<mBufNum; i++) {
             int offset = (p+posOffset)*mBufNum + i;
-            offset %= (mBufNum*PRIME_ARRAY_LEN);
+            offset &= mOffsetMask;
             output[i] += mPrimeArrays[offset] * (base + (p+posOffset));
         }
     }

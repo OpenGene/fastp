@@ -34,6 +34,7 @@ private:
     uint64* mPrimeArrays;
     uint64 mTotalReads;
     uint64 mDupReads;
+    uint64 mOffsetMask;
     
 };
 
