@@ -25,7 +25,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
   - [do not overwrite exiting files](#do-not-overwrite-exiting-files)
   - [split the output to multiple files for parallel processing](#split-the-output-to-multiple-files-for-parallel-processing)
   - [merge PE reads](#merge-pe-reads)
-- [duplication rate and deduplication](duplication-rate-and-deduplication)
+- [duplication rate and deduplication](#duplication-rate-and-deduplication)
   - [duplication rate evaluation](#duplication-rate-evaluation)
   - [deduplication](#deduplication)
 - [filtering](#filtering)
