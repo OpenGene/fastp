@@ -25,6 +25,8 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
   - [do not overwrite exiting files](#do-not-overwrite-exiting-files)
   - [split the output to multiple files for parallel processing](#split-the-output-to-multiple-files-for-parallel-processing)
   - [merge PE reads](#merge-pe-reads)
+- [duplication rate and deduplication](duplication-rate-and-deduplication)
+  - [duplication rate evaluation](#duplication-rate-evaluation)
   - [deduplication](#deduplication)
 - [filtering](#filtering)
   - [quality filter](#quality-filter)
@@ -328,8 +330,17 @@ means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the ba
 
 Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_limit_percent (default 20%)`. Please note that the reads should meet these three conditions simultaneously.
 
-# deduplication
-Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. The duplication evaluation module has been improved to get more accurate result. Please also note that when deduplication is enabled, the evaluated duplication rate might be slightly different compared to the case that deduplication is not enabled. This is due to duplication evaluation mode applies more calculation (and uses more memory) to get more accurate result.
+# duplication rate and deduplication
+For both SE and PE data, fastp supports evaluating its duplication rate and removing duplicated reads/pairs. fastp considers one read as duplicated only if its all base pairs are identical as another one. This meas if there is a sequencing error or an N base, the read will not be treated as duplicated.
+
+## duplication rate evaluation
+By default, fastp evaluates duplication rate, and this module may use 1G memory and take 10% ~ 20% more running time. If you dont need the duplication rate information, you can set `--dont_eval_duplication` to disable the duplication evaluation. But please be noted that, if deduplication (`--dedup`) option is enabled, then `--dont_eval_duplication` option is ignored.
+
+For the reason of performance, fastp doesn't apply thread synchronization for duplication calculation. So the evaluated duplication rate can vary slightly (~0.1%) when you run fastp with the data multiple times. If you want to get stable reproduced result, please use only worker thread (`-w 1`).
+
+## deduplication
+Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. The duplication evaluation module has been improved to get more accurate result. Please also note that when deduplication is enabled, the evaluated duplication rate might be slightly different compared to the case that deduplication is not enabled. This is due to duplication evaluation module applies more calculation (and uses more memory) when deduplication is enabled.
+
 
 # all options
 ```shell
@@ -355,6 +366,7 @@ options:
       --interleaved_in                 indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.
       --reads_to_process             specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
       --dont_overwrite               don't overwrite existing files. Overwritting is allowed by default.
+      --dont_eval_duplication          don't evaluate duplication rate to save time and use less memory.
       --fix_mgi_id                     the MGI FASTQ ID format is not compatible with many BAM operation tools, enable this option to fix it.
   
   # adapter trimming options
