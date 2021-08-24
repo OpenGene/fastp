@@ -5,8 +5,13 @@
 
 #define _DEBUG false
 
-typedef long int64;
-typedef unsigned long uint64;
+#ifndef _WIN32
+	typedef long int64;
+	typedef unsigned long uint64;
+#else
+	typedef long long int64;
+	typedef unsigned long long uint64;
+#endif
 
 typedef int int32;
 typedef unsigned int uint32;
