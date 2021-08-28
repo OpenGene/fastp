@@ -1,55 +1,165 @@
+/*
+MIT License
+
+Copyright (c) 2021 Shifu Chen <chen@haplox.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include "fastqreader.h"
 #include "util.h"
 #include <string.h>
+#include <cassert>
 
-#define FQ_BUF_SIZE (1<<20)
+#define FQ_BUF_SIZE (1<<23)
+#define IGZIP_IN_BUF_SIZE (1<<22)
+#define GZIP_HEADER_BYTES_REQ (1<<16)
 
 FastqReader::FastqReader(string filename, bool hasQuality, bool phred64){
 	mFilename = filename;
-	mZipFile = NULL;
 	mZipped = false;
 	mFile = NULL;
 	mStdinMode = false;
-	mPhred64 = phred64;
-	mHasQuality = hasQuality;
-	mBuf = new char[FQ_BUF_SIZE];
+	mFastqBuf = new char[FQ_BUF_SIZE];
 	mBufDataLen = 0;
 	mBufUsedLen = 0;
 	mHasNoLineBreakAtEnd = false;
+	mGzipInputBufferSize = IGZIP_IN_BUF_SIZE;
+	mGzipInputBuffer = new unsigned char[mGzipInputBufferSize];
+	mGzipOutputBufferSize = FQ_BUF_SIZE;
+	mGzipOutputBuffer = (unsigned char*)mFastqBuf;
+	mCounter = 0;
+	mPhred64 = phred64;
+	mHasQuality = hasQuality;
+	mHasNoLineBreakAtEnd = false;
+	mGzipInputUsedBytes = 0;
 	init();
 }
 
 FastqReader::~FastqReader(){
 	close();
-	delete mBuf;
+	delete[] mFastqBuf;
+	delete[] mGzipInputBuffer;
 }
 
 bool FastqReader::hasNoLineBreakAtEnd() {
 	return mHasNoLineBreakAtEnd;
 }
 
-void FastqReader::readToBuf() {
+
+bool FastqReader::bufferFinished() {
 	if(mZipped) {
-		mBufDataLen = gzread(mZipFile, mBuf, FQ_BUF_SIZE);
-		if(mBufDataLen == -1) {
-			cerr << "Error to read gzip file" << endl;
-		}
+		return eof() && mGzipState.avail_in == 0;
 	} else {
-		mBufDataLen = fread(mBuf, 1, FQ_BUF_SIZE, mFile);
+		return eof();
+	}
+}
+
+void FastqReader::readToBufIgzip(){
+	mBufDataLen = 0;
+	while(mBufDataLen == 0) {
+		if(eof() && mGzipState.avail_in==0)
+			return;
+		if (mGzipState.avail_in == 0) {
+			mGzipState.next_in = mGzipInputBuffer;
+			mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+			mGzipInputUsedBytes += mGzipState.avail_in;
+		}
+		mGzipState.next_out = mGzipOutputBuffer;
+		mGzipState.avail_out = mGzipOutputBufferSize;
+
+		int ret = isal_inflate(&mGzipState);
+		if (ret != ISAL_DECOMP_OK) {
+			error_exit("igzip: encountered while decompressing file");
+		}
+		mBufDataLen = mGzipState.next_out - mGzipOutputBuffer;
+		if(eof() || mGzipState.avail_in>0)
+			break;
+	}
+	// this block is finished
+	if(mGzipState.block_state == ISAL_BLOCK_FINISH) {
+		// a new block begins
+		if(!eof() || mGzipState.avail_in > 0) {
+			if (mGzipState.avail_in == 0) {
+				isal_inflate_reset(&mGzipState);
+				mGzipState.next_in = mGzipInputBuffer;
+				mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+				mGzipInputUsedBytes += mGzipState.avail_in;
+			} else if (mGzipState.avail_in >= GZIP_HEADER_BYTES_REQ){
+				unsigned char* old_next_in = mGzipState.next_in;
+				size_t old_avail_in = mGzipState.avail_in;
+				isal_inflate_reset(&mGzipState);
+				mGzipState.avail_in = old_avail_in;
+				mGzipState.next_in = old_next_in;
+			} else {
+				size_t old_avail_in = mGzipState.avail_in;
+				memmove(mGzipInputBuffer, mGzipState.next_in, mGzipState.avail_in);
+				size_t added = 0;
+				if(!eof()) {
+					added = fread(mGzipInputBuffer + mGzipState.avail_in, 1, mGzipInputBufferSize - mGzipState.avail_in, mFile);
+					mGzipInputUsedBytes += added;
+				}
+				isal_inflate_reset(&mGzipState);
+				mGzipState.next_in = mGzipInputBuffer;
+				mGzipState.avail_in = old_avail_in + added;
+			}
+			int ret = isal_read_gzip_header(&mGzipState, &mGzipHeader);
+			if (ret != ISAL_DECOMP_OK) {
+				error_exit("igzip: invalid gzip header found");
+			}
+		}
+	}
+}
+
+void FastqReader::readToBuf() {
+	mBufDataLen = 0;
+	if(mZipped) {
+		readToBufIgzip();
+	} else {
+		if(!eof())
+			mBufDataLen = fread(mFastqBuf, 1, FQ_BUF_SIZE, mFile);
 	}
 	mBufUsedLen = 0;
 
-	if(mBufDataLen < FQ_BUF_SIZE) {
-		if(mBuf[mBufDataLen-1] != '\n')
+	if(bufferFinished()) {
+		if(mFastqBuf[mBufDataLen-1] != '\n')
 			mHasNoLineBreakAtEnd = true;
 	}
 }
 
 void FastqReader::init(){
 	if (ends_with(mFilename, ".gz")){
-		mZipFile = gzopen(mFilename.c_str(), "r");
+		mFile = fopen(mFilename.c_str(), "rb");
+		if(mFile == NULL) {
+			error_exit("Failed to open file: " + mFilename);
+		}
+		isal_gzip_header_init(&mGzipHeader);
+		isal_inflate_init(&mGzipState);
+		mGzipState.crc_flag = ISAL_GZIP_NO_HDR_VER;
+		mGzipState.next_in = mGzipInputBuffer;
+		mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+		mGzipInputUsedBytes += mGzipState.avail_in;
+		int ret = isal_read_gzip_header(&mGzipState, &mGzipHeader);
+		if (ret != ISAL_DECOMP_OK) {
+			error_exit("igzip: Error invalid gzip header found");
+		}
 		mZipped = true;
-		gzrewind(mZipFile);
 	}
 	else {
 		if(mFilename == "/dev/stdin") {
@@ -67,11 +177,10 @@ void FastqReader::init(){
 
 void FastqReader::getBytes(size_t& bytesRead, size_t& bytesTotal) {
 	if(mZipped) {
-		bytesRead = gzoffset(mZipFile);
+		bytesRead = mGzipInputUsedBytes - mGzipState.avail_in;
 	} else {
 		bytesRead = ftell(mFile);//mFile.tellg();
 	}
-
 	// use another ifstream to not affect current reader
 	ifstream is(mFilename);
 	is.seekg (0, is.end);
@@ -91,30 +200,32 @@ void FastqReader::clearLineBreaks(char* line) {
 	}
 }
 
+bool FastqReader::eof() {
+	return feof(mFile);//mFile.eof();
+}
+
 string FastqReader::getLine(){
-	static int c=0;
-	c++;
 	int copied = 0;
 
 	int start = mBufUsedLen;
 	int end = start;
 
 	while(end < mBufDataLen) {
-		if(mBuf[end] != '\r' && mBuf[end] != '\n')
+		if(mFastqBuf[end] != '\r' && mFastqBuf[end] != '\n')
 			end++;
 		else
 			break;
 	}
 
 	// this line well contained in this buf, or this is the last buf
-	if(end < mBufDataLen || mBufDataLen < FQ_BUF_SIZE) {
+	if(end < mBufDataLen || bufferFinished()) {
 		int len = end - start;
-		string line(mBuf+start, len);
+		string line(mFastqBuf+start, len);
 
 		// skip \n or \r
 		end++;
 		// handle \r\n
-		if(end < mBufDataLen-1 && mBuf[end-1]=='\r' && mBuf[end] == '\n')
+		if(end < mBufDataLen-1 && mFastqBuf[end-1]=='\r' && mFastqBuf[end] == '\n')
 			end++;
 
 		mBufUsedLen = end;
@@ -123,53 +234,40 @@ string FastqReader::getLine(){
 	}
 
 	// this line is not contained in this buf, we need to read new buf
-	string str(mBuf+start, mBufDataLen - start);
+	string str(mFastqBuf+start, mBufDataLen - start);
 
 	while(true) {
 		readToBuf();
 		start = 0;
 		end = 0;
 		while(end < mBufDataLen) {
-			if(mBuf[end] != '\r' && mBuf[end] != '\n')
+			if(mFastqBuf[end] != '\r' && mFastqBuf[end] != '\n')
 				end++;
 			else
 				break;
 		}
-		// this line well contained in this buf, we need to read new buf
-		if(end < mBufDataLen || mBufDataLen < FQ_BUF_SIZE) {
+		// this line well contained in this buf
+		if(end < mBufDataLen || bufferFinished()) {
 			int len = end - start;
-			str.append(mBuf+start, len);
+			str.append(mFastqBuf+start, len);
 
 			// skip \n or \r
 			end++;
 			// handle \r\n
-			if(end < mBufDataLen-1 && mBuf[end] == '\n')
+			if(end < mBufDataLen-1 && mFastqBuf[end] == '\n')
 				end++;
 
 			mBufUsedLen = end;
 			return str;
 		}
 		// even this new buf is not enough, although impossible
-		str.append(mBuf+start, mBufDataLen);
+		str.append(mFastqBuf+start, mBufDataLen);
 	}
 
 	return string();
 }
 
-bool FastqReader::eof() {
-	if (mZipped) {
-		return gzeof(mZipFile);
-	} else {
-		return feof(mFile);//mFile.eof();
-	}
-}
-
 Read* FastqReader::read(){
-	if (mZipped){
-		if (mZipFile == NULL)
-			return NULL;
-	}
-
 	if(mBufUsedLen >= mBufDataLen && eof()) {
 		return NULL;
 	}
@@ -208,17 +306,9 @@ Read* FastqReader::read(){
 }
 
 void FastqReader::close(){
-	if (mZipped){
-		if (mZipFile){
-			gzclose(mZipFile);
-			mZipFile = NULL;
-		}
-	}
-	else {
-		if (mFile){
-			fclose(mFile);//mFile.close();
-			mFile = NULL;
-		}
+	if (mFile){
+		fclose(mFile);//mFile.close();
+		mFile = NULL;
 	}
 }
 
@@ -254,17 +344,18 @@ bool FastqReader::isZipped(){
 
 bool FastqReader::test(){
 	FastqReader reader1("testdata/R1.fq");
-	FastqReader reader2("testdata/R1.fq.gz");
+	FastqReader reader2("testdata/R1.fq");
 	Read* r1 = NULL;
 	Read* r2 = NULL;
+	int i=0;
 	while(true){
+		i++;
 		r1=reader1.read();
 		r2=reader2.read();
-		if(r1 == NULL || r2 == NULL)
+		if(r1 == NULL || r2==NULL)
 			break;
-		if(r1->mSeq.mStr != r2->mSeq.mStr){
-			return false;
-		}
+		r1->print();
+		r2->print();
 		delete r1;
 		delete r2;
 	}
