@@ -204,7 +204,7 @@ bool FastqReader::eof() {
 	return feof(mFile);//mFile.eof();
 }
 
-string FastqReader::getLine(){
+string* FastqReader::getLine(){
 	int copied = 0;
 
 	int start = mBufUsedLen;
@@ -220,7 +220,7 @@ string FastqReader::getLine(){
 	// this line well contained in this buf, or this is the last buf
 	if(end < mBufDataLen || bufferFinished()) {
 		int len = end - start;
-		string line(mFastqBuf+start, len);
+		string* line = new string(mFastqBuf+start, len);
 
 		// skip \n or \r
 		end++;
@@ -234,7 +234,7 @@ string FastqReader::getLine(){
 	}
 
 	// this line is not contained in this buf, we need to read new buf
-	string str(mFastqBuf+start, mBufDataLen - start);
+	string* str = new string(mFastqBuf+start, mBufDataLen - start);
 
 	while(true) {
 		readToBuf();
@@ -249,7 +249,7 @@ string FastqReader::getLine(){
 		// this line well contained in this buf
 		if(end < mBufDataLen || bufferFinished()) {
 			int len = end - start;
-			str.append(mFastqBuf+start, len);
+			str->append(mFastqBuf+start, len);
 
 			// skip \n or \r
 			end++;
@@ -261,10 +261,10 @@ string FastqReader::getLine(){
 			return str;
 		}
 		// even this new buf is not enough, although impossible
-		str.append(mFastqBuf+start, mBufDataLen);
+		str->append(mFastqBuf+start, mBufDataLen);
 	}
 
-	return string();
+	return new string();
 }
 
 Read* FastqReader::read(){
@@ -272,35 +272,27 @@ Read* FastqReader::read(){
 		return NULL;
 	}
 
-	string name = getLine();
+	string* name = getLine();
 	// name should start with @
-	while((name.empty() && !(mBufUsedLen >= mBufDataLen && eof())) || (!name.empty() && name[0]!='@')){
+	while((name->empty() && !(mBufUsedLen >= mBufDataLen && eof())) || (!name->empty() && (*name)[0]!='@')){
 		name = getLine();
 	}
 
-	if(name.empty())
+	if(name->empty())
 		return NULL;
 
-	string sequence = getLine();
-	string strand = getLine();
-
-	// WAR for FQ with no quality
-	if (!mHasQuality){
-		string quality = string(sequence.length(), 'K');
-		return new Read(name, sequence, strand, quality, mPhred64);
+	string* sequence = getLine();
+	string* strand = getLine();
+	string* quality = getLine();
+	if(quality->length() != sequence->length()) {
+		cerr << "ERROR: sequence and quality have different length:" << endl;
+		cerr << name << endl;
+		cerr << sequence << endl;
+		cerr << strand << endl;
+		cerr << quality << endl;
+		return NULL;
 	}
-	else {
-		string quality = getLine();
-		if(quality.length() != sequence.length()) {
-			cerr << "ERROR: sequence and quality have different length:" << endl;
-			cerr << name << endl;
-			cerr << sequence << endl;
-			cerr << strand << endl;
-			cerr << quality << endl;
-			return NULL;
-		}
-		return new Read(name, sequence, strand, quality, mPhred64);
-	}
+	return new Read(name, sequence, strand, quality, mPhred64);
 
 	return NULL;
 }

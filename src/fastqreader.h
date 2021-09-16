@@ -55,7 +55,7 @@ public:
 private:
 	void init();
 	void close();
-	string getLine();
+	string* getLine();
 	void clearLineBreaks(char* line);
 	void readToBuf();
 	void readToBufIgzip();

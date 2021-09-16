@@ -88,7 +88,7 @@ void Evaluator::computeOverRepSeq(string filename, map<string, long>& hotseqs, i
         for(int s=0; s<5; s++) {
             int step = steps[s];
             for(int i=0; i<rlen-step; i++) {
-                string seq = r->mSeq.mStr.substr(i, step);
+                string seq = r->mSeq->substr(i, step);
                 if(seqCounts.count(seq)>0)
                     seqCounts[seq]++;
                 else
@@ -244,7 +244,7 @@ string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
         if(rlen < keylen + 1 + shiftTail)
             continue;
 
-        const char* data = r->mSeq.mStr.c_str();
+        const char* data = r->mSeq->c_str();
         bool valid = true;
         unsigned int key = 0;
         for(int i=0; i<keylen; i++) {
@@ -475,10 +475,10 @@ string Evaluator::evalAdapterAndReadNum(long& readNum, bool isR2) {
     memset(counts, 0, sizeof(unsigned int)*size);
     for(int i=0; i<records; i++) {
         Read* r = loadedReads[i];
-        const char* data = r->mSeq.mStr.c_str();
+        const char* data = r->mSeq->c_str();
         int key = -1;
         for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
-            key = seq2int(r->mSeq.mStr, pos, keylen, key);
+            key = seq2int(r->mSeq, pos, keylen, key);
             if(key >= 0) {
                 counts[key]++;
             }
@@ -581,12 +581,12 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
     // forward search
     for(int i=0; i<records; i++) {
         Read* r = loadedReads[i];
-        const char* data = r->mSeq.mStr.c_str();
+        const char* data = r->mSeq->c_str();
         int key = -1;
         for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
-            key = seq2int(r->mSeq.mStr, pos, keylen, key);
+            key = seq2int(r->mSeq, pos, keylen, key);
             if(key == seed) {
-                forwardTree.addSeq(r->mSeq.mStr.substr(pos+keylen, r->length()-keylen-shiftTail-pos));
+                forwardTree.addSeq(r->mSeq->substr(pos+keylen, r->length()-keylen-shiftTail-pos));
             }
         }
     }
@@ -597,12 +597,12 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
     // backward search
     for(int i=0; i<records; i++) {
         Read* r = loadedReads[i];
-        const char* data = r->mSeq.mStr.c_str();
+        const char* data = r->mSeq->c_str();
         int key = -1;
         for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
-            key = seq2int(r->mSeq.mStr, pos, keylen, key);
+            key = seq2int(r->mSeq, pos, keylen, key);
             if(key == seed) {
-                string seq =  r->mSeq.mStr.substr(0, pos);
+                string seq =  r->mSeq->substr(0, pos);
                 string rcseq = reverse(seq);
                 backwardTree.addSeq(rcseq);
             }
@@ -659,6 +659,10 @@ string Evaluator::int2seq(unsigned int val, int seqlen) {
         done++;
     }
     return ret;
+}
+
+int Evaluator::seq2int(string* seq, int pos, int keylen, int lastVal) {
+    return seq2int(*seq, pos, keylen, lastVal);
 }
 
 int Evaluator::seq2int(string& seq, int pos, int keylen, int lastVal) {

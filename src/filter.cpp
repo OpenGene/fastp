@@ -23,8 +23,8 @@ int Filter::passFilter(Read* r) {
 
     // need to recalculate lowQualNum and nBaseNum if the corresponding filters are enabled
     if(mOptions->qualfilter.enabled || mOptions->lengthFilter.enabled) {
-        const char* seqstr = r->mSeq.mStr.c_str();
-        const char* qualstr = r->mQuality.c_str();
+        const char* seqstr = r->mSeq->c_str();
+        const char* qualstr = r->mQuality->c_str();
 
         for(int i=0; i<rlen; i++) {
             char base = seqstr[i];
@@ -69,7 +69,7 @@ bool Filter::passLowComplexityFilter(Read* r) {
     int length = r->length();
     if(length <= 1)
         return false;
-    const char* data = r->mSeq.mStr.c_str();
+    const char* data = r->mSeq->c_str();
     for(int i=0; i<length-1; i++) {
         if(data[i] != data[i+1])
             diff++;
@@ -95,8 +95,8 @@ Read* Filter::trimAndCut(Read* r, int front, int tail, int& frontTrimmed) {
         r->resize(rlen);
         return r;
     } else if(!mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight){
-        r->mSeq.mStr = r->mSeq.mStr.substr(front, rlen);
-        r->mQuality = r->mQuality.substr(front, rlen);
+        r->mSeq->erase(0,front);
+        r->mQuality->erase(0,front);
         frontTrimmed  = front;
         return r;
     }
@@ -104,8 +104,8 @@ Read* Filter::trimAndCut(Read* r, int front, int tail, int& frontTrimmed) {
     // need quality cutting
 
     int l = r->length();
-    const char* qualstr = r->mQuality.c_str();
-    const char* seq = r->mSeq.mStr.c_str();
+    const char* qualstr = r->mQuality->c_str();
+    const char* seq = r->mSeq->c_str();
     // quality cutting forward
     if(mOptions->qualityCut.enabledFront) {
         int w = mOptions->qualityCut.windowSizeFront;
@@ -209,8 +209,8 @@ Read* Filter::trimAndCut(Read* r, int front, int tail, int& frontTrimmed) {
     if(rlen <= 0 || front >= l-1)
         return NULL;
 
-    r->mSeq.mStr = r->mSeq.mStr.substr(front, rlen);
-    r->mQuality = r->mQuality.substr(front, rlen);
+    r->mSeq->erase(0, front);
+    r->mQuality->erase(0, front);
 
     frontTrimmed = front;
 
@@ -270,6 +270,6 @@ bool Filter::test() {
     Read* ret = filter.trimAndCut(&r, 0, 1, frontTrimmed);
     ret->print();
     
-    return ret->mSeq.mStr == "CCCCCCCCCCCCCCCCCCCCCCCCCCCC"
-        && ret->mQuality == "CCCCCCCCCCC////CCCCCCCCCCCCC";
+    return *ret->mSeq == "CCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+        && *ret->mQuality == "CCCCCCCCCCC////CCCCCCCCCCCCC";
 }

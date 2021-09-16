@@ -92,7 +92,7 @@ bool Duplicate::checkRead(Read* r) {
     for(int i=0; i<mBufNum; i++)
         positions[i] = 0;
     int len = r->length();
-    seq2intvector(r->mSeq.mStr.c_str(), len, positions);
+    seq2intvector(r->mSeq->c_str(), len, positions);
     bool isDup = applyBloomFilter(positions);
     delete[] positions;
 
@@ -109,8 +109,8 @@ bool Duplicate::checkPair(Read* r1, Read* r2) {
     // init
     for(int i=0; i<mBufNum; i++)
         positions[i] = 0;
-    seq2intvector(r1->mSeq.mStr.c_str(), r1->length(), positions);
-    seq2intvector(r2->mSeq.mStr.c_str(), r2->length(), positions, r1->length());
+    seq2intvector(r1->mSeq->c_str(), r1->length(), positions);
+    seq2intvector(r2->mSeq->c_str(), r2->length(), positions, r1->length());
     bool isDup = applyBloomFilter(positions);
     delete[] positions;
 

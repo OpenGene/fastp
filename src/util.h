@@ -38,6 +38,11 @@ inline bool starts_with( string const & value,  string const & starting)
     return  equal(starting.begin(), starting.end(), value.begin());
 }
 
+inline bool starts_with( string* value,  string const & starting)
+{
+    return starts_with(*value, starting);
+}
+
 inline bool ends_with( string const & value,  string const & ending)
 {
 	if (ending.size() > value.size()) return false;

@@ -21,8 +21,8 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr,
 
         int len1 = min(r1->length(), ol + frontTrimmed2);
         int len2 = min(r2->length(), ol + frontTrimmed1);
-        string adapter1 = r1->mSeq.mStr.substr(len1, r1->length() - len1);
-        string adapter2 = r2->mSeq.mStr.substr(len2, r2->length() - len2);
+        string adapter1 = r1->mSeq->substr(len1, r1->length() - len1);
+        string adapter2 = r2->mSeq->substr(len2, r2->length() - len2);
 
         if(_DEBUG) {
             cerr << adapter1 << endl;
@@ -34,10 +34,8 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read* r1, Read* r2, FilterResult* fr,
             r2->reverseComplement()->print();
             cerr <<endl;
         }
-        r1->mSeq.mStr = r1->mSeq.mStr.substr(0, len1);
-        r1->mQuality = r1->mQuality.substr(0, len1);
-        r2->mSeq.mStr = r2->mSeq.mStr.substr(0, len2);
-        r2->mQuality = r2->mQuality.substr(0, len2);
+        r1->resize(len1);
+        r2->resize(len2);
 
         fr->addAdapterTrimmed(adapter1, adapter2);
         return true;
@@ -53,13 +51,13 @@ bool AdapterTrimmer::trimByMultiSequences(Read* r, FilterResult* fr, vector<stri
         matchReq = 6;
     bool trimmed = false;
 
-    string originalSeq = r->mSeq.mStr;
+    string* originalSeq = r->mSeq;
     for(int i=0; i<adapterList.size(); i++) {
         trimmed |= trimBySequence(r, NULL, adapterList[i], isR2, matchReq);
     }
 
     if(trimmed) {
-        string adapter = originalSeq.substr(r->length(), originalSeq.length() - r->length());
+        string adapter = originalSeq->substr(r->length(), originalSeq->length() - r->length());
         if(fr)
             fr->addAdapterTrimmed(adapter, isR2, incTrimmedCounter);
         else
@@ -76,7 +74,7 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
     int alen = adapterseq.length();
 
     const char* adata = adapterseq.c_str();
-    const char* rdata = r->mSeq.mStr.c_str();
+    const char* rdata = r->mSeq->c_str();
 
     if(alen < matchReq)
         return false;
@@ -115,16 +113,15 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
     if(found) {
         if(pos < 0) {
             string adapter = adapterseq.substr(0, alen+pos);
-            r->mSeq.mStr.resize(0);
-            r->mQuality.resize(0);
+            r->mSeq->resize(0);
+            r->mQuality->resize(0);
             if(fr) {
                 fr->addAdapterTrimmed(adapter, isR2);
             }
 
         } else {
-            string adapter = r->mSeq.mStr.substr(pos, rlen-pos);
-            r->mSeq.mStr = r->mSeq.mStr.substr(0, pos);
-            r->mQuality = r->mQuality.substr(0, pos);
+            string adapter = r->mSeq->substr(pos, rlen-pos);
+            r->resize(pos);
             if(fr) {
                 fr->addAdapterTrimmed(adapter, isR2);
             }
@@ -142,7 +139,7 @@ bool AdapterTrimmer::test() {
         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
     string adapter = "TTTTCCACGGGGATACTACTG";
     bool trimmed = AdapterTrimmer::trimBySequence(&r, NULL, adapter);
-    if (r.mSeq.mStr != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAA")
+    if (*r.mSeq != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAA")
         return false;
 
     Read read("@name",
@@ -155,8 +152,8 @@ bool AdapterTrimmer::test() {
     adapterList.push_back("ATCGATCGATCGATCG");
     adapterList.push_back("AATTCCGGAATTCCGG");
     trimmed = AdapterTrimmer::trimByMultiSequences(&read, NULL, adapterList);
-    if (read.mSeq.mStr != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCCCGGGG") {
-        cerr << read.mSeq.mStr << endl;
+    if (*read.mSeq != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCCCGGGG") {
+        cerr << read.mSeq << endl;
         return false;
     }
 

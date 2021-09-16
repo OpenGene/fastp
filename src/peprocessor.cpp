@@ -396,7 +396,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         if(r1 != NULL && r2!=NULL && mOverlappedWriter) {
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, 0);
             if(ov.overlapped) {
-                Read* overlappedRead = new Read(r1->mName, r1->mSeq.mStr.substr(max(0,ov.offset), ov.overlap_len), r1->mStrand, r1->mQuality.substr(max(0,ov.offset), ov.overlap_len));
+                Read* overlappedRead = new Read(r1->mName, new string(r1->mSeq->substr(max(0,ov.offset)), ov.overlap_len), r1->mStrand, new string(r1->mQuality->substr(max(0,ov.offset)), ov.overlap_len));
                 overlappedOut += overlappedRead->toString();
                 delete overlappedRead;
             }

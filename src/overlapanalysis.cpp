@@ -12,13 +12,13 @@ OverlapResult OverlapAnalysis::analyze(Read* r1, Read* r2, int overlapDiffLimit,
 }
 
 // ported from the python code of AfterQC
-OverlapResult OverlapAnalysis::analyze(Sequence& r1, Sequence& r2, int diffLimit, int overlapRequire, double diffPercentLimit) {
-    Sequence rcr2 = ~r2;
-    int len1 = r1.length();
+OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, int overlapRequire, double diffPercentLimit) {
+    string rcr2 = Sequence::reverseComplement(r2);
+    int len1 = r1->length();
     int len2 = rcr2.length();
     // use the pointer directly for speed
-    const char* str1 = r1.mStr.c_str();
-    const char* str2 = rcr2.mStr.c_str();
+    const char* str1 = r1->c_str();
+    const char* str2 = rcr2.c_str();
 
     int complete_compare_require = 50;
 
@@ -106,20 +106,20 @@ Read* OverlapAnalysis::merge(Read* r1, Read* r2, OverlapResult ov) {
         len2 = r2->length() - ol;
 
     Read* rr2 = r2->reverseComplement();
-    string mergedSeq = r1->mSeq.mStr.substr(0, len1);
+    string mergedSeq = r1->mSeq->substr(0, len1);
     if(ov.offset > 0) {
-        mergedSeq += rr2->mSeq.mStr.substr(ol, len2);
+        mergedSeq += rr2->mSeq->substr(ol, len2);
     }
 
-    string mergedQual = r1->mQuality.substr(0, len1);
+    string mergedQual = r1->mQuality->substr(0, len1);
     if(ov.offset > 0) {
-        mergedQual += rr2->mQuality.substr(ol, len2);
+        mergedQual += rr2->mQuality->substr(ol, len2);
     }
 
     delete rr2;
 
-    string name = r1->mName + " merged_" + to_string(len1) + "_" + to_string(len2);
-    Read* mergedRead = new Read(name, mergedSeq, r1->mStrand, mergedQual);
+    string name = *(r1->mName) + " merged_" + to_string(len1) + "_" + to_string(len2);
+    Read* mergedRead = new Read(new string(name), new string(mergedSeq), new string(*r1->mStrand), new string(mergedQual));
 
     return mergedRead;
 }
@@ -128,15 +128,15 @@ bool OverlapAnalysis::test(){
     //Sequence r1("CAGCGCCTACGGGCCCCTTTTTCTGCGCGACCGCGTGGCTGTGGGCGCGGATGCCTTTGAGCGCGGTGACTTCTCACTGCGTATCGAGCCGCTGGAGGTCTCCC");
     //Sequence r2("ACCTCCAGCGGCTCGATACGCAGTGAGAAGTCACCGCGCTCAAAGGCATCCGCGCCCACAGCCACGCGGTCGCGCAGAAAAAGGGGCCCGTAGGCGCGGCTCCC");
 
-    Sequence r1("CAGCGCCTACGGGCCCCTTTTTCTGCGCGACCGCGTGGCTGTGGGCGCGGATGCCTTTGAGCGCGGTGACTTCTCACTGCGTATCGAGC");
-    Sequence r2("ACCTCCAGCGGCTCGATACGCAGTGAGAAGTCACCGCGCTCAAAGGCATCCGCGCCCACAGCCACGCGGTCGCGCAGAAAAAGGGGTCC");
-    string qual1("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-    string qual2("#########################################################################################");
+    string* r1 = new string("CAGCGCCTACGGGCCCCTTTTTCTGCGCGACCGCGTGGCTGTGGGCGCGGATGCCTTTGAGCGCGGTGACTTCTCACTGCGTATCGAGC");
+    string* r2 = new string("ACCTCCAGCGGCTCGATACGCAGTGAGAAGTCACCGCGCTCAAAGGCATCCGCGCCCACAGCCACGCGGTCGCGCAGAAAAAGGGGTCC");
+    string* qual1 = new string("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+    string* qual2 = new string("#########################################################################################");
     
     OverlapResult ov = OverlapAnalysis::analyze(r1, r2, 2, 30, 0.2);
 
-    Read read1("name1", r1, "+", qual1);
-    Read read2("name2", r2, "+", qual2);
+    Read read1(new string("name1"), r1, new string("+"), qual1);
+    Read read2(new string("name2"), r2, new string("+"), qual2);
 
     Read* mergedRead = OverlapAnalysis::merge(&read1, &read2, ov);
     mergedRead->print();

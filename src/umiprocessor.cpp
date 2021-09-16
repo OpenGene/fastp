@@ -18,11 +18,11 @@ void UmiProcessor::process(Read* r1, Read* r2) {
     else if(mOptions->umi.location == UMI_LOC_INDEX2 && r2)
         umi = r2->lastIndex();
     else if(mOptions->umi.location == UMI_LOC_READ1){
-        umi = r1->mSeq.mStr.substr(0, min(r1->length(), mOptions->umi.length));
+        umi = r1->mSeq->substr(0, min(r1->length(), mOptions->umi.length));
         r1->trimFront(umi.length() + mOptions->umi.skip);
     }
     else if(mOptions->umi.location == UMI_LOC_READ2 && r2){
-        umi = r2->mSeq.mStr.substr(0, min(r2->length(), mOptions->umi.length));
+        umi = r2->mSeq->substr(0, min(r2->length(), mOptions->umi.length));
         r2->trimFront(umi.length() + mOptions->umi.skip);
     }
     else if(mOptions->umi.location == UMI_LOC_PER_INDEX){
@@ -37,11 +37,11 @@ void UmiProcessor::process(Read* r1, Read* r2) {
         }
     }
     else if(mOptions->umi.location == UMI_LOC_PER_READ){
-        string umi1 = r1->mSeq.mStr.substr(0, min(r1->length(), mOptions->umi.length));
+        string umi1 = r1->mSeq->substr(0, min(r1->length(), mOptions->umi.length));
         string umiMerged = umi1;
         r1->trimFront(umi1.length() + mOptions->umi.skip);
         if(r2){
-            string umi2 = r2->mSeq.mStr.substr(0, min(r2->length(), mOptions->umi.length));
+            string umi2 = r2->mSeq->substr(0, min(r2->length(), mOptions->umi.length));
             umiMerged = umiMerged + "_" + umi2;
             r2->trimFront(umi2.length() + mOptions->umi.skip);
         }
@@ -67,16 +67,16 @@ void UmiProcessor::addUmiToName(Read* r, string umi){
     else
         tag = ":" + mOptions->umi.prefix + "_" + umi;
     int spacePos = -1;
-    for(int i=0; i<r->mName.length(); i++) {
-        if(r->mName[i] == ' ') {
+    for(int i=0; i<r->mName->length(); i++) {
+        if(r->mName->at(i) == ' ') {
             spacePos = i;
             break;
         }
     }
     if(spacePos == -1) {
-        r->mName = r->mName + tag;
+        r->mName->append(tag);
     } else {
-        r->mName = r->mName.substr(0, spacePos) + tag + r->mName.substr(spacePos, r->mName.length() - spacePos);
+        r->mName->insert(spacePos, tag);
     }
 
 }
