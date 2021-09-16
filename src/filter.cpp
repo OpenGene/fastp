@@ -96,7 +96,9 @@ Read* Filter::trimAndCut(Read* r, int front, int tail, int& frontTrimmed) {
         return r;
     } else if(!mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight){
         r->mSeq->erase(0,front);
+        r->mSeq->resize(rlen);
         r->mQuality->erase(0,front);
+        r->mQuality->resize(rlen);
         frontTrimmed  = front;
         return r;
     }
@@ -210,7 +212,9 @@ Read* Filter::trimAndCut(Read* r, int front, int tail, int& frontTrimmed) {
         return NULL;
 
     r->mSeq->erase(0, front);
+    r->mSeq->resize(rlen);
     r->mQuality->erase(0, front);
+    r->mQuality->resize(rlen);
 
     frontTrimmed = front;
 
