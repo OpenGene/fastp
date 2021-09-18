@@ -148,7 +148,7 @@ bool PairEndProcessor::process(){
 
     std::thread** threads = new thread*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        threads[t] = new std::thread(std::bind(&PairEndProcessor::consumerTask, this, configs[t]));
+        threads[t] = new std::thread(std::bind(&PairEndProcessor::processorTask, this, configs[t]));
     }
 
     std::thread* leftWriterThread = NULL;
@@ -159,19 +159,19 @@ bool PairEndProcessor::process(){
     std::thread* failedWriterThread = NULL;
     std::thread* overlappedWriterThread = NULL;
     if(mLeftWriter)
-        leftWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mLeftWriter));
+        leftWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mLeftWriter));
     if(mRightWriter)
-        rightWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mRightWriter));
+        rightWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mRightWriter));
     if(mUnpairedLeftWriter)
-        unpairedLeftWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mUnpairedLeftWriter));
+        unpairedLeftWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mUnpairedLeftWriter));
     if(mUnpairedRightWriter)
-        unpairedRightWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mUnpairedRightWriter));
+        unpairedRightWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mUnpairedRightWriter));
     if(mMergedWriter)
-        mergedWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mMergedWriter));
+        mergedWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mMergedWriter));
     if(mFailedWriter)
-        failedWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mFailedWriter));
+        failedWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mFailedWriter));
     if(mOverlappedWriter)
-        overlappedWriterThread = new std::thread(std::bind(&PairEndProcessor::writeTask, this, mOverlappedWriter));
+        overlappedWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mOverlappedWriter));
 
     if(producerInterveleaved) {
         producerInterveleaved->join();
@@ -655,12 +655,6 @@ void PairEndProcessor::statInsertSize(Read* r1, Read* r2, OverlapResult& ov, int
     mInsertSizeHist[isize]++;
 }
 
-bool PairEndProcessor::processRead(Read* r, ReadPair* originalPair, bool reversed) {
-    // do something here
-    return true;
-}
-
-
 void PairEndProcessor::readerTask(bool isLeft)
 {
     if(mOptions->verbose) {
@@ -907,7 +901,7 @@ void PairEndProcessor::interleavedReaderTask()
         delete[] dataRight;
 }
 
-void PairEndProcessor::consumerTask(ThreadConfig* config)
+void PairEndProcessor::processorTask(ThreadConfig* config)
 {
     SingleProducerSingleConsumerList<ReadPack*>* inputLeft = config->getLeftInput();
     SingleProducerSingleConsumerList<ReadPack*>* inputRight = config->getRightInput();
@@ -961,7 +955,7 @@ void PairEndProcessor::consumerTask(ThreadConfig* config)
     }
 }
 
-void PairEndProcessor::writeTask(WriterThread* config)
+void PairEndProcessor::writerTask(WriterThread* config)
 {
     while(true) {
         if(config->isCompleted()){

@@ -30,22 +30,20 @@ public:
 
 private:
     bool processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config);
-    bool processRead(Read* r, ReadPair* originalRead, bool reversed);
     void readerTask(bool isLeft);
     void interleavedReaderTask();
-    void consumerTask(ThreadConfig* config);
+    void processorTask(ThreadConfig* config);
     void initConfig(ThreadConfig* config);
     void initOutput();
     void closeOutput();
     void statInsertSize(Read* r1, Read* r2, OverlapResult& ov, int frontTrimmed1 = 0, int frontTrimmed2 = 0);
     int getPeakInsertSize();
-    void writeTask(WriterThread* config);
+    void writerTask(WriterThread* config);
 
 private:
     atomic_bool mProduceFinished;
     atomic_int mFinishedThreads;
     std::mutex mOutputMtx;
-    std::mutex mInputMtx;
     Options* mOptions;
     Filter* mFilter;
     gzFile mZipFile1;

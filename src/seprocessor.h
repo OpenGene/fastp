@@ -29,22 +29,17 @@ public:
 
 private:
     bool processSingleEnd(ReadPack* pack, ThreadConfig* config);
-    void initPackRepository();
-    void destroyPackRepository();
-    void producePack(ReadPack* pack);
-    void consumePack(ThreadConfig* config);
-    void producerTask();
-    void consumerTask(ThreadConfig* config);
+    void readerTask();
+    void processorTask(ThreadConfig* config);
     void initConfig(ThreadConfig* config);
     void initOutput();
     void closeOutput();
-    void writeTask(WriterThread* config);
+    void writerTask(WriterThread* config);
 
 private:
     Options* mOptions;
     atomic_bool mProduceFinished;
     atomic_int mFinishedThreads;
-    std::mutex mInputMtx;
     std::mutex mOutputMtx;
     Filter* mFilter;
     gzFile mZipFile;

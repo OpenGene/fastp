@@ -70,8 +70,7 @@ bool SingleEndProcessor::process(){
     if(!mOptions->split.enabled)
         initOutput();
 
-    initPackRepository();
-    std::thread producer(std::bind(&SingleEndProcessor::producerTask, this));
+    std::thread readerThread(std::bind(&SingleEndProcessor::readerTask, this));
 
     mInputLists = new SingleProducerSingleConsumerList<ReadPack*>*[mOptions->thread];
 
@@ -87,17 +86,17 @@ bool SingleEndProcessor::process(){
 
     std::thread** threads = new thread*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        threads[t] = new std::thread(std::bind(&SingleEndProcessor::consumerTask, this, configs[t]));
+        threads[t] = new std::thread(std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
     }
 
     std::thread* leftWriterThread = NULL;
     std::thread* failedWriterThread = NULL;
     if(mLeftWriter)
-        leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mLeftWriter));
+        leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mLeftWriter));
     if(mFailedWriter)
-        failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mFailedWriter));
+        failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
 
-    producer.join();
+    readerThread.join();
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
     }
@@ -305,21 +304,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     return true;
 }
 
-void SingleEndProcessor::initPackRepository() {
-}
-
-void SingleEndProcessor::destroyPackRepository() {
-}
-
-void SingleEndProcessor::producePack(ReadPack* pack){
-    mInputLists[mPackCounter % mOptions->thread]->produce(pack);
-    mPackCounter++;
-}
-
-void SingleEndProcessor::consumePack(ThreadConfig* config){
-}
-
-void SingleEndProcessor::producerTask()
+void SingleEndProcessor::readerTask()
 {
     if(mOptions->verbose)
         loginfo("start to load data");
@@ -340,7 +325,8 @@ void SingleEndProcessor::producerTask()
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-            producePack(pack);
+            mInputLists[mPackCounter % mOptions->thread]->produce(pack);
+            mPackCounter++;
             data = NULL;
             if(read) {
                 delete read;
@@ -364,7 +350,8 @@ void SingleEndProcessor::producerTask()
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-            producePack(pack);
+            mInputLists[mPackCounter % mOptions->thread]->produce(pack);
+            mPackCounter++;
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
@@ -416,7 +403,7 @@ void SingleEndProcessor::producerTask()
         delete[] data;
 }
 
-void SingleEndProcessor::consumerTask(ThreadConfig* config)
+void SingleEndProcessor::processorTask(ThreadConfig* config)
 {
     SingleProducerSingleConsumerList<ReadPack*>* input = config->getLeftInput();
     while(true) {
@@ -456,7 +443,7 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config)
     }
 }
 
-void SingleEndProcessor::writeTask(WriterThread* config)
+void SingleEndProcessor::writerTask(WriterThread* config)
 {
     while(true) {
         if(config->isCompleted()){
