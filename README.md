@@ -99,6 +99,17 @@ wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 ```
 ## or compile from source
+### Step 1: download and build libisal
+See https://github.com/intel/isa-l_crypto
+```shell
+git clone https://github.com/intel/isa-l_crypto.git
+cd isa-l
+./autogen.sh
+./configure
+make
+sudo make install
+```
+### Step 2: download and build fastp
 ```shell
 # get source (you can also use browser to download from master or releases)
 git clone https://github.com/OpenGene/fastp.git
@@ -122,7 +133,7 @@ make
 ## add fastp to your PATH
 ```
 
-`fastp` only relies on `zlib`, which is already available on most Linux-like systems. If you get an error like `undefined reference to gzbuffer` when compiling `fastp`, you may have to update the `zlib` (http://zlib.net)
+`fastp` relies on `zlib` and `libisal`. If you get an error like `undefined reference to gzbuffer` when compiling `fastp`, you may have to update the `zlib` (http://zlib.net)
 
 # input and output
 `fastp` supports both single-end (SE) and paired-end (PE) input/output.
