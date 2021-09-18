@@ -45,7 +45,9 @@ public:
 
     // input list
     void setInputList(SingleProducerSingleConsumerList<ReadPack*>* list);
-    SingleProducerSingleConsumerList<ReadPack*>* input(){return mInputList;}
+    void setInputList(SingleProducerSingleConsumerList<ReadPack*>* left, SingleProducerSingleConsumerList<ReadPack*>* right);
+    SingleProducerSingleConsumerList<ReadPack*>* getLeftInput(){return mLeftInputList;}
+    SingleProducerSingleConsumerList<ReadPack*>* getRightInput(){return mRightInputList;}
 
 private:
     void deleteWriter();
@@ -60,7 +62,8 @@ private:
     Writer* mWriter2;
     Options* mOptions;
     FilterResult* mFilterResult;
-    SingleProducerSingleConsumerList<ReadPack*>* mInputList;
+    SingleProducerSingleConsumerList<ReadPack*>* mLeftInputList;
+    SingleProducerSingleConsumerList<ReadPack*>* mRightInputList;
 
     // for spliting output
     int mThreadId;

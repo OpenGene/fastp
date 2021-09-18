@@ -21,6 +21,8 @@ ThreadConfig::ThreadConfig(Options* opt, int threadId, bool paired){
 
     mFilterResult = new FilterResult(opt, paired);
     mCanBeStopped = false;
+    mLeftInputList = NULL;
+    mRightInputList = NULL;
 }
 
 ThreadConfig::~ThreadConfig() {
@@ -31,15 +33,24 @@ void ThreadConfig::cleanup() {
     if(mOptions->split.enabled && mOptions->split.byFileNumber)
         writeEmptyFilesForSplitting();
     deleteWriter();
-    if(mInputList) {
-        delete mInputList;
-        mInputList = NULL;
+    if(mLeftInputList) {
+        delete mLeftInputList;
+        mLeftInputList = NULL;
+    }
+    if(mRightInputList) {
+        delete mRightInputList;
+        mRightInputList = NULL;
     }
 }
 
 
 void ThreadConfig::setInputList(SingleProducerSingleConsumerList<ReadPack*>* list) {
-    mInputList = list;
+    mLeftInputList = list;
+}
+
+void ThreadConfig::setInputList(SingleProducerSingleConsumerList<ReadPack*>* left, SingleProducerSingleConsumerList<ReadPack*>* right) {
+    mLeftInputList = left;
+    mRightInputList = right;
 }
 
 void ThreadConfig::deleteWriter() {

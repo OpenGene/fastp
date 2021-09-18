@@ -418,7 +418,7 @@ void SingleEndProcessor::producerTask()
 
 void SingleEndProcessor::consumerTask(ThreadConfig* config)
 {
-    SingleProducerSingleConsumerList<ReadPack*>* input = config->input();
+    SingleProducerSingleConsumerList<ReadPack*>* input = config->getLeftInput();
     while(true) {
         if(config->canBeStopped()){
             mFinishedThreads++;
