@@ -15,25 +15,9 @@
 #include "umiprocessor.h"
 #include "writerthread.h"
 #include "duplicate.h"
+#include "singleproducersingleconsumerlist.h"
 
 using namespace std;
-
-struct ReadPack {
-    Read** data;
-    int count;
-};
-
-typedef struct ReadPack ReadPack;
-
-struct ReadRepository {
-    ReadPack** packBuffer;
-    atomic_long readPos;
-    atomic_long writePos;
-    //std::mutex mtx;
-    //std::mutex readCounterMtx;
-    //std::condition_variable repoNotFull;
-    //std::condition_variable repoNotEmpty;
-};
 
 typedef struct ReadRepository ReadRepository;
 
@@ -58,7 +42,6 @@ private:
 
 private:
     Options* mOptions;
-    ReadRepository mRepo;
     atomic_bool mProduceFinished;
     atomic_int mFinishedThreads;
     std::mutex mInputMtx;
@@ -70,6 +53,8 @@ private:
     WriterThread* mLeftWriter;
     WriterThread* mFailedWriter;
     Duplicate* mDuplicate;
+    SingleProducerSingleConsumerList<ReadPack*>** mInputLists;
+    size_t mPackCounter;
 };
 
 

@@ -9,6 +9,7 @@
 #include "writer.h"
 #include "options.h"
 #include "filterresult.h"
+#include "singleproducersingleconsumerlist.h"
 
 using namespace std;
 
@@ -42,6 +43,10 @@ public:
     bool canBeStopped();
     void cleanup();
 
+    // input list
+    void setInputList(SingleProducerSingleConsumerList<ReadPack*>* list);
+    SingleProducerSingleConsumerList<ReadPack*>* input(){return mInputList;}
+
 private:
     void deleteWriter();
     void writeEmptyFilesForSplitting();
@@ -55,6 +60,7 @@ private:
     Writer* mWriter2;
     Options* mOptions;
     FilterResult* mFilterResult;
+    SingleProducerSingleConsumerList<ReadPack*>* mInputList;
 
     // for spliting output
     int mThreadId;

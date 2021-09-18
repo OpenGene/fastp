@@ -59,4 +59,11 @@ public:
     static bool test();
 };
 
+struct ReadPack {
+    Read** data;
+    int count;
+};
+
+typedef struct ReadPack ReadPack;
+
 #endif

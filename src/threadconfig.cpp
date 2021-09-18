@@ -31,6 +31,15 @@ void ThreadConfig::cleanup() {
     if(mOptions->split.enabled && mOptions->split.byFileNumber)
         writeEmptyFilesForSplitting();
     deleteWriter();
+    if(mInputList) {
+        delete mInputList;
+        mInputList = NULL;
+    }
+}
+
+
+void ThreadConfig::setInputList(SingleProducerSingleConsumerList<ReadPack*>* list) {
+    mInputList = list;
 }
 
 void ThreadConfig::deleteWriter() {
