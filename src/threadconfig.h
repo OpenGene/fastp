@@ -45,7 +45,7 @@ public:
 
     // input list
     void setInputList(SingleProducerSingleConsumerList<ReadPack*>* list);
-    void setInputList(SingleProducerSingleConsumerList<ReadPack*>* left, SingleProducerSingleConsumerList<ReadPack*>* right);
+    void setInputListPair(SingleProducerSingleConsumerList<ReadPack*>* left, SingleProducerSingleConsumerList<ReadPack*>* right);
     SingleProducerSingleConsumerList<ReadPack*>* getLeftInput(){return mLeftInputList;}
     SingleProducerSingleConsumerList<ReadPack*>* getRightInput(){return mRightInputList;}
 

@@ -20,23 +20,6 @@
 
 using namespace std;
 
-struct ReadPairPack {
-    ReadPair** data;
-    int count;
-};
-
-typedef struct ReadPairPack ReadPairPack;
-
-struct ReadPairRepository {
-    ReadPairPack** packBuffer;
-    atomic_long readPos;
-    atomic_long writePos;
-    //std::mutex mtx;
-    //std::mutex readCounterMtx;
-    //std::condition_variable repoNotFull;
-    //std::condition_variable repoNotEmpty;
-};
-
 typedef struct ReadPairRepository ReadPairRepository;
 
 class PairEndProcessor{
@@ -46,13 +29,10 @@ public:
     bool process();
 
 private:
-    bool processPairEnd(ReadPairPack* pack, ThreadConfig* config);
+    bool processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config);
     bool processRead(Read* r, ReadPair* originalRead, bool reversed);
-    void initPackRepository();
-    void destroyPackRepository();
-    void producePack(ReadPairPack* pack);
-    void consumePack(ThreadConfig* config);
-    void producerTask();
+    void readerTask(bool isLeft);
+    void interleavedReaderTask();
     void consumerTask(ThreadConfig* config);
     void initConfig(ThreadConfig* config);
     void initOutput();
@@ -62,7 +42,6 @@ private:
     void writeTask(WriterThread* config);
 
 private:
-    ReadPairRepository mRepo;
     atomic_bool mProduceFinished;
     atomic_int mFinishedThreads;
     std::mutex mOutputMtx;
@@ -83,6 +62,10 @@ private:
     WriterThread* mFailedWriter;
     WriterThread* mOverlappedWriter;
     Duplicate* mDuplicate;
+    SingleProducerSingleConsumerList<ReadPack*>** mLeftInputLists;
+    SingleProducerSingleConsumerList<ReadPack*>** mRightInputLists;
+    size_t mLeftPackCounter;
+    size_t mRightPackCounter;
 };
 
 

@@ -48,7 +48,7 @@ void ThreadConfig::setInputList(SingleProducerSingleConsumerList<ReadPack*>* lis
     mLeftInputList = list;
 }
 
-void ThreadConfig::setInputList(SingleProducerSingleConsumerList<ReadPack*>* left, SingleProducerSingleConsumerList<ReadPack*>* right) {
+void ThreadConfig::setInputListPair(SingleProducerSingleConsumerList<ReadPack*>* left, SingleProducerSingleConsumerList<ReadPack*>* right) {
     mLeftInputList = left;
     mRightInputList = right;
 }
