@@ -23,10 +23,14 @@ LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_F
 ${BIN_TARGET}:${OBJ}
 	$(CXX) $(OBJ) -o $@ $(LD_FLAGS)
 
+static:${OBJ}
+	$(CC) $(OBJ) -static -lisal -lz -lpthread -o ${BIN_TARGET}
+
 ${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp make_obj_dir
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 .PHONY:clean
+.PHONY:static
 clean:
 	@if test -d $(DIR_OBJ) ; \
 	then \
