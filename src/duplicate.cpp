@@ -22,8 +22,8 @@ Duplicate::Duplicate(Options* opt) {
     mOffsetMask = PRIME_ARRAY_LEN * mBufNum - 1;
 
     mBufLenInBits = mBufLenInBytes << 3;
-    mDupBuf = new uint8[mBufLenInBytes * mBufNum];
-    memset(mDupBuf, 0, sizeof(uint8) * mBufLenInBytes * mBufNum);
+    mDupBuf = new atomic_uchar[mBufLenInBytes * mBufNum];
+    memset(mDupBuf, 0, sizeof(atomic_uchar) * mBufLenInBytes * mBufNum);
 
     mPrimeArrays = new uint64[mBufNum * PRIME_ARRAY_LEN];
     memset(mPrimeArrays, 0, sizeof(uint64) * mBufNum * PRIME_ARRAY_LEN);
@@ -129,8 +129,9 @@ bool Duplicate::applyBloomFilter(uint64* positions) {
         uint32 bitOffset = pos & 0x07;
         uint8 byte = (0x01) << bitOffset;
 
-        isDup = isDup && (mDupBuf[i * mBufLenInBytes + bytePos] & byte);
-        mDupBuf[i * mBufLenInBytes + bytePos] |= byte;
+        //isDup = isDup && (mDupBuf[i * mBufLenInBytes + bytePos] & byte);
+        uint8 ret = atomic_fetch_or(mDupBuf + i * mBufLenInBytes + bytePos, byte);
+        isDup = (ret & byte) != 0;
     }
     return isDup;
 }

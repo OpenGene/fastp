@@ -7,6 +7,7 @@
 #include "read.h"
 #include "options.h"
 #include "common.h"
+#include <atomic>
 
 using namespace std;
 
@@ -30,10 +31,10 @@ private:
     uint64 mBufLenInBits;
     uint64 mBufLenInBytes;
     uint32 mBufNum;
-    uint8* mDupBuf;
+    atomic_uchar* mDupBuf;
     uint64* mPrimeArrays;
-    uint64 mTotalReads;
-    uint64 mDupReads;
+    atomic_ulong mTotalReads;
+    atomic_ulong mDupReads;
     uint64 mOffsetMask;
     
 };
