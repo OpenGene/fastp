@@ -2,6 +2,7 @@
 #include "overlapanalysis.h"
 #include <memory.h>
 #include <math.h>
+#include "util.h"
 
 const int PRIME_ARRAY_LEN = 1<<9;
 
@@ -12,17 +13,46 @@ Duplicate::Duplicate(Options* opt) {
     mBufLenInBytes = 1L <<29;
     mBufNum = 2;
 
-    // if deduplication is enabled, we double the buffer size and buffer number to make more accurate deduplication
-    // this will take 4x memory (4G)
-    if(mOptions->duplicate.dedup) {
-        mBufLenInBytes *= 2;
-        mBufNum *= 2;
+    // the memory usage increases as the accuracy level increases
+    // level 1: 1G
+    // level 2: 2G
+    // level 3: 4G
+    // level 4: 8G
+    // level 5: 16G
+    // level 6: 32G
+    switch(mOptions->duplicate.accuracyLevel) {
+        case 1:
+            break;
+        case 2:
+            mBufLenInBytes *= 2;
+            break;
+        case 3:
+            mBufLenInBytes *= 2;
+            mBufNum *= 2;
+            break;
+        case 4:
+            mBufLenInBytes *= 4;
+            mBufNum *= 2;
+            break;
+        case 5:
+            mBufLenInBytes *= 4;
+            mBufNum *= 4;
+            break;
+        case 6:
+            mBufLenInBytes *= 8;
+            mBufNum *= 4;
+            break;
+        default:
+            break;
     }
 
     mOffsetMask = PRIME_ARRAY_LEN * mBufNum - 1;
 
     mBufLenInBits = mBufLenInBytes << 3;
     mDupBuf = new atomic_uchar[mBufLenInBytes * mBufNum];
+    if(!mDupBuf) {
+        error_exit("Out of memory, failed to allocate " + to_string(mBufLenInBytes * mBufNum) + " bytes buffer for duplication analysis, please reduce the dup_accuracy_level and try again.");
+    }
     memset(mDupBuf, 0, sizeof(atomic_uchar) * mBufLenInBytes * mBufNum);
 
     mPrimeArrays = new uint64[mBufNum * PRIME_ARRAY_LEN];

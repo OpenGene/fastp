@@ -35,7 +35,6 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out1", 'o', "read1 output file name", false, "");
     cmd.add<string>("in2", 'I', "read2 input file name", false, "");
     cmd.add<string>("out2", 'O', "read2 output file name", false, "");
-    cmd.add("dedup", 'D', "enable deduplication to drop the duplicated reads/pairs");
     cmd.add<string>("unpaired1", 0, "for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it.", false, "");
     cmd.add<string>("unpaired2", 0, "for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --unpaired1 (default mode), both unpaired reads will be written to this same file.", false, "");
     cmd.add<string>("overlapped_out", 0, "for each read pair, output the overlapped region if it has no any mismatched base.", false, "");
@@ -50,7 +49,6 @@ int main(int argc, char* argv[]){
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
     cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
-    cmd.add("dont_eval_duplication", 0, "don't evaluate duplication rate to save time and use less memory.");
     cmd.add("fix_mgi_id", 0, "the MGI FASTQ ID format is not compatible with many BAM operation tools, enable this option to fix it.");
     cmd.add("verbose", 'V', "output verbose log information (i.e. when every 1M reads are processed).");
 
@@ -68,6 +66,11 @@ int main(int argc, char* argv[]){
     cmd.add<int>("trim_front2", 'F', "trimming how many bases in front for read2. If it's not specified, it will follow read1's settings", false, 0);
     cmd.add<int>("trim_tail2", 'T', "trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings", false, 0);
     cmd.add<int>("max_len2", 'B', "if read2 is longer than max_len2, then trim read2 at its tail to make it as long as max_len2. Default 0 means no limitation. If it's not specified, it will follow read1's settings", false, 0);
+
+    // duplication evaluation and deduplication
+    cmd.add("dedup", 'D', "enable deduplication to drop the duplicated reads/pairs");
+    cmd.add<int>("dup_calc_accuracy", 0, "accuracy level to calculate duplication (1~6), higher level uses more memory (1G, 2G, 4G, 8G, 16G, 32G). Default 1 for no-dedup mode, and 3 for dedup mode.", false);
+    cmd.add("dont_eval_duplication", 0, "don't evaluate duplication rate to save time and use less memory.");
 
     // polyG tail trimming
     cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
@@ -167,7 +170,6 @@ int main(int argc, char* argv[]){
     opt.in2 = cmd.get<string>("in2");
     opt.out1 = cmd.get<string>("out1");
     opt.out2 = cmd.get<string>("out2");
-    opt.duplicate.dedup = cmd.exist("dedup");
     opt.unpaired1 = cmd.get<string>("unpaired1");
     opt.unpaired2 = cmd.get<string>("unpaired2");
     opt.failedOut = cmd.get<string>("failed_out");
@@ -184,7 +186,18 @@ int main(int argc, char* argv[]){
     opt.interleavedInput = cmd.exist("interleaved_in");
     opt.verbose = cmd.exist("verbose");
     opt.fixMGI = cmd.exist("fix_mgi_id");
+
+    // duplication evaluation and deduplication
+    opt.duplicate.dedup = cmd.exist("dedup");
     opt.duplicate.enabled = !cmd.exist("dont_eval_duplication") || cmd.exist("dedup") ;
+    if(!cmd.exist("dup_calc_accuracy")) {
+        if(opt.duplicate.dedup)
+            opt.duplicate.accuracyLevel = 3;
+        else
+            opt.duplicate.accuracyLevel = 1;
+    } else {
+        opt.duplicate.accuracyLevel = min(6, max(1, cmd.get<int>("dup_calc_accuracy")));
+    }
 
     // merge PE
     opt.merge.enabled = cmd.exist("merge");

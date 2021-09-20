@@ -33,15 +33,15 @@ class DuplicationOptions {
 public:
     DuplicationOptions() {
         enabled = true;
-        keylen = 12;
         histSize = 32;
         dedup = false;
+        accuracyLevel = 1;
     }
 public:
     bool enabled;
-    int keylen;
     int histSize;
     bool dedup;
+    int accuracyLevel;
 };
 
 class IndexFilterOptions {

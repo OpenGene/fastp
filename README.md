@@ -345,12 +345,12 @@ Same as the [base correction feature](#base-correction-for-pe-data), this functi
 For both SE and PE data, fastp supports evaluating its duplication rate and removing duplicated reads/pairs. fastp considers one read as duplicated only if its all base pairs are identical as another one. This meas if there is a sequencing error or an N base, the read will not be treated as duplicated.
 
 ## duplication rate evaluation
-By default, fastp evaluates duplication rate, and this module may use 1G memory and take 10% ~ 20% more running time. If you dont need the duplication rate information, you can set `--dont_eval_duplication` to disable the duplication evaluation. But please be noted that, if deduplication (`--dedup`) option is enabled, then `--dont_eval_duplication` option is ignored.
+By default, fastp evaluates duplication rate, and this module may use 1G memory and take 10% ~ 20% more running time. If you don't need the duplication rate information, you can set `--dont_eval_duplication` to disable the duplication evaluation. But please be noted that, if deduplication (`--dedup`) option is enabled, then `--dont_eval_duplication` option is ignored.
 
-For the reason of performance, fastp doesn't apply thread synchronization for duplication calculation. So the evaluated duplication rate can vary slightly (~0.1%) when you run fastp with the data multiple times. If you want to get stable reproduced result, please use only worker thread (`-w 1`).
+fastp uses a hash algorithm to find the identical sequences. Due to the possible hash collision, about 0.01% of the total reads may be wrongly recognized as deduplicated reads. Normally this may not impact the downstream analysis. The accuracy of calculating duplication can be improved by increasing the hash buffer number or enlarge the buffer size. The option `--dup_calc_accuracy` can be used to specify the level (1 ~ 6). The higher level means more memory usage and more running time.
 
 ## deduplication
-Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. The duplication evaluation module has been improved to get more accurate result. Please also note that when deduplication is enabled, the evaluated duplication rate might be slightly different compared to the case that deduplication is not enabled. This is due to duplication evaluation module applies more calculation (and uses more memory) when deduplication is enabled.
+Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. When `--dedup` is enabled, the `dup_calc_accracy` level is default to `3`, and it can be changed to any value of 1 ~ 6.
 
 
 # all options
@@ -362,7 +362,6 @@ options:
   -o, --out1                         read1 output file name (string [=])
   -I, --in2                          read2 input file name (string [=])
   -O, --out2                           read2 output file name (string [=])
-  -D, --dedup                          enable deduplication to drop the duplicated reads/pairs
       --unpaired1                      for PE input, if read1 passed QC but read2 not, it will be written to unpaired1. Default is to discard it. (string [=])
       --unpaired2                      for PE input, if read2 passed QC but read1 not, it will be written to unpaired2. If --unpaired2 is same as --unpaired1 (default mode), both unpaired reads will be written to this same file. (string [=])
       --failed_out                     specify the file to store reads that cannot pass the filters. (string [=])
@@ -377,7 +376,6 @@ options:
       --interleaved_in                 indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.
       --reads_to_process             specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
       --dont_overwrite               don't overwrite existing files. Overwritting is allowed by default.
-      --dont_eval_duplication          don't evaluate duplication rate to save time and use less memory.
       --fix_mgi_id                     the MGI FASTQ ID format is not compatible with many BAM operation tools, enable this option to fix it.
   
   # adapter trimming options
@@ -394,6 +392,11 @@ options:
   -F, --trim_front2                    trimming how many bases in front for read2. If it's not specified, it will follow read1's settings (int [=0])
   -T, --trim_tail2                     trimming how many bases in tail for read2. If it's not specified, it will follow read1's settings (int [=0])
   -B, --max_len2                       if read2 is longer than max_len2, then trim read2 at its tail to make it as long as max_len2. Default 0 means no limitation. If it's not specified, it will follow read1's settings (int [=0])
+
+  # duplication evaluation and deduplication
+  -D, --dedup                          enable deduplication to drop the duplicated reads/pairs
+      --dup_calc_accuracy              accuracy level to calculate duplication (1~6), higher level uses more memory (1G, 2G, 4G, 8G, 16G, 32G). Default 1 for no-dedup mode, and 3 for dedup mode. (int [=0])
+      --dont_eval_duplication          don't evaluate duplication rate to save time and use less memory.
 
   # polyG tail trimming, useful for NextSeq/NovaSeq data
   -g, --trim_poly_g                  force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data
