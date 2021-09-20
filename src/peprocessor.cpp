@@ -39,8 +39,9 @@ PairEndProcessor::PairEndProcessor(Options* opt){
         mDuplicate = new Duplicate(mOptions);
     }
 
-    mLeftPackCounter = 0;
-    mRightPackCounter = 0;
+    mLeftPackReadCounter = 0;
+    mRightPackReadCounter = 0;
+    mPackProcessedCounter = 0;
 }
 
 PairEndProcessor::~PairEndProcessor() {
@@ -687,11 +688,11 @@ void PairEndProcessor::readerTask(bool isLeft)
             pack->count = count;
 
             if(isLeft) {
-                mLeftInputLists[mLeftPackCounter % mOptions->thread]->produce(pack);
-                mLeftPackCounter++;
+                mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
+                mLeftPackReadCounter++;
             } else {
-                mRightInputLists[mRightPackCounter % mOptions->thread]->produce(pack);
-                mRightPackCounter++;
+                mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
+                mRightPackReadCounter++;
             }
             data = NULL;
             if(read) {
@@ -718,22 +719,30 @@ void PairEndProcessor::readerTask(bool isLeft)
             pack->count = count;
             
             if(isLeft) {
-                mLeftInputLists[mLeftPackCounter % mOptions->thread]->produce(pack);
-                mLeftPackCounter++;
+                mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
+                mLeftPackReadCounter++;
             } else {
-                mRightInputLists[mRightPackCounter % mOptions->thread]->produce(pack);
-                mRightPackCounter++;
+                mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
+                mRightPackReadCounter++;
             }
 
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
-            // if the consumer is far behind this producer, sleep and wait to limit memory usage
-            /*while(mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT){
-                //cerr<<"sleep"<<endl;
-                slept++;
-                usleep(100);
-            }*/
+            // if the processor is far behind this reader, sleep and wait to limit memory usage
+            if(isLeft) {
+                while(mLeftPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT){
+                    //cerr<<"sleep"<<endl;
+                    slept++;
+                    usleep(100);
+                }
+            } else {
+                while(mRightPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT){
+                    //cerr<<"sleep"<<endl;
+                    slept++;
+                    usleep(100);
+                }
+            }
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
             // check this only when necessary
@@ -809,11 +818,11 @@ void PairEndProcessor::interleavedReaderTask()
             packLeft->count = count;
             packRight->count = count;
 
-            mLeftInputLists[mLeftPackCounter % mOptions->thread]->produce(packLeft);
-            mLeftPackCounter++;
+            mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
+            mLeftPackReadCounter++;
 
-            mRightInputLists[mRightPackCounter % mOptions->thread]->produce(packRight);
-            mRightPackCounter++;
+            mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
+            mRightPackReadCounter++;
 
             dataLeft = NULL;
             dataRight = NULL;
@@ -844,11 +853,11 @@ void PairEndProcessor::interleavedReaderTask()
             packLeft->count = count;
             packRight->count = count;
 
-            mLeftInputLists[mLeftPackCounter % mOptions->thread]->produce(packLeft);
-            mLeftPackCounter++;
+            mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
+            mLeftPackReadCounter++;
 
-            mRightInputLists[mRightPackCounter % mOptions->thread]->produce(packRight);
-            mRightPackCounter++;
+            mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
+            mRightPackReadCounter++;
 
             //re-initialize data for next pack
             Read** dataLeft = new Read*[PACK_SIZE];
@@ -856,10 +865,11 @@ void PairEndProcessor::interleavedReaderTask()
             memset(dataLeft, 0, sizeof(Read*)*PACK_SIZE);
             memset(dataRight, 0, sizeof(Read*)*PACK_SIZE);
             // if the consumer is far behind this producer, sleep and wait to limit memory usage
-            /*while(mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT){
+            while(mLeftPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT){
+                //cerr<<"sleep"<<endl;
                 slept++;
-                usleep(1000);
-            }*/
+                usleep(100);
+            }
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
             // check this only when necessary

@@ -62,8 +62,9 @@ private:
     Duplicate* mDuplicate;
     SingleProducerSingleConsumerList<ReadPack*>** mLeftInputLists;
     SingleProducerSingleConsumerList<ReadPack*>** mRightInputLists;
-    size_t mLeftPackCounter;
-    size_t mRightPackCounter;
+    size_t mLeftPackReadCounter;
+    size_t mRightPackReadCounter;
+    size_t mPackProcessedCounter;
 };
 
 

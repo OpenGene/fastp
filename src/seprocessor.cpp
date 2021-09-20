@@ -27,7 +27,8 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
         mDuplicate = new Duplicate(mOptions);
     }
 
-    mPackCounter = 0;
+    mPackReadCounter = 0;
+    mPackProcessedCounter = 0;
 }
 
 SingleEndProcessor::~SingleEndProcessor() {
@@ -301,6 +302,8 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     delete pack->data;
     delete pack;
 
+    mPackProcessedCounter++;
+
     return true;
 }
 
@@ -325,8 +328,8 @@ void SingleEndProcessor::readerTask()
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-            mInputLists[mPackCounter % mOptions->thread]->produce(pack);
-            mPackCounter++;
+            mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
+            mPackReadCounter++;
             data = NULL;
             if(read) {
                 delete read;
@@ -350,19 +353,19 @@ void SingleEndProcessor::readerTask()
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-            mInputLists[mPackCounter % mOptions->thread]->produce(pack);
-            mPackCounter++;
+            mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
+            mPackReadCounter++;
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
-            // if the consumer is far behind this producer, sleep and wait to limit memory usage
-            /*while(mRepo.writePos - mRepo.readPos > PACK_IN_MEM_LIMIT){
+            // if the processor is far behind this reader, sleep and wait to limit memory usage
+            while( mPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT){
                 //cerr<<"sleep"<<endl;
                 slept++;
                 usleep(100);
-            }*/
+            }
             readNum += count;
-            // if the writer threads are far behind this producer, sleep and wait
+            // if the writer threads are far behind this reader, sleep and wait
             // check this only when necessary
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
                 while(mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {

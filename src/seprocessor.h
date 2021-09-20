@@ -49,7 +49,8 @@ private:
     WriterThread* mFailedWriter;
     Duplicate* mDuplicate;
     SingleProducerSingleConsumerList<ReadPack*>** mInputLists;
-    size_t mPackCounter;
+    size_t mPackReadCounter;
+    size_t mPackProcessedCounter;
 };
 
 
