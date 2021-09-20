@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
 
     // duplication evaluation and deduplication
     cmd.add("dedup", 'D', "enable deduplication to drop the duplicated reads/pairs");
-    cmd.add<int>("dup_calc_accuracy", 0, "accuracy level to calculate duplication (1~6), higher level uses more memory (1G, 2G, 4G, 8G, 16G, 32G). Default 1 for no-dedup mode, and 3 for dedup mode.", false);
+    cmd.add<int>("dup_calc_accuracy", 0, "accuracy level to calculate duplication (1~6), higher level uses more memory (1G, 2G, 4G, 8G, 16G, 24G). Default 1 for no-dedup mode, and 3 for dedup mode.", false);
     cmd.add("dont_eval_duplication", 0, "don't evaluate duplication rate to save time and use less memory.");
 
     // polyG tail trimming

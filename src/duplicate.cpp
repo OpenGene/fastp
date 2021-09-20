@@ -19,7 +19,7 @@ Duplicate::Duplicate(Options* opt) {
     // level 3: 4G
     // level 4: 8G
     // level 5: 16G
-    // level 6: 32G
+    // level 6: 24G
     switch(mOptions->duplicate.accuracyLevel) {
         case 1:
             break;
@@ -35,12 +35,12 @@ Duplicate::Duplicate(Options* opt) {
             mBufNum *= 2;
             break;
         case 5:
-            mBufLenInBytes *= 4;
-            mBufNum *= 4;
+            mBufLenInBytes *= 8;
+            mBufNum *= 2;
             break;
         case 6:
             mBufLenInBytes *= 8;
-            mBufNum *= 4;
+            mBufNum *= 3;
             break;
         default:
             break;
