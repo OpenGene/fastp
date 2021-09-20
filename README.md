@@ -347,7 +347,16 @@ For both SE and PE data, fastp supports evaluating its duplication rate and remo
 ## duplication rate evaluation
 By default, fastp evaluates duplication rate, and this module may use 1G memory and take 10% ~ 20% more running time. If you don't need the duplication rate information, you can set `--dont_eval_duplication` to disable the duplication evaluation. But please be noted that, if deduplication (`--dedup`) option is enabled, then `--dont_eval_duplication` option is ignored.
 
-fastp uses a hash algorithm to find the identical sequences. Due to the possible hash collision, about 0.01% of the total reads may be wrongly recognized as deduplicated reads. Normally this may not impact the downstream analysis. The accuracy of calculating duplication can be improved by increasing the hash buffer number or enlarge the buffer size. The option `--dup_calc_accuracy` can be used to specify the level (1 ~ 6). The higher level means more memory usage and more running time.
+fastp uses a hash algorithm to find the identical sequences. Due to the possible hash collision, about 0.01% of the total reads may be wrongly recognized as deduplicated reads. Normally this may not impact the downstream analysis. The accuracy of calculating duplication can be improved by increasing the hash buffer number or enlarge the buffer size. The option `--dup_calc_accuracy` can be used to specify the level (1 ~ 6). The higher level means more memory usage and more running time. Please refer to following table:
+
+| dup_calc_accuracy level | hash  buffer number | buffer size | memory usage | speed | |
+|- | - | - | - | - | - |
+| 1 | 1 | 1G | 1G | ultra-fast | default for no-dedup mode |
+| 2 | 1 | 2G | 2G | fast | |
+| 3 | 2 | 2G | 4G | fast | default for dedup|
+| 4 | 2 | 4G | 8G | fast | |
+| 5 | 2 | 8G | 12G | fast | |
+| 6 | 3 | 8G | 24G | moderate | |
 
 ## deduplication
 Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. When `--dedup` is enabled, the `dup_calc_accracy` level is default to `3`, and it can be changed to any value of 1 ~ 6.
