@@ -638,6 +638,8 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
     delete leftPack;
     delete rightPack;
 
+    mPackProcessedCounter++;
+
     return true;
 }
     
