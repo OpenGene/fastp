@@ -71,8 +71,6 @@ bool SingleEndProcessor::process(){
     if(!mOptions->split.enabled)
         initOutput();
 
-    std::thread readerThread(std::bind(&SingleEndProcessor::readerTask, this));
-
     mInputLists = new SingleProducerSingleConsumerList<ReadPack*>*[mOptions->thread];
 
     //TODO: get the correct cycles
@@ -84,6 +82,8 @@ bool SingleEndProcessor::process(){
         configs[t]->setInputList(mInputLists[t]);
         initConfig(configs[t]);
     }
+
+    std::thread readerThread(std::bind(&SingleEndProcessor::readerTask, this));
 
     std::thread** threads = new thread*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){

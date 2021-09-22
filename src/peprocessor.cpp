@@ -126,13 +126,6 @@ bool PairEndProcessor::process(){
     std::thread* producerRight = NULL;
     std::thread* producerInterveleaved = NULL;
 
-    if(mOptions->interleavedInput)
-        producerInterveleaved= new std::thread(std::bind(&PairEndProcessor::interleavedReaderTask, this));
-    else {
-        producerLeft = new std::thread(std::bind(&PairEndProcessor::readerTask, this, true));
-        producerRight = new std::thread(std::bind(&PairEndProcessor::readerTask, this, false));
-    }
-
     mLeftInputLists = new SingleProducerSingleConsumerList<ReadPack*>*[mOptions->thread];
     mRightInputLists = new SingleProducerSingleConsumerList<ReadPack*>*[mOptions->thread];
 
@@ -145,6 +138,13 @@ bool PairEndProcessor::process(){
         configs[t] = new ThreadConfig(mOptions, t, true);
         configs[t]->setInputListPair(mLeftInputLists[t], mRightInputLists[t]);
         initConfig(configs[t]);
+    }
+
+    if(mOptions->interleavedInput)
+        producerInterveleaved= new std::thread(std::bind(&PairEndProcessor::interleavedReaderTask, this));
+    else {
+        producerLeft = new std::thread(std::bind(&PairEndProcessor::readerTask, this, true));
+        producerRight = new std::thread(std::bind(&PairEndProcessor::readerTask, this, false));
     }
 
     std::thread** threads = new thread*[mOptions->thread];
