@@ -27,10 +27,6 @@ public:
 
     void initWriter(string filename1);
     void initWriter(string filename1, string filename2);
-    void initWriter(ofstream* stream);
-    void initWriter(ofstream* stream1, ofstream* stream2);
-    void initWriter(gzFile gzfile);
-    void initWriter(gzFile gzfile1, gzFile gzfile2);
 
     void addFilterResult(int result, int readNum);
     void addMergedPairs(int pairs);

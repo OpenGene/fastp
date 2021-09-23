@@ -17,10 +17,6 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mProduceFinished = false;
     mFinishedThreads = 0;
     mFilter = new Filter(opt);
-    mOutStream1 = NULL;
-    mZipFile1 = NULL;
-    mOutStream2 = NULL;
-    mZipFile2 = NULL;
     mUmiProcessor = new UmiProcessor(opt);
 
     int isizeBufLen = mOptions->insertSizeMax + 1;

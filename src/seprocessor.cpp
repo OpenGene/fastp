@@ -16,8 +16,6 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
     mProduceFinished = false;
     mFinishedThreads = 0;
     mFilter = new Filter(opt);
-    mOutStream = NULL;
-    mZipFile = NULL;
     mUmiProcessor = new UmiProcessor(opt);
     mLeftWriter =  NULL;
     mFailedWriter = NULL;

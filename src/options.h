@@ -375,6 +375,8 @@ public:
     bool verbose;
     // merge options
     MergeOptions merge;
+    // the buffer size for writer
+    size_t writerBufferSize;
 
 };
 

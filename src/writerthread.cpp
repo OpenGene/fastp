@@ -67,17 +67,7 @@ void WriterThread::deleteWriter() {
 
 void WriterThread::initWriter(string filename1) {
     deleteWriter();
-    mWriter1 = new Writer(filename1, mOptions->compression);
-}
-
-void WriterThread::initWriter(ofstream* stream) {
-    deleteWriter();
-    mWriter1 = new Writer(stream);
-}
-
-void WriterThread::initWriter(gzFile gzfile) {
-    deleteWriter();
-    mWriter1 = new Writer(gzfile);
+    mWriter1 = new Writer(mOptions, filename1, mOptions->compression);
 }
 
 long WriterThread::bufferLength(){

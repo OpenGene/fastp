@@ -42,8 +42,6 @@ private:
     atomic_int mFinishedThreads;
     std::mutex mOutputMtx;
     Filter* mFilter;
-    gzFile mZipFile;
-    ofstream* mOutStream;
     UmiProcessor* mUmiProcessor;
     WriterThread* mLeftWriter;
     WriterThread* mFailedWriter;

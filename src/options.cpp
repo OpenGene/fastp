@@ -27,6 +27,7 @@ Options::Options(){
     seqLen1 = 151;
     seqLen2 = 151;
     fixMGI = false;
+    writerBufferSize = 0x01L<<22; // 4M writer buffer for per output by default
 }
 
 void Options::init() {

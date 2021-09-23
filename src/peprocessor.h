@@ -46,10 +46,6 @@ private:
     std::mutex mOutputMtx;
     Options* mOptions;
     Filter* mFilter;
-    gzFile mZipFile1;
-    gzFile mZipFile2;
-    ofstream* mOutStream1;
-    ofstream* mOutStream2;
     UmiProcessor* mUmiProcessor;
     atomic_long* mInsertSizeHist;
     WriterThread* mLeftWriter;

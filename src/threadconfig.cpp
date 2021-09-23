@@ -66,35 +66,13 @@ void ThreadConfig::deleteWriter() {
 
 void ThreadConfig::initWriter(string filename1) {
     deleteWriter();
-    mWriter1 = new Writer(filename1, mOptions->compression);
+    mWriter1 = new Writer(mOptions, filename1, mOptions->compression);
 }
 
 void ThreadConfig::initWriter(string filename1, string filename2) {
     deleteWriter();
-    mWriter1 = new Writer(filename1, mOptions->compression);
-    mWriter2 = new Writer(filename2, mOptions->compression);
-}
-
-void ThreadConfig::initWriter(ofstream* stream) {
-    deleteWriter();
-    mWriter1 = new Writer(stream);
-}
-
-void ThreadConfig::initWriter(ofstream* stream1, ofstream* stream2) {
-    deleteWriter();
-    mWriter1 = new Writer(stream1);
-    mWriter2 = new Writer(stream2);
-}
-
-void ThreadConfig::initWriter(gzFile gzfile) {
-    deleteWriter();
-    mWriter1 = new Writer(gzfile);
-}
-
-void ThreadConfig::initWriter(gzFile gzfile1, gzFile gzfile2) {
-    deleteWriter();
-    mWriter1 = new Writer(gzfile1);
-    mWriter2 = new Writer(gzfile2);
+    mWriter1 = new Writer(mOptions, filename1, mOptions->compression);
+    mWriter2 = new Writer(mOptions, filename2, mOptions->compression);
 }
 
 void ThreadConfig::addFilterResult(int result, int readNum) {
