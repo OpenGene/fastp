@@ -9,6 +9,7 @@
 #include "options.h"
 #include <atomic>
 #include <mutex>
+#include "singleproducersingleconsumerlist.h"
 
 using namespace std;
 
@@ -18,15 +19,16 @@ public:
     ~WriterThread();
 
     void initWriter(string filename1);
+    void initBufferLists();
 
     void cleanup();
 
     bool isCompleted();
     void output();
-    void input(char* data, size_t size);
+    void input(int tid, string* data);
     bool setInputCompleted();
 
-    long bufferLength();
+    long bufferLength() {return mBufferLength;};
     string getFilename() {return mFilename;}
 
 private:
@@ -39,13 +41,9 @@ private:
 
     // for spliting output
     bool mInputCompleted;
-    atomic_long mInputCounter;
-    atomic_long mOutputCounter;
-    char** mRingBuffer;
-    size_t* mRingBufferSizes;
-
-    mutex mtx;
-
+    atomic_long mBufferLength;
+    SingleProducerSingleConsumerList<string*>** mBufferLists;
+    int mWorkingBufferList;
 };
 
 #endif

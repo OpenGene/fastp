@@ -43,6 +43,7 @@ public:
 	bool isZipped();
 	bool write(const char* strdata, size_t size);
 	bool writeString(const string& str);
+	bool writeString(string* str);
 	void flush();
 	string filename();
 

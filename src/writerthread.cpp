@@ -8,50 +8,49 @@ WriterThread::WriterThread(Options* opt, string filename){
 
     mWriter1 = NULL;
 
-    mInputCounter = 0;
-    mOutputCounter = 0;
     mInputCompleted = false;
     mFilename = filename;
 
-    mRingBuffer = new char*[PACK_NUM_LIMIT];
-    memset(mRingBuffer, 0, sizeof(char*) * PACK_NUM_LIMIT);
-    mRingBufferSizes = new size_t[PACK_NUM_LIMIT];
-    memset(mRingBufferSizes, 0, sizeof(size_t) * PACK_NUM_LIMIT);
     initWriter(filename);
+    initBufferLists();
+    mWorkingBufferList = 0; // 0 ~ mOptions->thread-1
+    mBufferLength = 0;
 }
 
 WriterThread::~WriterThread() {
     cleanup();
-    delete mRingBuffer;
 }
 
 bool WriterThread::isCompleted() 
 {
-    return mInputCompleted && (mOutputCounter == mInputCounter);
+    return mInputCompleted && (mBufferLength==0);
 }
 
 bool WriterThread::setInputCompleted() {
     mInputCompleted = true;
+    for(int t=0; t<mOptions->thread; t++) {
+        mBufferLists[t]->setProducerFinished();
+    }
     return true;
 }
 
 void WriterThread::output(){
-    if(mOutputCounter >= mInputCounter) {
+    SingleProducerSingleConsumerList<string*>* list =  mBufferLists[mWorkingBufferList];
+    if(!list->canBeConsumed()) {
         usleep(100);
-    }
-    while( mOutputCounter < mInputCounter) 
-    {
-        mWriter1->write(mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]);
-        delete mRingBuffer[mOutputCounter];
-        mRingBuffer[mOutputCounter] = NULL;
-        mOutputCounter++;
+    } else {
+        string* str = list->consume();
+        mWriter1->write(str->data(), str->length());
+        delete str;
+        mBufferLength--;
+        mWorkingBufferList = (mWorkingBufferList+1)%mOptions->thread;
     }
 }
 
-void  WriterThread::input(char* data, size_t size){
-    mRingBuffer[mInputCounter] = data;
-    mRingBufferSizes[mInputCounter] = size;
-    mInputCounter++;
+
+void WriterThread::input(int tid, string* data) {
+    mBufferLists[tid]->produce(data);
+    mBufferLength++;
 }
 
 void WriterThread::cleanup() {
@@ -70,6 +69,9 @@ void WriterThread::initWriter(string filename1) {
     mWriter1 = new Writer(mOptions, filename1, mOptions->compression);
 }
 
-long WriterThread::bufferLength(){
-    return mInputCounter - mOutputCounter;
+void WriterThread::initBufferLists() {
+    mBufferLists = new SingleProducerSingleConsumerList<string*>*[mOptions->thread];
+    for(int t=0; t<mOptions->thread; t++) {
+        mBufferLists[t] = new SingleProducerSingleConsumerList<string*>();
+    }
 }

@@ -43,7 +43,6 @@ private:
 private:
     atomic_bool mProduceFinished;
     atomic_int mFinishedThreads;
-    std::mutex mOutputMtx;
     Options* mOptions;
     Filter* mFilter;
     UmiProcessor* mUmiProcessor;

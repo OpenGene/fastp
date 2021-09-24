@@ -335,14 +335,17 @@ int PairEndProcessor::getPeakInsertSize() {
 
 bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config){
     assert(leftPack->count == rightPack->count);
-    string outstr1;
-    string outstr2;
-    string unpairedOut1;
-    string unpairedOut2;
-    string singleOutput;
-    string mergedOutput;
-    string failedOut;
-    string overlappedOut;
+    int tid = config->getThreadId();
+
+    string* outstr1 = new string();
+    string* outstr2 = new string();
+    string* unpairedOut1 = new string();
+    string* unpairedOut2 = new string();
+    string* singleOutput = new string();
+    string* mergedOutput = new string();
+    string* failedOut = new string();
+    string* overlappedOut = new string();
+
     int readPassed = 0;
     int mergedCount = 0;
     for(int p=0;p<leftPack->count;p++){
@@ -424,7 +427,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, 0);
             if(ov.overlapped) {
                 Read* overlappedRead = new Read(r1->mName, new string(r1->mSeq->substr(max(0,ov.offset)), ov.overlap_len), r1->mStrand, new string(r1->mQuality->substr(max(0,ov.offset)), ov.overlap_len));
-                overlappedOut += overlappedRead->toString();
+                overlappedOut -> append(overlappedRead->toString());
                 delete overlappedRead;
             }
         }
@@ -457,7 +460,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 int result = mFilter->passFilter(merged);
                 config->addFilterResult(result, 2);
                 if(result == PASS_FILTER) {
-                    mergedOutput += merged->toString();
+                    mergedOutput->append(merged->toString());
                     config->getPostStats1()->statRead(merged);
                     readPassed++;
                     mergedCount++;
@@ -468,14 +471,14 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 int result1 = mFilter->passFilter(r1);
                 config->addFilterResult(result1, 1);
                 if(result1 == PASS_FILTER && !dedupOut) {
-                    mergedOutput += r1->toString();
+                    mergedOutput->append(r1->toString());
                     config->getPostStats1()->statRead(r1);
                 }
 
                 int result2 = mFilter->passFilter(r2);
                 config->addFilterResult(result2, 1);
                 if(result2 == PASS_FILTER && !dedupOut) {
-                    mergedOutput += r2->toString();
+                    mergedOutput->append(r2->toString());
                     config->getPostStats1()->statRead(r2);
                 }
                 if(result1 == PASS_FILTER && result2 == PASS_FILTER )
@@ -496,10 +499,10 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
                     
                     if(mOptions->outputToSTDOUT && !mOptions->merge.enabled) {
-                        singleOutput += r1->toString() + r2->toString();
+                        singleOutput->append(r1->toString() + r2->toString());
                     } else {
-                        outstr1 += r1->toString();
-                        outstr2 += r2->toString();
+                        outstr1->append(r1->toString());
+                        outstr2->append(r2->toString());
                     }
 
                     // stats the read after filtering
@@ -511,24 +514,24 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                     readPassed++;
                 } else if( r1 != NULL &&  result1 == PASS_FILTER) {
                     if(mUnpairedLeftWriter) {
-                        unpairedOut1 += r1->toString();
+                        unpairedOut1->append(r1->toString());
                         if(mFailedWriter)
-                            failedOut += or2->toStringWithTag(FAILED_TYPES[result2]);
+                            failedOut->append(or2->toStringWithTag(FAILED_TYPES[result2]));
                     } else {
                         if(mFailedWriter) {
-                            failedOut += or1->toStringWithTag("paired_read_is_failing");
-                            failedOut += or2->toStringWithTag(FAILED_TYPES[result2]);
+                            failedOut->append(or1->toStringWithTag("paired_read_is_failing"));
+                            failedOut->append(or2->toStringWithTag(FAILED_TYPES[result2]));
                         }
                     }
                 } else if( r2 != NULL && result2 == PASS_FILTER) {
                     if(mUnpairedLeftWriter || mUnpairedRightWriter) {
-                        unpairedOut2 += r2->toString();
+                        unpairedOut2->append(r2->toString());
                         if(mFailedWriter)
-                            failedOut += or1->toStringWithTag(FAILED_TYPES[result1]);
+                            failedOut->append(or1->toStringWithTag(FAILED_TYPES[result1]));
                     } else {
                         if(mFailedWriter) {
-                            failedOut += or1->toStringWithTag(FAILED_TYPES[result1]);
-                            failedOut += or2->toStringWithTag("paired_read_is_failing");
+                            failedOut->append(or1->toStringWithTag(FAILED_TYPES[result1]));
+                            failedOut->append(or2->toStringWithTag("paired_read_is_failing"));
                         }
                     }
                 }
@@ -542,83 +545,71 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         if(r2 != or2 && r2 != NULL)
             delete r2;
     }
-    // if splitting output, then no lock is need since different threads write different files
-    if(!mOptions->split.enabled) 
-        mOutputMtx.lock();
+
     if(mOptions->outputToSTDOUT) {
         // STDOUT output
         // if it's merging mode, write the merged reads to STDOUT
         // otherwise write interleaved single output
         if(mOptions->merge.enabled)
-            fwrite(mergedOutput.c_str(), 1, mergedOutput.length(), stdout);
+            fwrite(mergedOutput->c_str(), 1, mergedOutput->length(), stdout);
         else
-            fwrite(singleOutput.c_str(), 1, singleOutput.length(), stdout);
+            fwrite(singleOutput->c_str(), 1, singleOutput->length(), stdout);
     } else if(mOptions->split.enabled) {
         // split output by each worker thread
-        if(!mOptions->out1.empty())
+        if(!mOptions->out1.empty()) 
             config->getWriter1()->writeString(outstr1);
         if(!mOptions->out2.empty())
             config->getWriter2()->writeString(outstr2);
     } 
 
-    if(mMergedWriter && !mergedOutput.empty()) {
+    if(mMergedWriter && !mergedOutput->empty()) {
         // write merged data
-        char* mdata = new char[mergedOutput.size()];
-        memcpy(mdata, mergedOutput.c_str(), mergedOutput.size());
-        mMergedWriter->input(mdata, mergedOutput.size());
+        mMergedWriter->input(tid, mergedOutput);
+        mergedOutput = NULL;
     }
 
-    if(mFailedWriter && !failedOut.empty()) {
+    if(mFailedWriter && !failedOut->empty()) {
         // write failed data
-        char* fdata = new char[failedOut.size()];
-        memcpy(fdata, failedOut.c_str(), failedOut.size());
-        mFailedWriter->input(fdata, failedOut.size());
+        mFailedWriter->input(tid, failedOut);
+        failedOut = NULL;
     }
 
-    if(mOverlappedWriter && !overlappedOut.empty()) {
+    if(mOverlappedWriter && !overlappedOut->empty()) {
         // write failed data
-        char* odata = new char[overlappedOut.size()];
-        memcpy(odata, overlappedOut.c_str(), overlappedOut.size());
-        mOverlappedWriter->input(odata, overlappedOut.size());
+        mOverlappedWriter->input(tid, overlappedOut);
+        overlappedOut = NULL;
     }
 
     // normal output by left/right writer thread
-    if(mRightWriter && mLeftWriter && (!outstr1.empty() || !outstr2.empty())) {
+    if(mRightWriter && mLeftWriter && (!outstr1->empty() || !outstr2->empty())) {
         // write PE
-        char* ldata = new char[outstr1.size()];
-        memcpy(ldata, outstr1.c_str(), outstr1.size());
-        mLeftWriter->input(ldata, outstr1.size());
+        mLeftWriter->input(tid, outstr1);
+        outstr1 = NULL;
 
-        char* rdata = new char[outstr2.size()];
-        memcpy(rdata, outstr2.c_str(), outstr2.size());
-        mRightWriter->input(rdata, outstr2.size());
-    } else if(mLeftWriter && !singleOutput.empty()) {
+        mRightWriter->input(tid, outstr2);
+        outstr2 = NULL;
+    } else if(mLeftWriter && !singleOutput->empty()) {
         // write singleOutput
-        char* ldata = new char[singleOutput.size()];
-        memcpy(ldata, singleOutput.c_str(), singleOutput.size());
-        mLeftWriter->input(ldata, singleOutput.size());
+        mLeftWriter->input(tid, singleOutput);
+        singleOutput = NULL;
     }
     // output unpaired reads
-    if (!unpairedOut1.empty() || !unpairedOut2.empty()) {
+    if (!unpairedOut1->empty() || !unpairedOut2->empty()) {
         if(mUnpairedLeftWriter && mUnpairedRightWriter) {
             // write PE
-            char* unpairedData1 = new char[unpairedOut1.size()];
-            memcpy(unpairedData1, unpairedOut1.c_str(), unpairedOut1.size());
-            mUnpairedLeftWriter->input(unpairedData1, unpairedOut1.size());
+            mUnpairedLeftWriter->input(tid, unpairedOut1);
+            unpairedOut1 = NULL;
 
-            char* unpairedData2 = new char[unpairedOut2.size()];
-            memcpy(unpairedData2, unpairedOut2.c_str(), unpairedOut2.size());
-            mUnpairedRightWriter->input(unpairedData2, unpairedOut2.size());
+            mUnpairedRightWriter->input(tid, unpairedOut2);
+            unpairedOut2 = NULL;
         } else if(mUnpairedLeftWriter) {
-            char* unpairedData = new char[unpairedOut1.size() + unpairedOut2.size() ];
-            memcpy(unpairedData, unpairedOut1.c_str(), unpairedOut1.size());
-            memcpy(unpairedData + unpairedOut1.size(), unpairedOut2.c_str(), unpairedOut2.size());
-            mUnpairedLeftWriter->input(unpairedData, unpairedOut1.size() + unpairedOut2.size());
+            mUnpairedLeftWriter->input(tid, unpairedOut1);
+            unpairedOut1 = NULL;
+
+            mUnpairedLeftWriter->input(tid, unpairedOut2);
+            unpairedOut2 = NULL;
         }
     }
-
-    if(!mOptions->split.enabled)
-        mOutputMtx.unlock();
 
     if(mOptions->split.byFileLines)
         config->markProcessed(readPassed);
@@ -628,6 +619,23 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
     if(mOptions->merge.enabled) {
         config->addMergedPairs(mergedCount);
     }
+
+    if(outstr1)
+        delete outstr1;
+    if(outstr2)
+        delete outstr2;
+    if(unpairedOut1)
+        delete unpairedOut1;
+    if(unpairedOut2)
+        delete unpairedOut2;
+    if(singleOutput)
+        delete singleOutput;
+    if(mergedOutput)
+        delete mergedOutput;
+    if(failedOut)
+        delete failedOut;
+    if(overlappedOut)
+        delete overlappedOut;
 
     delete leftPack->data;
     delete rightPack->data;

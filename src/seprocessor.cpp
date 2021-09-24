@@ -183,8 +183,10 @@ bool SingleEndProcessor::process(){
 }
 
 bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
-    string outstr;
-    string failedOut;
+    string* outstr = new string();
+    string* failedOut = new string();
+    int tid = config->getThreadId();
+
     int readPassed = 0;
     for(int p=0;p<pack->count;p++){
 
@@ -252,13 +254,13 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         if(!dedupOut) {
             if( r1 != NULL &&  result == PASS_FILTER) {
-                outstr += r1->toString();
+                outstr->append(r1->toString());
 
                 // stats the read after filtering
                 config->getPostStats1()->statRead(r1);
                 readPassed++;
             } else if(mFailedWriter) {
-                failedOut += or1->toStringWithTag(FAILED_TYPES[result]);
+                failedOut->append(or1->toStringWithTag(FAILED_TYPES[result]));
             }
         }
 
@@ -267,11 +269,9 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         if(r1 != or1 && r1 != NULL)
             delete r1;
     }
-    // if splitting output, then no lock is need since different threads write different files
-    if(!mOptions->split.enabled)
-        mOutputMtx.lock();
+
     if(mOptions->outputToSTDOUT) {
-        fwrite(outstr.c_str(), 1, outstr.length(), stdout);
+        fwrite(outstr->c_str(), 1, outstr->length(), stdout);
     } else if(mOptions->split.enabled) {
         // split output by each worker thread
         if(!mOptions->out1.empty())
@@ -279,23 +279,24 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     } 
 
     if(mLeftWriter) {
-        char* ldata = new char[outstr.size()];
-        memcpy(ldata, outstr.c_str(), outstr.size());
-        mLeftWriter->input(ldata, outstr.size());
+        mLeftWriter->input(tid, outstr);
+        outstr = NULL;
     }
-    if(mFailedWriter && !failedOut.empty()) {
+    if(mFailedWriter && !failedOut->empty()) {
         // write failed data
-        char* fdata = new char[failedOut.size()];
-        memcpy(fdata, failedOut.c_str(), failedOut.size());
-        mFailedWriter->input(fdata, failedOut.size());
+        mFailedWriter->input(tid, failedOut);
+        failedOut = NULL;
     }
-    if(!mOptions->split.enabled)
-        mOutputMtx.unlock();
 
     if(mOptions->split.byFileLines)
         config->markProcessed(readPassed);
     else
         config->markProcessed(pack->count);
+
+    if(outstr)
+        delete outstr;
+    if(failedOut)
+        delete failedOut;
 
     delete pack->data;
     delete pack;
@@ -426,7 +427,7 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
                 break;
             }
         } else {
-            usleep(10);
+            usleep(100);
         }
     }
     input->setConsumerFinished();

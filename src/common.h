@@ -70,5 +70,4 @@ const static char* FAILED_TYPES[FILTER_RESULT_TYPES] = {
 	"", "", "", ""
 };
 
-
 #endif /* COMMON_H */

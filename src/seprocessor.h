@@ -40,7 +40,6 @@ private:
     Options* mOptions;
     atomic_bool mProduceFinished;
     atomic_int mFinishedThreads;
-    std::mutex mOutputMtx;
     Filter* mFilter;
     UmiProcessor* mUmiProcessor;
     WriterThread* mLeftWriter;

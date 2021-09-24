@@ -86,6 +86,10 @@ bool Writer::writeString(const string& str) {
 	return write(str.data(), str.length());
 }
 
+bool Writer::writeString(string* str) {
+	return write(str->data(), str->length());
+}
+
 bool Writer::write(const char* strdata, size_t size) {
 	size_t written;
 	bool status;
