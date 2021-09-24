@@ -92,13 +92,21 @@ https://anaconda.org/bioconda/fastp/badges/version.svg)](https://anaconda.org/bi
 # note: the fastp version in bioconda may be not the latest
 conda install -c bioconda fastp
 ```
-## or download binary (only for Linux systems, http://opengene.org/fastp/fastp)
+## or download the latest prebuilt binary for Linux users
+this binary was compiled on CentOS, and tested on CentOS/Ubuntu
 ```shell
-# this binary was compiled on CentOS, and tested on CentOS/Ubuntu
+# download the latest build
 wget http://opengene.org/fastp/fastp
+chmod a+x ./fastp
+
+# or download specified version, i.e. fastp v0.20.1
+wget http://opengene.org/fastp/fastp.0.20.1
+mv fastp.0.20.1 fastp
 chmod a+x ./fastp
 ```
 ## or compile from source
+`fastp` depends on `libdeflate` and `libisal`.
+
 ### Step 1: download and build libisal
 See https://github.com/intel/isa-l_crypto
 ```shell
@@ -109,7 +117,17 @@ cd isa-l
 make
 sudo make install
 ```
-### Step 2: download and build fastp
+
+### step 2: download and build libdeflate
+See https://github.com/ebiggers/libdeflate
+```shell
+git clone https://github.com/ebiggers/libdeflate.git
+cd libdeflate
+make
+sudo make install
+```
+
+### Step 3: download and build fastp
 ```shell
 # get source (you can also use browser to download from master or releases)
 git clone https://github.com/OpenGene/fastp.git
@@ -121,19 +139,6 @@ make
 # Install
 sudo make install
 ```
-
-## compile from source for windows user with MinGW64-distro
-
-Get compiler from https://nuwen.net/mingw.html and install as `How to install` section.
-
-```shell
-git clone -b master --depth=1 https://github.com/OpenGene/fastp.git
-cd fastp
-make
-## add fastp to your PATH
-```
-
-`fastp` relies on `zlib` and `libisal`. If you get an error like `undefined reference to gzbuffer` when compiling `fastp`, you may have to update the `zlib` (http://zlib.net)
 
 # input and output
 `fastp` supports both single-end (SE) and paired-end (PE) input/output.
