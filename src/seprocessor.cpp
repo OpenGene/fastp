@@ -13,7 +13,7 @@
 
 SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOptions = opt;
-    mProduceFinished = false;
+    mReaderFinished = false;
     mFinishedThreads = 0;
     mFilter = new Filter(opt);
     mUmiProcessor = new UmiProcessor(opt);
@@ -71,8 +71,6 @@ bool SingleEndProcessor::process(){
 
     mInputLists = new SingleProducerSingleConsumerList<ReadPack*>*[mOptions->thread];
 
-    //TODO: get the correct cycles
-    int cycle = 151;
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
         mInputLists[t] = new SingleProducerSingleConsumerList<ReadPack*>();
@@ -321,7 +319,6 @@ void SingleEndProcessor::readerTask()
     bool needToBreak = false;
     while(true){
         Read* read = reader.read();
-        // TODO: put needToBreak here is just a WAR for resolve some unidentified dead lock issue 
         if(!read || needToBreak){
             // the last pack
             ReadPack* pack = new ReadPack;
@@ -395,7 +392,7 @@ void SingleEndProcessor::readerTask()
         mInputLists[t]->setProducerFinished();
 
     //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
-    mProduceFinished = true;
+    mReaderFinished = true;
     if(mOptions->verbose)
         loginfo("all reads loaded, start to monitor thread status");
     //lock.unlock();

@@ -86,7 +86,7 @@ void FastqReader::readToBufIgzip(){
 
 		int ret = isal_inflate(&mGzipState);
 		if (ret != ISAL_DECOMP_OK) {
-			error_exit("igzip: encountered while decompressing file");
+			error_exit("igzip: encountered while decompressing file: " + mFilename);
 		}
 		mBufDataLen = mGzipState.next_out - mGzipOutputBuffer;
 		if(eof() || mGzipState.avail_in>0)
@@ -157,7 +157,7 @@ void FastqReader::init(){
 		mGzipInputUsedBytes += mGzipState.avail_in;
 		int ret = isal_read_gzip_header(&mGzipState, &mGzipHeader);
 		if (ret != ISAL_DECOMP_OK) {
-			error_exit("igzip: Error invalid gzip header found");
+			error_exit("igzip: Error invalid gzip header found: "  + mFilename);
 		}
 		mZipped = true;
 	}

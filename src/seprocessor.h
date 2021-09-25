@@ -38,7 +38,7 @@ private:
 
 private:
     Options* mOptions;
-    atomic_bool mProduceFinished;
+    atomic_bool mReaderFinished;
     atomic_int mFinishedThreads;
     Filter* mFilter;
     UmiProcessor* mUmiProcessor;

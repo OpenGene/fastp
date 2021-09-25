@@ -14,7 +14,7 @@
 
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
-    mProduceFinished = false;
+    mReaderFinished = false;
     mFinishedThreads = 0;
     mFilter = new Filter(opt);
     mUmiProcessor = new UmiProcessor(opt);
@@ -118,15 +118,13 @@ bool PairEndProcessor::process(){
     if(!mOptions->split.enabled)
         initOutput();
 
-    std::thread* producerLeft = NULL;
-    std::thread* producerRight = NULL;
-    std::thread* producerInterveleaved = NULL;
+    std::thread* readerLeft = NULL;
+    std::thread* readerRight = NULL;
+    std::thread* readerInterveleaved = NULL;
 
     mLeftInputLists = new SingleProducerSingleConsumerList<ReadPack*>*[mOptions->thread];
     mRightInputLists = new SingleProducerSingleConsumerList<ReadPack*>*[mOptions->thread];
 
-    //TODO: get the correct cycles
-    int cycle = 151;
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
         mLeftInputLists[t] = new SingleProducerSingleConsumerList<ReadPack*>();
@@ -137,10 +135,10 @@ bool PairEndProcessor::process(){
     }
 
     if(mOptions->interleavedInput)
-        producerInterveleaved= new std::thread(std::bind(&PairEndProcessor::interleavedReaderTask, this));
+        readerInterveleaved= new std::thread(std::bind(&PairEndProcessor::interleavedReaderTask, this));
     else {
-        producerLeft = new std::thread(std::bind(&PairEndProcessor::readerTask, this, true));
-        producerRight = new std::thread(std::bind(&PairEndProcessor::readerTask, this, false));
+        readerLeft = new std::thread(std::bind(&PairEndProcessor::readerTask, this, true));
+        readerRight = new std::thread(std::bind(&PairEndProcessor::readerTask, this, false));
     }
 
     std::thread** threads = new thread*[mOptions->thread];
@@ -170,11 +168,11 @@ bool PairEndProcessor::process(){
     if(mOverlappedWriter)
         overlappedWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mOverlappedWriter));
 
-    if(producerInterveleaved) {
-        producerInterveleaved->join();
+    if(readerInterveleaved) {
+        readerInterveleaved->join();
     } else {
-        producerLeft->join();
-        producerRight->join();
+        readerLeft->join();
+        readerRight->join();
     }
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
@@ -284,11 +282,11 @@ bool PairEndProcessor::process(){
         configs[t] = NULL;
     }
 
-    if(producerInterveleaved) {
-        delete producerInterveleaved;
+    if(readerInterveleaved) {
+        delete readerInterveleaved;
     } else {
-        delete producerLeft;
-        delete producerRight;
+        delete readerLeft;
+        delete readerRight;
     }
 
     delete finalPreStats1;
@@ -686,7 +684,6 @@ void PairEndProcessor::readerTask(bool isLeft)
     bool needToBreak = false;
     while(true){
         Read* read = reader->read();
-        // TODO: put needToBreak here is just a WAR for resolve some unidentified dead lock issue 
         if(!read || needToBreak){
             // the last pack
             ReadPack* pack = new ReadPack;
@@ -785,7 +782,7 @@ void PairEndProcessor::readerTask(bool isLeft)
     }
 
     //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
-    mProduceFinished = true;
+    mReaderFinished = true;
     if(mOptions->verbose)
         loginfo("all reads loaded, start to monitor thread status");
     //lock.unlock();
@@ -905,7 +902,7 @@ void PairEndProcessor::interleavedReaderTask()
     }
 
     //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
-    mProduceFinished = true;
+    mReaderFinished = true;
     if(mOptions->verbose)
         loginfo("all reads loaded, start to monitor thread status");
     //lock.unlock();
