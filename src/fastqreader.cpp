@@ -269,7 +269,8 @@ string* FastqReader::getLine(){
 
 Read* FastqReader::read(){
 	if(mBufUsedLen >= mBufDataLen && eof()) {
-		return NULL;
+		if(!mZipped || (mZipped && mGzipState.avail_in==0))
+			return NULL;
 	}
 
 	string* name = getLine();
@@ -299,7 +300,7 @@ Read* FastqReader::read(){
 
 void FastqReader::close(){
 	if (mFile){
-		fclose(mFile);//mFile.close();
+		fclose(mFile);
 		mFile = NULL;
 	}
 }
