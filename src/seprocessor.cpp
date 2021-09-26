@@ -324,8 +324,8 @@ void SingleEndProcessor::readerTask()
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-            mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
-            mPackReadCounter++;
+            long counter = atomic_fetch_add(&mPackReadCounter, 1);
+            mInputLists[counter % mOptions->thread]->produce(pack);
             data = NULL;
             if(read) {
                 delete read;
@@ -349,8 +349,8 @@ void SingleEndProcessor::readerTask()
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-            mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
-            mPackReadCounter++;
+            long counter = atomic_fetch_add(&mPackReadCounter, 1);
+            mInputLists[counter % mOptions->thread]->produce(pack);
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
@@ -407,7 +407,6 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
     SingleProducerSingleConsumerList<ReadPack*>* input = config->getLeftInput();
     while(true) {
         if(config->canBeStopped()){
-            mFinishedThreads++;
             break;
         }
         while(input->canBeConsumed()) {
@@ -416,7 +415,6 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
         }
         if(input->isProducerFinished()) {
             if(!input->canBeConsumed()) {
-                mFinishedThreads++;
                 if(mOptions->verbose) {
                     string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
                     loginfo(msg);
@@ -428,6 +426,7 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
         }
     }
     input->setConsumerFinished();
+    mFinishedThreads++;
 
     if(mFinishedThreads == mOptions->thread) {
         if(mLeftWriter)

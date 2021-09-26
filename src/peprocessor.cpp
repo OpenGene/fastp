@@ -698,11 +698,11 @@ void PairEndProcessor::readerTask(bool isLeft)
             pack->count = count;
 
             if(isLeft) {
-                mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
-                mLeftPackReadCounter++;
+                long counter = atomic_fetch_add(&mLeftPackReadCounter, 1);
+                mLeftInputLists[counter % mOptions->thread]->produce(pack);
             } else {
-                mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
-                mRightPackReadCounter++;
+                long counter = atomic_fetch_add(&mRightPackReadCounter, 1);
+                mRightInputLists[counter % mOptions->thread]->produce(pack);
             }
             data = NULL;
             if(read) {
@@ -734,11 +734,11 @@ void PairEndProcessor::readerTask(bool isLeft)
             pack->count = count;
             
             if(isLeft) {
-                mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
-                mLeftPackReadCounter++;
+                long counter = atomic_fetch_add(&mLeftPackReadCounter, 1);
+                mLeftInputLists[counter % mOptions->thread]->produce(pack);
             } else {
-                mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
-                mRightPackReadCounter++;
+                long counter = atomic_fetch_add(&mRightPackReadCounter, 1);
+                mRightInputLists[counter % mOptions->thread]->produce(pack);
             }
 
             //re-initialize data for next pack
@@ -839,11 +839,10 @@ void PairEndProcessor::interleavedReaderTask()
             packLeft->count = count;
             packRight->count = count;
 
-            mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
-            mLeftPackReadCounter++;
-
-            mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
-            mRightPackReadCounter++;
+            long counter = atomic_fetch_add(&mLeftPackReadCounter, 1);
+            mLeftInputLists[counter % mOptions->thread]->produce(packLeft);
+            mRightInputLists[counter % mOptions->thread]->produce(packRight);
+            atomic_fetch_add(&mRightPackReadCounter, 1);
 
             dataLeft = NULL;
             dataRight = NULL;
@@ -874,11 +873,11 @@ void PairEndProcessor::interleavedReaderTask()
             packLeft->count = count;
             packRight->count = count;
 
-            mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
-            mLeftPackReadCounter++;
+            long counter = atomic_fetch_add(&mLeftPackReadCounter, 1);
+            mLeftInputLists[counter % mOptions->thread]->produce(packLeft);
+            mRightInputLists[counter % mOptions->thread]->produce(packRight);
+            atomic_fetch_add(&mRightPackReadCounter, 1);
 
-            mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
-            mRightPackReadCounter++;
 
             //re-initialize data for next pack
             Read** dataLeft = new Read*[PACK_SIZE];
@@ -937,7 +936,6 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
     SingleProducerSingleConsumerList<ReadPack*>* inputRight = config->getRightInput();
     while(true) {
         if(config->canBeStopped()){
-            mFinishedThreads++;
             break;
         }
         while(inputLeft->canBeConsumed() && inputRight->canBeConsumed()) {
