@@ -109,9 +109,10 @@ chmod a+x ./fastp
 
 ### Step 1: download and build libisal
 See https://github.com/intel/isa-l_crypto
+`autoconf`, `automake`, `libtools`, 'nasm (>=v2.11.01)' and 'yasm (>=1.2.0)' are required to build this isal
 ```shell
 git clone https://github.com/intel/isa-l_crypto.git
-cd isa-l
+cd isa-l_crypto
 ./autogen.sh
 ./configure
 make
