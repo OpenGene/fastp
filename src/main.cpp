@@ -139,7 +139,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("report_title", 'R', "should be quoted with \' or \", default is \"fastp report\"", false, "fastp report");
 
     // threading
-    cmd.add<int>("thread", 'w', "worker thread number, default is 2", false, 2);
+    cmd.add<int>("thread", 'w', "worker thread number, default is 3", false, 3);
 
     // split the output
     cmd.add<int>("split", 's', "split output by limiting total split file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default", false, 0);

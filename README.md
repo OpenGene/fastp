@@ -480,7 +480,7 @@ options:
   -R, --report_title                 should be quoted with ' or ", default is "fastp report" (string [=fastp report])
   
   # threading options
-  -w, --thread                       worker thread number, default is 2 (int [=2])
+  -w, --thread                       worker thread number, default is 3 (int [=3])
   
   # output splitting options
   -s, --split                        split output by limiting total split file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (int [=0])

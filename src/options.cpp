@@ -11,7 +11,7 @@ Options::Options(){
     out1 = "";
     out2 = "";
     reportTitle = "fastp report";
-    thread = 1;
+    thread = 3;
     compression = 4;
     phred64 = false;
     dontOverwrite = false;
