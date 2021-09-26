@@ -111,8 +111,8 @@ chmod a+x ./fastp
 See https://github.com/intel/isa-l_crypto   
 `autoconf`, `automake`, `libtools`, `nasm (>=v2.11.01)` and `yasm (>=1.2.0)` are required to build this isal
 ```shell
-git clone https://github.com/intel/isa-l_crypto.git
-cd isa-l_crypto
+git clone https://github.com/intel/isa-l.git
+cd isa-l
 ./autogen.sh
 ./configure
 make
