@@ -114,7 +114,7 @@ See https://github.com/intel/isa-l_crypto
 git clone https://github.com/intel/isa-l.git
 cd isa-l
 ./autogen.sh
-./configure
+./configure --prefix=/usr --libdir=/usr/lib64
 make
 sudo make install
 ```
