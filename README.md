@@ -108,8 +108,8 @@ chmod a+x ./fastp
 `fastp` depends on `libdeflate` and `libisal`, while `libisal` is not compatible with gcc 4.8. If you use gcc 4.8, your fastp will fail to run. Please upgrade your gcc before you build the libraries and fastp.
 
 ### Step 1: download and build libisal
-See https://github.com/intel/isa-l_crypto
-`autoconf`, `automake`, `libtools`, 'nasm (>=v2.11.01)' and 'yasm (>=1.2.0)' are required to build this isal
+See https://github.com/intel/isa-l_crypto   
+`autoconf`, `automake`, `libtools`, `nasm (>=v2.11.01)` and `yasm (>=1.2.0)` are required to build this isal
 ```shell
 git clone https://github.com/intel/isa-l_crypto.git
 cd isa-l_crypto
