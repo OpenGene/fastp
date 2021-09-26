@@ -14,7 +14,8 @@
 
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
-    mReaderFinished = false;
+    mLeftReaderFinished = false;
+    mRightReaderFinished = false;
     mFinishedThreads = 0;
     mFilter = new Filter(opt);
     mUmiProcessor = new UmiProcessor(opt);
@@ -332,7 +333,13 @@ int PairEndProcessor::getPeakInsertSize() {
 }
 
 bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config){
-    assert(leftPack->count == rightPack->count);
+    if(leftPack->count != rightPack->count) {
+        cerr << endl;
+        cerr << "WARNNIG: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
+        cerr << "Read1 pack size: " << leftPack->count << endl;
+        cerr << "Read2 pack size: " << rightPack->count << endl;
+        cerr << endl;
+    }
     int tid = config->getThreadId();
 
     string* outstr1 = new string();
@@ -346,7 +353,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
 
     int readPassed = 0;
     int mergedCount = 0;
-    for(int p=0;p<leftPack->count;p++){
+    for(int p=0;p<leftPack->count && p<rightPack->count;p++){
         Read* or1 = leftPack->data[p];
         Read* or2 = rightPack->data[p];
 
@@ -712,7 +719,12 @@ void PairEndProcessor::readerTask(bool isLeft)
         }
         if(mOptions->verbose && count + readNum >= lastReported + 1000000) {
             lastReported = count + readNum;
-            string msg = "loaded " + to_string((lastReported/1000000)) + "M reads";
+            string msg;
+            if(isLeft)
+                msg = "Read1: ";
+            else
+                msg = "Read2: ";
+            msg += "loaded " + to_string((lastReported/1000000)) + "M reads";
             loginfo(msg);
         }
         // a full pack
@@ -781,11 +793,17 @@ void PairEndProcessor::readerTask(bool isLeft)
             mRightInputLists[t]->setProducerFinished();
     }
 
-    //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
-    mReaderFinished = true;
-    if(mOptions->verbose)
-        loginfo("all reads loaded, start to monitor thread status");
-    //lock.unlock();
+    if(mOptions->verbose) {
+        if(isLeft) {
+            mLeftReaderFinished = true;
+            loginfo("Read1: loading completed with " + to_string(mLeftPackReadCounter) + " packs");
+        }
+        else {
+            mRightReaderFinished = true;
+            loginfo("Read2: loading completed with " + to_string(mLeftPackReadCounter) + " packs");
+        }
+    }
+    
 
     // if the last data initialized is not used, free it
     if(data != NULL)
@@ -901,11 +919,10 @@ void PairEndProcessor::interleavedReaderTask()
         }
     }
 
-    //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
-    mReaderFinished = true;
+    mLeftReaderFinished = true;
+    mRightReaderFinished = true;
     if(mOptions->verbose)
-        loginfo("all reads loaded, start to monitor thread status");
-    //lock.unlock();
+        loginfo("Reads loading: completed");
 
     // if the last data initialized is not used, free it
     if(dataLeft != NULL)

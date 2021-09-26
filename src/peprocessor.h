@@ -41,7 +41,8 @@ private:
     void writerTask(WriterThread* config);
 
 private:
-    atomic_bool mReaderFinished;
+    atomic_bool mLeftReaderFinished;
+    atomic_bool mRightReaderFinished;
     atomic_int mFinishedThreads;
     Options* mOptions;
     Filter* mFilter;
