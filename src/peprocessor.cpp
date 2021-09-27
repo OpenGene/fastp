@@ -582,53 +582,51 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
             config->getWriter2()->writeString(outstr2);
     } 
 
-    if(mMergedWriter && !mergedOutput->empty()) {
+    if(mMergedWriter) {
         // write merged data
         mMergedWriter->input(tid, mergedOutput);
         mergedOutput = NULL;
     }
 
-    if(mFailedWriter && !failedOut->empty()) {
+    if(mFailedWriter) {
         // write failed data
         mFailedWriter->input(tid, failedOut);
         failedOut = NULL;
     }
 
-    if(mOverlappedWriter && !overlappedOut->empty()) {
+    if(mOverlappedWriter) {
         // write failed data
         mOverlappedWriter->input(tid, overlappedOut);
         overlappedOut = NULL;
     }
 
     // normal output by left/right writer thread
-    if(mRightWriter && mLeftWriter && (!outstr1->empty() || !outstr2->empty())) {
+    if(mRightWriter && mLeftWriter) {
         // write PE
         mLeftWriter->input(tid, outstr1);
         outstr1 = NULL;
 
         mRightWriter->input(tid, outstr2);
         outstr2 = NULL;
-    } else if(mLeftWriter && !singleOutput->empty()) {
+    } else if(mLeftWriter) {
         // write singleOutput
         mLeftWriter->input(tid, singleOutput);
         singleOutput = NULL;
     }
     // output unpaired reads
-    if (!unpairedOut1->empty() || !unpairedOut2->empty()) {
-        if(mUnpairedLeftWriter && mUnpairedRightWriter) {
-            // write PE
-            mUnpairedLeftWriter->input(tid, unpairedOut1);
-            unpairedOut1 = NULL;
+    if(mUnpairedLeftWriter && mUnpairedRightWriter) {
+        // write PE
+        mUnpairedLeftWriter->input(tid, unpairedOut1);
+        unpairedOut1 = NULL;
 
-            mUnpairedRightWriter->input(tid, unpairedOut2);
-            unpairedOut2 = NULL;
-        } else if(mUnpairedLeftWriter) {
-            mUnpairedLeftWriter->input(tid, unpairedOut1);
-            unpairedOut1 = NULL;
+        mUnpairedRightWriter->input(tid, unpairedOut2);
+        unpairedOut2 = NULL;
+    } else if(mUnpairedLeftWriter) {
+        mUnpairedLeftWriter->input(tid, unpairedOut1);
+        unpairedOut1 = NULL;
 
-            mUnpairedLeftWriter->input(tid, unpairedOut2);
-            unpairedOut2 = NULL;
-        }
+        mUnpairedLeftWriter->input(tid, unpairedOut2);
+        unpairedOut2 = NULL;
     }
 
     if(mOptions->split.byFileLines)
@@ -815,7 +813,7 @@ void PairEndProcessor::readerTask(bool isLeft)
         }
         else {
             mRightReaderFinished = true;
-            loginfo("Read2: loading completed with " + to_string(mLeftPackReadCounter) + " packs");
+            loginfo("Read2: loading completed with " + to_string(mRightPackReadCounter) + " packs");
         }
     }
     
@@ -964,7 +962,7 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
         } else if(inputRight->isProducerFinished() && !inputRight->canBeConsumed()) {
             break;
         } else {
-            usleep(1);
+            usleep(100);
         }
     }
     inputLeft->setConsumerFinished();

@@ -280,7 +280,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         mLeftWriter->input(tid, outstr);
         outstr = NULL;
     }
-    if(mFailedWriter && !failedOut->empty()) {
+    if(mFailedWriter) {
         // write failed data
         mFailedWriter->input(tid, failedOut);
         failedOut = NULL;
@@ -393,8 +393,9 @@ void SingleEndProcessor::readerTask()
 
     //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
     mReaderFinished = true;
-    if(mOptions->verbose)
-        loginfo("all reads loaded, start to monitor thread status");
+    if(mOptions->verbose) {
+        loginfo("Loading completed with " + to_string(mPackReadCounter) + " packs");
+    }
     //lock.unlock();
 
     // if the last data initialized is not used, free it
@@ -415,7 +416,6 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
         }
         if(input->isProducerFinished()) {
             if(!input->canBeConsumed()) {
-                mFinishedThreads++;
                 if(mOptions->verbose) {
                     string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
                     loginfo(msg);
