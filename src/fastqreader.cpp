@@ -137,7 +137,7 @@ void FastqReader::readToBuf() {
 	}
 	mBufUsedLen = 0;
 
-	if(bufferFinished()) {
+	if(bufferFinished() && mBufDataLen>0) {
 		if(mFastqBuf[mBufDataLen-1] != '\n')
 			mHasNoLineBreakAtEnd = true;
 	}
@@ -268,14 +268,13 @@ string* FastqReader::getLine(){
 }
 
 Read* FastqReader::read(){
-	if(mBufUsedLen >= mBufDataLen && eof()) {
-		if(!mZipped || (mZipped && mGzipState.avail_in==0))
-			return NULL;
+	if(mBufUsedLen >= mBufDataLen && bufferFinished()) {
+		return NULL;
 	}
 
 	string* name = getLine();
 	// name should start with @
-	while((name->empty() && !(mBufUsedLen >= mBufDataLen && eof())) || (!name->empty() && (*name)[0]!='@')){
+	while((name->empty() && !(mBufUsedLen >= mBufDataLen && bufferFinished())) || (!name->empty() && (*name)[0]!='@')){
 		name = getLine();
 	}
 
