@@ -377,7 +377,9 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)) {
             delete or1;
+            or1 = NULL;
             delete or2;
+            or2 = NULL;
             continue;
         }
 
@@ -544,11 +546,24 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         }
 
         // if no trimming applied, r1 should be identical to or1
-        if(r1 != or1 && r1 != NULL)
+        if(r1 != or1 && r1 != NULL) {
             delete r1;
+            r1 = NULL;
+        }
         // if no trimming applied, r1 should be identical to or1
-        if(r2 != or2 && r2 != NULL)
+        if(r2 != or2 && r2 != NULL) {
             delete r2;
+            r2 = NULL;
+        }
+
+        if(or1) {
+            delete or1;
+            or1 = NULL;
+        }
+        if(or2) {
+            delete or2;
+            or2 = NULL;
+        }
     }
 
     if(mOptions->outputToSTDOUT) {
@@ -698,11 +713,11 @@ void PairEndProcessor::readerTask(bool isLeft)
             pack->count = count;
 
             if(isLeft) {
-                long counter = atomic_fetch_add(&mLeftPackReadCounter, 1);
-                mLeftInputLists[counter % mOptions->thread]->produce(pack);
+                mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
+                mLeftPackReadCounter++;
             } else {
-                long counter = atomic_fetch_add(&mRightPackReadCounter, 1);
-                mRightInputLists[counter % mOptions->thread]->produce(pack);
+                mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
+                mRightPackReadCounter++;
             }
             data = NULL;
             if(read) {
@@ -734,11 +749,11 @@ void PairEndProcessor::readerTask(bool isLeft)
             pack->count = count;
             
             if(isLeft) {
-                long counter = atomic_fetch_add(&mLeftPackReadCounter, 1);
-                mLeftInputLists[counter % mOptions->thread]->produce(pack);
+                mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
+                mLeftPackReadCounter++;
             } else {
-                long counter = atomic_fetch_add(&mRightPackReadCounter, 1);
-                mRightInputLists[counter % mOptions->thread]->produce(pack);
+                mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
+                mRightPackReadCounter++;
             }
 
             //re-initialize data for next pack
@@ -839,10 +854,11 @@ void PairEndProcessor::interleavedReaderTask()
             packLeft->count = count;
             packRight->count = count;
 
-            long counter = atomic_fetch_add(&mLeftPackReadCounter, 1);
-            mLeftInputLists[counter % mOptions->thread]->produce(packLeft);
-            mRightInputLists[counter % mOptions->thread]->produce(packRight);
-            atomic_fetch_add(&mRightPackReadCounter, 1);
+            mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
+            mLeftPackReadCounter++;
+
+            mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
+            mRightPackReadCounter++;
 
             dataLeft = NULL;
             dataRight = NULL;
@@ -873,11 +889,11 @@ void PairEndProcessor::interleavedReaderTask()
             packLeft->count = count;
             packRight->count = count;
 
-            long counter = atomic_fetch_add(&mLeftPackReadCounter, 1);
-            mLeftInputLists[counter % mOptions->thread]->produce(packLeft);
-            mRightInputLists[counter % mOptions->thread]->produce(packRight);
-            atomic_fetch_add(&mRightPackReadCounter, 1);
+            mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
+            mLeftPackReadCounter++;
 
+            mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
+            mRightPackReadCounter++;
 
             //re-initialize data for next pack
             Read** dataLeft = new Read*[PACK_SIZE];
