@@ -41,9 +41,9 @@ public:
 	Writer(Options* opt, string filename, int compression);
 	~Writer();
 	bool isZipped();
-	bool write(const char* strdata, size_t size);
 	bool writeString(const string& str);
 	bool writeString(string* str);
+	bool write(const char* strdata, size_t size);
 	void flush();
 	string filename();
 
@@ -53,6 +53,7 @@ public:
 private:
 	void init();
 	void close();
+	bool writeInternal(const char* strdata, size_t size);
 
 private:
 	string mFilename;

@@ -48,7 +48,7 @@ Writer::~Writer(){
 
 void Writer::flush() {
 	if(mBufDataLen > 0) {
-		write(mBuffer, mBufDataLen);
+		writeInternal(mBuffer, mBufDataLen);
 		mBufDataLen = 0;
 	}
 }
@@ -91,6 +91,18 @@ bool Writer::writeString(string* str) {
 }
 
 bool Writer::write(const char* strdata, size_t size) {
+	if(size + mBufDataLen > mBufSize)
+		flush();
+	if(size > mBufSize)
+		return writeInternal(strdata, size);
+	else {
+		memcpy(mBuffer + mBufDataLen, strdata, size);
+		mBufDataLen += size;
+	}
+	return true;
+}
+
+bool Writer::writeInternal(const char* strdata, size_t size) {
 	size_t written;
 	bool status;
 	
