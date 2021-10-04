@@ -22,15 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// A lock-free linked list for single-producer, single-consumer threading
+// A ultra-fast lock-free linked list for single-producer, single-consumer threading
+// Memory usage overhead: 3M bytes per list, if you want to save memory, please use smaller block and smaller ring buffer
+// The type T is usually a pointer, a internal type (such as int, long), or a class supports assignment T a = b;
 
-#ifndef SINGLEPRODUCERSINGLECONSUMERLIST_H
-#define SINGLEPRODUCERSINGLECONSUMERLIST_H
+/* WARNING: only supports up to 1G unconsumed elements in list, 
+            which means: produced - consumed must < 1G,
+            this is usually much more than enough,
+            but if you want to support even more unconsumed elements, 
+            please modify the value of blocksRingBufferSize as you want.
+*/
+
+#ifndef SINGLE_PRODUCER_SINGLE_CONSUMER_LIST_H
+#define SINGLE_PRODUCER_SINGLE_CONSUMER_LIST_H
 
 #include <atomic>
 #include <stdio.h>
 #include <memory.h>
 #include <cassert>
+#include <vector>
 
 template<typename T>
 struct LockFreeListItem {
@@ -57,6 +67,22 @@ public:
         tail = NULL;
         producerFinished = false;
         consumerFinished = false;
+        produced = 0;
+        consumed = 0;
+        recycled = 0;
+        blocksRingBufferSize = 0x1L << 18;
+        blocksRingBufferSizeMask = blocksRingBufferSize - 1;
+        blocksNum = 0;
+        // 2M memory
+        blocks = new LockFreeListItem<T>*[blocksRingBufferSize];
+        memset(blocks, 0, sizeof(LockFreeListItem<T>*) * blocksRingBufferSize);
+    }
+    inline ~SingleProducerSingleConsumerList() {
+        while(recycled < blocksNum) {
+            delete[] blocks[recycled & blocksRingBufferSizeMask];
+            blocks[recycled & blocksRingBufferSizeMask] = NULL;
+            recycled++;
+        }
     }
     inline bool canBeConsumed() {
         if(head == NULL)
@@ -64,7 +90,7 @@ public:
         return head->nextItemReady || producerFinished;
     }
     inline void produce(T val) {
-        LockFreeListItem<T>* item = new LockFreeListItem<T>(val);
+        LockFreeListItem<T>* item = makeItem(val);
         if(head==NULL) {
             head = item;
             tail = item;
@@ -73,13 +99,15 @@ public:
             tail->nextItemReady = true;
             tail = item;
         }
+        produced++;
     }
     inline T consume() {
         assert(head != NULL);
         T val = head->value;
-        LockFreeListItem<T>* tmp = head;
         head = head->nextItem;
-        delete tmp;
+        consumed++;
+        if((consumed & 0xFFF) == 0)
+            recycle();
         return val;
     }
     inline bool isProducerFinished() {
@@ -95,10 +123,43 @@ public:
         consumerFinished = true;
     }
 private:
+    // blockized list
+    inline LockFreeListItem<T>* makeItem(T val) {
+        unsigned long blk = produced >> 12;
+        unsigned long idx = produced & 0xFFF;
+        size_t size = 0x01<<12;
+        if(blocksNum <= blk) {
+            LockFreeListItem<T>* buffer = new LockFreeListItem<T>[size];
+            memset(buffer, 0, sizeof(LockFreeListItem<T>) * size);
+            blocks[blocksNum & blocksRingBufferSizeMask] = buffer;
+            blocksNum++;
+        }
+        LockFreeListItem<T>* item = blocks[blk & blocksRingBufferSizeMask]+idx;
+        item->value = val;
+        return item;
+    }
+
+    inline void recycle() {
+        unsigned long blk = consumed >> 12;
+        while((recycled+1) < blk) {
+            delete[] blocks[recycled & blocksRingBufferSizeMask];
+            blocks[recycled & blocksRingBufferSizeMask] = NULL;
+            recycled++;
+        }
+    }
+
+private:
     LockFreeListItem<T>* head;
     LockFreeListItem<T>* tail;
+    LockFreeListItem<T>** blocks;
     std::atomic_bool producerFinished;
     std::atomic_bool consumerFinished;
+    unsigned long produced;
+    unsigned long consumed;
+    unsigned long recycled;
+    unsigned long blocksRingBufferSize;
+    unsigned long blocksRingBufferSizeMask;
+    unsigned long blocksNum;
 };
 
 #endif
