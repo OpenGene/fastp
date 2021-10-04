@@ -27,6 +27,8 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
 
     mPackReadCounter = 0;
     mPackProcessedCounter = 0;
+
+    mReadPool = new ReadPool(mOptions);
 }
 
 SingleEndProcessor::~SingleEndProcessor() {
@@ -34,6 +36,10 @@ SingleEndProcessor::~SingleEndProcessor() {
     if(mDuplicate) {
         delete mDuplicate;
         mDuplicate = NULL;
+    }
+    if(mReadPool) {
+        delete mReadPool;
+        mReadPool = NULL;
     }
 }
 
@@ -180,6 +186,12 @@ bool SingleEndProcessor::process(){
     return true;
 }
 
+void SingleEndProcessor::recycleToPool(int tid, Read* r) {
+    // failed to recycle, then delete it
+    if(!mReadPool->input(tid, r))
+        delete r;
+}
+
 bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     string* outstr = new string();
     string* failedOut = new string();
@@ -204,7 +216,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1)) {
-            delete or1;
+            recycleToPool(tid, or1);
             continue;
         }
 
@@ -262,10 +274,10 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             }
         }
 
-        delete or1;
+        recycleToPool(tid, or1);
         // if no trimming applied, r1 should be identical to or1
         if(r1 != or1 && r1 != NULL)
-            delete r1;
+            recycleToPool(tid, r1);
     }
 
     if(mOptions->outputToSTDOUT) {
@@ -315,6 +327,7 @@ void SingleEndProcessor::readerTask()
     Read** data = new Read*[PACK_SIZE];
     memset(data, 0, sizeof(Read*)*PACK_SIZE);
     FastqReader reader(mOptions->in1, true, mOptions->phred64);
+    reader.setReadPool(mReadPool);
     int count=0;
     bool needToBreak = false;
     while(true){

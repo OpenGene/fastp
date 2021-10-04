@@ -84,6 +84,9 @@ public:
             recycled++;
         }
     }
+    inline size_t size() {
+        return produced -  consumed;
+    }
     inline bool canBeConsumed() {
         if(head == NULL)
             return false;

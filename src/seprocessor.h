@@ -16,6 +16,7 @@
 #include "writerthread.h"
 #include "duplicate.h"
 #include "singleproducersingleconsumerlist.h"
+#include "readpool.h"
 
 using namespace std;
 
@@ -35,6 +36,7 @@ private:
     void initOutput();
     void closeOutput();
     void writerTask(WriterThread* config);
+    void recycleToPool(int tid, Read* r);
 
 private:
     Options* mOptions;
@@ -48,6 +50,7 @@ private:
     SingleProducerSingleConsumerList<ReadPack*>** mInputLists;
     size_t mPackReadCounter;
     atomic_long mPackProcessedCounter;
+    ReadPool* mReadPool;
 };
 
 

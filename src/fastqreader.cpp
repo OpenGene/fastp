@@ -49,6 +49,7 @@ FastqReader::FastqReader(string filename, bool hasQuality, bool phred64){
 	mHasQuality = hasQuality;
 	mHasNoLineBreakAtEnd = false;
 	mGzipInputUsedBytes = 0;
+	mReadPool = NULL;
 	init();
 }
 
@@ -60,6 +61,10 @@ FastqReader::~FastqReader(){
 
 bool FastqReader::hasNoLineBreakAtEnd() {
 	return mHasNoLineBreakAtEnd;
+}
+
+void FastqReader::setReadPool(ReadPool* rp) {
+	mReadPool = rp;
 }
 
 
@@ -204,7 +209,7 @@ bool FastqReader::eof() {
 	return feof(mFile);//mFile.eof();
 }
 
-string* FastqReader::getLine(){
+void FastqReader::getLine(string* line){
 	int copied = 0;
 
 	int start = mBufUsedLen;
@@ -220,7 +225,7 @@ string* FastqReader::getLine(){
 	// this line well contained in this buf, or this is the last buf
 	if(end < mBufDataLen || bufferFinished()) {
 		int len = end - start;
-		string* line = new string(mFastqBuf+start, len);
+		line->assign(mFastqBuf+start, len);
 
 		// skip \n or \r
 		end++;
@@ -230,11 +235,11 @@ string* FastqReader::getLine(){
 
 		mBufUsedLen = end;
 
-		return line;
+		return ;
 	}
 
 	// this line is not contained in this buf, we need to read new buf
-	string* str = new string(mFastqBuf+start, mBufDataLen - start);
+	line->assign(mFastqBuf+start, mBufDataLen - start);
 
 	while(true) {
 		readToBuf();
@@ -249,7 +254,7 @@ string* FastqReader::getLine(){
 		// this line well contained in this buf
 		if(end < mBufDataLen || bufferFinished()) {
 			int len = end - start;
-			str->append(mFastqBuf+start, len);
+			line->append(mFastqBuf+start, len);
 
 			// skip \n or \r
 			end++;
@@ -258,13 +263,13 @@ string* FastqReader::getLine(){
 				end++;
 
 			mBufUsedLen = end;
-			return str;
+			return;
 		}
 		// even this new buf is not enough, although impossible
-		str->append(mFastqBuf+start, mBufDataLen);
+		line->append(mFastqBuf+start, mBufDataLen);
 	}
 
-	return new string();
+	return;
 }
 
 Read* FastqReader::read(){
@@ -272,29 +277,53 @@ Read* FastqReader::read(){
 		return NULL;
 	}
 
-	string* name = getLine();
+	string* name;
+	string* sequence;
+	string* strand;
+	string* quality;
+
+	Read* readInPool = NULL;
+	if(mReadPool)
+		readInPool = mReadPool->getOne();
+
+	if(readInPool) {
+		name = readInPool->mName;
+		sequence = readInPool->mSeq;
+		strand = readInPool->mStrand;
+		quality = readInPool->mQuality;
+	} else {
+		name = new string();
+		sequence = new string();
+		strand = new string();
+		quality = new string();
+	}
+
+	getLine(name);
 	// name should start with @
 	while((name->empty() && !(mBufUsedLen >= mBufDataLen && bufferFinished())) || (!name->empty() && (*name)[0]!='@')){
-		name = getLine();
+		getLine(name);
 	}
 
 	if(name->empty())
 		return NULL;
 
-	string* sequence = getLine();
-	string* strand = getLine();
-	string* quality = getLine();
+	getLine(sequence);
+	getLine(strand);
+	getLine(quality);
+
 	if(quality->length() != sequence->length()) {
 		cerr << "ERROR: sequence and quality have different length:" << endl;
-		cerr << name << endl;
-		cerr << sequence << endl;
-		cerr << strand << endl;
-		cerr << quality << endl;
+		cerr << *name << endl;
+		cerr << *sequence << endl;
+		cerr << *strand << endl;
+		cerr << *quality << endl;
 		return NULL;
 	}
-	return new Read(name, sequence, strand, quality, mPhred64);
 
-	return NULL;
+	if(readInPool)
+		return readInPool;
+	else
+		return new Read(name, sequence, strand, quality, mPhred64);
 }
 
 void FastqReader::close(){

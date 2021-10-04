@@ -16,6 +16,7 @@
 #include "overlapanalysis.h"
 #include "writerthread.h"
 #include "duplicate.h"
+#include "readpool.h"
 
 
 using namespace std;
@@ -39,6 +40,8 @@ private:
     void statInsertSize(Read* r1, Read* r2, OverlapResult& ov, int frontTrimmed1 = 0, int frontTrimmed2 = 0);
     int getPeakInsertSize();
     void writerTask(WriterThread* config);
+    void recycleToPool1(int tid, Read* r);
+    void recycleToPool2(int tid, Read* r);
 
 private:
     atomic_bool mLeftReaderFinished;
@@ -61,6 +64,8 @@ private:
     size_t mLeftPackReadCounter;
     size_t mRightPackReadCounter;
     atomic_long mPackProcessedCounter;
+    ReadPool* mLeftReadPool;
+    ReadPool* mRightReadPool;
 };
 
 

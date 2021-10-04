@@ -39,6 +39,9 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mLeftPackReadCounter = 0;
     mRightPackReadCounter = 0;
     mPackProcessedCounter = 0;
+
+    mLeftReadPool = new ReadPool(mOptions);
+    mRightReadPool = new ReadPool(mOptions);
 }
 
 PairEndProcessor::~PairEndProcessor() {
@@ -46,6 +49,14 @@ PairEndProcessor::~PairEndProcessor() {
     if(mDuplicate) {
         delete mDuplicate;
         mDuplicate = NULL;
+    }
+    if(mLeftReadPool) {
+        delete mLeftReadPool;
+        mLeftReadPool = NULL;
+    }
+    if(mRightReadPool) {
+        delete mRightReadPool;
+        mRightReadPool = NULL;
     }
 }
 
@@ -332,6 +343,18 @@ int PairEndProcessor::getPeakInsertSize() {
     return peak;
 }
 
+void PairEndProcessor::recycleToPool1(int tid, Read* r) {
+    // failed to recycle, then delete it
+    if(!mLeftReadPool->input(tid, r))
+        delete r;
+}
+
+void PairEndProcessor::recycleToPool2(int tid, Read* r) {
+    // failed to recycle, then delete it
+    if(!mRightReadPool->input(tid, r))
+        delete r;
+}
+
 bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config){
     if(leftPack->count != rightPack->count) {
         cerr << endl;
@@ -376,9 +399,9 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
 
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)) {
-            delete or1;
+            recycleToPool1(tid, or1);
             or1 = NULL;
-            delete or2;
+            recycleToPool2(tid, or2);
             or2 = NULL;
             continue;
         }
@@ -435,7 +458,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
             if(ov.overlapped) {
                 Read* overlappedRead = new Read(r1->mName, new string(r1->mSeq->substr(max(0,ov.offset)), ov.overlap_len), r1->mStrand, new string(r1->mQuality->substr(max(0,ov.offset)), ov.overlap_len));
                 overlappedOut -> append(overlappedRead->toString());
-                delete overlappedRead;
+                recycleToPool1(tid, overlappedRead);
             }
         }
 
@@ -472,7 +495,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                     readPassed++;
                     mergedCount++;
                 }
-                delete merged;
+                recycleToPool1(tid, merged);
                 mergeProcessed = true;
             } else if(mOptions->merge.includeUnmerged){
                 int result1 = mFilter->passFilter(r1);
@@ -547,21 +570,21 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
 
         // if no trimming applied, r1 should be identical to or1
         if(r1 != or1 && r1 != NULL) {
-            delete r1;
+            recycleToPool1(tid, r1);
             r1 = NULL;
         }
         // if no trimming applied, r1 should be identical to or1
         if(r2 != or2 && r2 != NULL) {
-            delete r2;
+            recycleToPool2(tid, r2);
             r2 = NULL;
         }
 
         if(or1) {
-            delete or1;
+            recycleToPool1(tid, or1);
             or1 = NULL;
         }
         if(or2) {
-            delete or2;
+            recycleToPool2(tid, or2);
             or2 = NULL;
         }
     }
@@ -695,10 +718,14 @@ void PairEndProcessor::readerTask(bool isLeft)
     Read** data = new Read*[PACK_SIZE];
     memset(data, 0, sizeof(Read*)*PACK_SIZE);
     FastqReader* reader = NULL;
-    if(isLeft)
+    if(isLeft) {
         reader = new FastqReader(mOptions->in1, true, mOptions->phred64);
-    else
+        reader->setReadPool(mLeftReadPool);
+    }
+    else {
         reader = new FastqReader(mOptions->in2, true, mOptions->phred64);
+        reader->setReadPool(mRightReadPool);
+    }
 
     int count=0;
     bool needToBreak = false;
