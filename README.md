@@ -104,7 +104,7 @@ wget http://opengene.org/fastp/fastp.0.20.1
 mv fastp.0.20.1 fastp
 chmod a+x ./fastp
 ```
-## or compile from source (not compatible with gcc 4.8!!!)
+## or compile from source
 `fastp` depends on `libdeflate` and `libisal`, while `libisal` is not compatible with gcc 4.8. If you use gcc 4.8, your fastp will fail to run. Please upgrade your gcc before you build the libraries and fastp.
 
 ### Step 1: download and build libisal
