@@ -17,14 +17,16 @@ BIN_TARGET := ${TARGET}
 CXX ?= g++
 CXXFLAGS := -std=c++11 -g -O3 -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS}
 LIBS := -lisal -ldeflate -lpthread
+STATIC_LIBS := -static -lisal -ldeflate -lpthread
 LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_FLAGS)
+STATIC_LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(STATIC_LIBS) $(STATIC_LD_FLAGS)
 
 
 ${BIN_TARGET}:${OBJ}
 	$(CXX) $(OBJ) -o $@ $(LD_FLAGS)
 
 static:${OBJ}
-	$(CC) $(OBJ) -static -lisal  -ldeflate -lpthread -o ${BIN_TARGET}
+	$(CXX) $(OBJ) -o ${BIN_TARGET} $(STATIC_LD_FLAGS)
 
 ${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp make_obj_dir
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
