@@ -264,13 +264,13 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         if(!dedupOut) {
             if( r1 != NULL &&  result == PASS_FILTER) {
-                outstr->append(r1->toString());
+                r1->appendToString(outstr);
 
                 // stats the read after filtering
                 config->getPostStats1()->statRead(r1);
                 readPassed++;
             } else if(mFailedWriter) {
-                failedOut->append(or1->toStringWithTag(FAILED_TYPES[result]));
+                or1->appendToStringWithTag(failedOut, FAILED_TYPES[result]);
             }
         }
 

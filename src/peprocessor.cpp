@@ -457,7 +457,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, 0);
             if(ov.overlapped) {
                 Read* overlappedRead = new Read(r1->mName, new string(r1->mSeq->substr(max(0,ov.offset)), ov.overlap_len), r1->mStrand, new string(r1->mQuality->substr(max(0,ov.offset)), ov.overlap_len));
-                overlappedOut -> append(overlappedRead->toString());
+                overlappedRead->appendToString(overlappedOut);
                 recycleToPool1(tid, overlappedRead);
             }
         }
@@ -490,7 +490,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 int result = mFilter->passFilter(merged);
                 config->addFilterResult(result, 2);
                 if(result == PASS_FILTER) {
-                    mergedOutput->append(merged->toString());
+                    merged->appendToString(mergedOutput);
                     config->getPostStats1()->statRead(merged);
                     readPassed++;
                     mergedCount++;
@@ -501,14 +501,14 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 int result1 = mFilter->passFilter(r1);
                 config->addFilterResult(result1, 1);
                 if(result1 == PASS_FILTER && !dedupOut) {
-                    mergedOutput->append(r1->toString());
+                    r1->appendToString(mergedOutput);
                     config->getPostStats1()->statRead(r1);
                 }
 
                 int result2 = mFilter->passFilter(r2);
                 config->addFilterResult(result2, 1);
                 if(result2 == PASS_FILTER && !dedupOut) {
-                    mergedOutput->append(r2->toString());
+                    r2->appendToString(mergedOutput);
                     config->getPostStats1()->statRead(r2);
                 }
                 if(result1 == PASS_FILTER && result2 == PASS_FILTER )
@@ -529,10 +529,11 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 if( r1 != NULL &&  result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER ) {
                     
                     if(mOptions->outputToSTDOUT && !mOptions->merge.enabled) {
-                        singleOutput->append(r1->toString() + r2->toString());
+                        r1->appendToString(singleOutput);
+                        r2->appendToString(singleOutput);
                     } else {
-                        outstr1->append(r1->toString());
-                        outstr2->append(r2->toString());
+                        r1->appendToString(outstr1);
+                        r2->appendToString(outstr2);
                     }
 
                     // stats the read after filtering
@@ -544,24 +545,24 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                     readPassed++;
                 } else if( r1 != NULL &&  result1 == PASS_FILTER) {
                     if(mUnpairedLeftWriter) {
-                        unpairedOut1->append(r1->toString());
+                        r1->appendToString(unpairedOut1);
                         if(mFailedWriter)
-                            failedOut->append(or2->toStringWithTag(FAILED_TYPES[result2]));
+                            or2->appendToStringWithTag(failedOut, FAILED_TYPES[result2]);
                     } else {
                         if(mFailedWriter) {
-                            failedOut->append(or1->toStringWithTag("paired_read_is_failing"));
-                            failedOut->append(or2->toStringWithTag(FAILED_TYPES[result2]));
+                            or1->appendToStringWithTag(failedOut, "paired_read_is_failing");
+                            or2->appendToStringWithTag(failedOut, FAILED_TYPES[result2]);
                         }
                     }
                 } else if( r2 != NULL && result2 == PASS_FILTER) {
                     if(mUnpairedLeftWriter || mUnpairedRightWriter) {
-                        unpairedOut2->append(r2->toString());
+                        r2->appendToString(unpairedOut2);
                         if(mFailedWriter)
-                            failedOut->append(or1->toStringWithTag(FAILED_TYPES[result1]));
+                            or1->appendToStringWithTag(failedOut,FAILED_TYPES[result1]);
                     } else {
                         if(mFailedWriter) {
-                            failedOut->append(or1->toStringWithTag(FAILED_TYPES[result1]));
-                            failedOut->append(or2->toStringWithTag("paired_read_is_failing"));
+                            or1->appendToStringWithTag(failedOut, FAILED_TYPES[result1]);
+                            or2->appendToStringWithTag(failedOut, "paired_read_is_failing");
                         }
                     }
                 }

@@ -26,6 +26,8 @@ public:
     int length();
     string toString();
     string toStringWithTag(string tag);
+    void appendToString(string* target);
+    void appendToStringWithTag(string* target, string tag);
     void resize(int len);
     void convertPhred64To33();
     void trimFront(int len);
