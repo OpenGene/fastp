@@ -138,7 +138,6 @@ void Read::appendToString(string* target) {
 	total++;
 	str[total] = '\0';
 
-	assert(total == size);
 	target->append(str, size);
 	delete[] str;
 }
@@ -169,7 +168,6 @@ void Read::appendToStringWithTag(string* target, string tag) {
 	total++;
 	str[total] = '\0';
 
-	assert(total == size);
 	target->append(str, size);
 	delete[] str;
 }
