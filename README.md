@@ -93,15 +93,15 @@ https://anaconda.org/bioconda/fastp/badges/version.svg)](https://anaconda.org/bi
 conda install -c bioconda fastp
 ```
 ## or download the latest prebuilt binary for Linux users
-Tthis binary was compiled on CentOS, and tested on CentOS/Ubuntu
+This binary was compiled on CentOS, and tested on CentOS/Ubuntu
 ```shell
 # download the latest build
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 
-# or download specified version, i.e. fastp v0.20.1
-wget http://opengene.org/fastp/fastp.0.20.1
-mv fastp.0.20.1 fastp
+# or download specified version, i.e. fastp v0.23.0
+wget http://opengene.org/fastp/fastp.0.23.0
+mv fastp.0.23.0 fastp
 chmod a+x ./fastp
 ```
 ## or compile from source
