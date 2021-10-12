@@ -23,7 +23,7 @@ STATIC_LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(STATI
 
 
 ${BIN_TARGET}:${OBJ}
-	$(CXX) $(OBJ) -o $@ $(LD_FLAGS)
+	$(CXX) $(OBJ) -o $@ $(LD_FLAGS) $(STATIC_LD_FLAGS)
 
 static:${OBJ}
 	$(CXX) $(OBJ) -o ${BIN_TARGET} $(STATIC_LD_FLAGS)
