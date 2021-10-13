@@ -107,38 +107,45 @@ chmod a+x ./fastp
 ## or compile from source
 `fastp` depends on `libdeflate` and `libisal`, while `libisal` is not compatible with gcc 4.8. If you use gcc 4.8, your fastp will fail to run. Please upgrade your gcc before you build the libraries and fastp.
 
+### Step 0: download fastp
+
+```bash
+cd ${HOME} && git clone -b master --depth=1 https://github.com/OpenGene/fastp.git
+```
+
 ### Step 1: download and build libisal
 See https://github.com/intel/isa-l   
 `autoconf`, `automake`, `libtools`, `nasm (>=v2.11.01)` and `yasm (>=1.2.0)` are required to build this isal
-```shell
-git clone https://github.com/intel/isa-l.git
-cd isa-l
+
+```bash
+cd fastp
+git submodule sync
+git submodule update --init --recursive src/3rd/isa-l
+cd src/3rd/isa-l
 ./autogen.sh
 ./configure --prefix=/usr --libdir=/usr/lib64
-make
+make -j $(nproc)
 sudo make install
 ```
 
 ### step 2: download and build libdeflate
 See https://github.com/ebiggers/libdeflate
+
 ```shell
-git clone https://github.com/ebiggers/libdeflate.git
-cd libdeflate
-make
+cd ${HOME}/fastp
+git submodule sync
+git submodule update --init --recursive src/3rd/libdeflate
+cd src/3rd/libdeflate
+make -j $(nproc)
 sudo make install
 ```
 
-### Step 3: download and build fastp
+### Step 3: build fastp
 ```shell
-# get source (you can also use browser to download from master or releases)
-git clone https://github.com/OpenGene/fastp.git
-
-# build
-cd fastp
-make
-
-# Install
+cd ${HOME}/fastp
+make -j $(nproc)
 sudo make install
+if [ -n "$(command -v fastp)" ];then fastp -h;fi
 ```
 
 # input and output
