@@ -109,11 +109,11 @@ void PairEndProcessor::closeOutput() {
     }
     if(mUnpairedLeftWriter) {
         delete mUnpairedLeftWriter;
-        mLeftWriter = NULL;
+        mUnpairedLeftWriter = NULL;
     }
     if(mUnpairedRightWriter) {
         delete mUnpairedRightWriter;
-        mRightWriter = NULL;
+        mUnpairedRightWriter = NULL;
     }
 }
 
@@ -555,11 +555,15 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                         }
                     }
                 } else if( r2 != NULL && result2 == PASS_FILTER) {
-                    if(mUnpairedLeftWriter || mUnpairedRightWriter) {
+                    if(mUnpairedRightWriter) {
                         r2->appendToString(unpairedOut2);
                         if(mFailedWriter)
                             or1->appendToStringWithTag(failedOut,FAILED_TYPES[result1]);
-                    } else {
+                    } else if(mUnpairedLeftWriter) {
+                        r2->appendToString(unpairedOut1);
+                        if(mFailedWriter)
+                            or1->appendToStringWithTag(failedOut,FAILED_TYPES[result1]);
+                    }  else {
                         if(mFailedWriter) {
                             or1->appendToStringWithTag(failedOut, FAILED_TYPES[result1]);
                             or2->appendToStringWithTag(failedOut, "paired_read_is_failing");
@@ -648,9 +652,6 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
     } else if(mUnpairedLeftWriter) {
         mUnpairedLeftWriter->input(tid, unpairedOut1);
         unpairedOut1 = NULL;
-
-        mUnpairedLeftWriter->input(tid, unpairedOut2);
-        unpairedOut2 = NULL;
     }
 
     if(mOptions->split.byFileLines)
