@@ -100,9 +100,9 @@ This binary was compiled on CentOS, and tested on CentOS/Ubuntu
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 
-# or download specified version, i.e. fastp v0.23.0
-wget http://opengene.org/fastp/fastp.0.23.0
-mv fastp.0.23.0 fastp
+# or download specified version, i.e. fastp v0.23.1
+wget http://opengene.org/fastp/fastp.0.23.1
+mv fastp.0.23.1 fastp
 chmod a+x ./fastp
 ```
 ## or compile from source
