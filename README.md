@@ -64,7 +64,8 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 11. support long reads (data from PacBio / Nanopore devices).
 12. support reading from STDIN and writing to STDOUT
 13. support interleaved input
-14. ...
+14. support ultra-fast FASTQ-level deduplication
+15. ...
 
 This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
 
