@@ -1,0 +1,40 @@
+name: fastp ci
+on: 
+    push:
+	branches:
+	    - master
+    pull_request:
+	branches:
+	    - master
+jobs:
+    code-lint:
+	runs-on: ubuntu-latest
+	steps:
+	    - uses: actions/checkout@v2
+	    - uses: DoozyX/clang-format-lint-action@v0.13
+		with: 
+		    source: "./src"
+		    exclude: "./lib"
+		    extensions: "h,hpp,cpp,c" 
+		    clangFormatVersion: 10
+		    inplace: False
+    build:
+	runs-on: ubuntu-latest
+	steps:
+	    - uses: actions/checkout@v2
+	    - name: install build-essential
+		run: sudo apt install -y build-essential git
+	    - name: make deflate
+		run: git submodule sync
+		run: git subbmodule update --init --recursive src/libs/deflate
+		run: cd src/libs/deflate && make -j $(nproc) && sudo make install && cd -
+	    - name: make isa-l
+		run: sudo apt install -y autoconfig automake libtools nasm yasm
+		run: git submodule sync
+		run: git subbmodule update --init --recursive src/libs/isa-l
+		run: cd src/libs/isa-l && ./autogen.sh && ./configure --prefix=/usr --libdir=/usr/lib64 && make -j $(nproc) && sudo make install && cd -
+	    - name: make fatsp
+		run: make -j $(nproc) static
+	    - name: test
+		run: make test
+
