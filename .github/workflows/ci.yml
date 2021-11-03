@@ -35,17 +35,19 @@ jobs:
       - name: install build dependencies (MacOS)
         run: brew install automake autoconf coreutils nasm
         if: runner.os == 'macOS'
-      - name: make deflate
+      - name: get deflate
         uses: actions/checkout@v2
         with:
           repo: https://github.com/ebiggers/libdeflate.git
           path: src/libs/deflate
+      - name: build deflate
         run: |
           cd src/libs/deflate
           bash -c 'make -j $(nproc)'
           sudo make install && cd -
-      - name: make isa-l
+      - name: get isa-l
         uses: actions/checkout@v2
+      - name: build isa-l
         with:
           repo: https://github.com/intel/isa-l.git
           path: src/libs/isa-l
