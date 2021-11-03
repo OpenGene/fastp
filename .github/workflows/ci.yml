@@ -38,7 +38,7 @@ jobs:
       - name: get deflate
         uses: actions/checkout@v2
         with:
-          repository: https://github.com/ebiggers/libdeflate.git
+          repository: ebiggers/libdeflate
           path: fastp/src/libs/deflate
       - name: build deflate
         run: |
@@ -49,7 +49,7 @@ jobs:
       - name: get isa-l
         uses: actions/checkout@v2
         with:
-          repository: https://github.com/intel/isa-l.git
+          repository: intel/isa-l
           path: fastp/src/libs/isa-l
       - name: build isa-l
         run: |
