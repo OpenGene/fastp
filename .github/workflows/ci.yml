@@ -40,4 +40,4 @@ jobs:
       - name: make fatsp
         run: bash -c 'make -j $(nproc) static'
       - name: test
-        run: fastp --version
+        run:  chmod a+x ./fastp && ./fastp --version
