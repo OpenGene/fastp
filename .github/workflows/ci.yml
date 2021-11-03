@@ -35,7 +35,7 @@ jobs:
         # run: git submodule update --init --recursive src/libs/deflate
         run: |
           sudo apt update && sudo apt install -y nasm
-          git clone --depth=1 https://github.com/intel/isa-l.git
+          git clone --depth=1 https://github.com/intel/isa-l.git src/libs/isa-l
           cd src/libs/isa-l && ./autogen.sh && ./configure --prefix=/usr --libdir=/usr/lib64 && bash -c 'make -j $(nproc)'&& sudo make install && cd -
       - name: make fatsp
         run: bash -c 'make -j $(nproc) static'
