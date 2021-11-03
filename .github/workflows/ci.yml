@@ -34,7 +34,7 @@ jobs:
         # run: git submodule sync
         # run: git submodule update --init --recursive src/libs/deflate
         run: |
-          sudo apt update sudo apt install -y autoconfig automake libtools nasm yasml
+          sudo apt update && sudo apt install -y autoconfig automake libtools nasm yasml
           git clone --depth=1 https://github.com/intel/isa-l.git
           cd src/libs/isa-l && ./autogen.sh && ./configure --prefix=/usr --libdir=/usr/lib64 && make -j && sudo make install && cd -
       - name: make fatsp
