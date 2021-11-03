@@ -19,25 +19,44 @@ jobs:
           clangFormatVersion: 10
           inplace: False
   build:
-    runs-on: ubuntu-latest
+    needs: code-lint
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - name: install build-essential
-        run: sudo apt update && sudo apt install -y build-essential git
+      - name: checkout scm
+        uses: actions/checkout@v2
+      - name: install build dependencies (Linux)
+        run: sudo apt update && sudo apt install -y build-essential nasm
+        if: runner.os == 'Linux'
+      - name: install build dependencies (MacOS)
+        run: brew install automake autoconf coreutils nasm
+        if: runner.os == 'macOS'
       - name: make deflate
-        # run: git submodule sync
-        # run: git submodule update --init --recursive src/libs/deflate
+        uses: actions/checkout@v2
+        with:
+          repo: https://github.com/ebiggers/libdeflate.git
+          path: src/libs/deflate
         run: |
-          git clone --depth=1 https://github.com/ebiggers/libdeflate.git src/libs/deflate
-          cd src/libs/deflate && bash -c 'make -j $(nproc)' && sudo make install && cd -
+          cd src/libs/deflate
+          bash -c 'make -j $(nproc)'
+          sudo make install && cd -
       - name: make isa-l
-        # run: git submodule sync
-        # run: git submodule update --init --recursive src/libs/deflate
+        uses: actions/checkout@v2
+        with:
+          repo: https://github.com/intel/isa-l.git
+          path: src/libs/isa-l
         run: |
-          sudo apt update && sudo apt install -y nasm
-          git clone --depth=1 https://github.com/intel/isa-l.git src/libs/isa-l
-          cd src/libs/isa-l && ./autogen.sh && ./configure --prefix=/usr --libdir=/usr/lib64 && bash -c 'make -j $(nproc)'&& sudo make install && cd -
+          cd src/libs/isa-l
+          ./autogen.sh
+          ./configure --prefix=/usr --libdir=/usr/lib64
+          bash -c 'make -j $(nproc)'
+          sudo make install
+          cd -
       - name: make fatsp
         run: bash -c 'make -j $(nproc) static'
       - name: test
-        run:  chmod a+x ./fastp && ./fastp --version
+        run: chmod a+x ./fastp && ./fastp --version
