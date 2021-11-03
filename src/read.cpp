@@ -1,5 +1,6 @@
 #include "read.h"
 #include <sstream>
+#include <cstring>
 #include "util.h"
 
 Read::Read(string* name, string* seq, string* strand, string* quality, bool phred64){
