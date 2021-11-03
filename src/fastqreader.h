@@ -25,77 +25,79 @@ SOFTWARE.
 #ifndef FASTQ_READER_H
 #define FASTQ_READER_H
 
+#include "common.h"
+#include "igzip_lib.h"
+#include "read.h"
+#include "readpool.h"
+#include <fstream>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include "read.h"
-#include "common.h"
-#include <iostream>
-#include <fstream>
-#include "igzip_lib.h"
-#include "readpool.h"
 
-class FastqReader{
+class FastqReader {
 public:
-	FastqReader(string filename, bool hasQuality = true, bool phred64=false);
-	~FastqReader();
-	bool isZipped();
+  FastqReader(string filename, bool hasQuality = true, bool phred64 = false);
+  ~FastqReader();
+  bool isZipped();
 
-	void getBytes(size_t& bytesRead, size_t& bytesTotal);
+  void getBytes(size_t &bytesRead, size_t &bytesTotal);
 
-	//this function is not thread-safe
-	//do not call read() of a same FastqReader object from different threads concurrently
-	Read* read();
-	bool eof();
-	bool hasNoLineBreakAtEnd();
-	void setReadPool(ReadPool* rp);
+  // this function is not thread-safe
+  // do not call read() of a same FastqReader object from different threads
+  // concurrently
+  Read *read();
+  bool eof();
+  bool hasNoLineBreakAtEnd();
+  void setReadPool(ReadPool *rp);
 
 public:
-	static bool isZipFastq(string filename);
-	static bool isFastq(string filename);
-	static bool test();
+  static bool isZipFastq(string filename);
+  static bool isFastq(string filename);
+  static bool test();
 
 private:
-	void init();
-	void close();
-	void getLine(string* line);
-	void clearLineBreaks(char* line);
-	void readToBuf();
-	void readToBufIgzip();
-	bool bufferFinished();
+  void init();
+  void close();
+  void getLine(string *line);
+  void clearLineBreaks(char *line);
+  void readToBuf();
+  void readToBufIgzip();
+  bool bufferFinished();
 
 private:
-	string mFilename;
-	struct isal_gzip_header mGzipHeader;
-	struct inflate_state mGzipState;
-	unsigned char *mGzipInputBuffer;
-	unsigned char *mGzipOutputBuffer;
-	size_t mGzipInputBufferSize;
-	size_t mGzipOutputBufferSize;
-	size_t mGzipInputUsedBytes;
-	FILE* mFile;
-	bool mZipped;
-	char* mFastqBuf;
-	int mBufDataLen;
-	int mBufUsedLen;
-	bool mStdinMode;
-	bool mHasNoLineBreakAtEnd;
-	long mCounter;
-	bool mHasQuality;
-	bool mPhred64;
-    ReadPool* mReadPool;
-
+  string mFilename;
+  struct isal_gzip_header mGzipHeader;
+  struct inflate_state mGzipState;
+  unsigned char *mGzipInputBuffer;
+  unsigned char *mGzipOutputBuffer;
+  size_t mGzipInputBufferSize;
+  size_t mGzipOutputBufferSize;
+  size_t mGzipInputUsedBytes;
+  FILE *mFile;
+  bool mZipped;
+  char *mFastqBuf;
+  int mBufDataLen;
+  int mBufUsedLen;
+  bool mStdinMode;
+  bool mHasNoLineBreakAtEnd;
+  long mCounter;
+  bool mHasQuality;
+  bool mPhred64;
+  ReadPool *mReadPool;
 };
 
-class FastqReaderPair{
+class FastqReaderPair {
 public:
-	FastqReaderPair(FastqReader* left, FastqReader* right);
-	FastqReaderPair(string leftName, string rightName, bool hasQuality = true, bool phred64 = false, bool interleaved = false);
-	~FastqReaderPair();
-	ReadPair* read();
+  FastqReaderPair(FastqReader *left, FastqReader *right);
+  FastqReaderPair(string leftName, string rightName, bool hasQuality = true,
+                  bool phred64 = false, bool interleaved = false);
+  ~FastqReaderPair();
+  ReadPair *read();
+
 public:
-	FastqReader* mLeft;
-	FastqReader* mRight;
-	bool mInterleaved;
+  FastqReader *mLeft;
+  FastqReader *mRight;
+  bool mInterleaved;
 };
 
 #endif

@@ -25,48 +25,47 @@ SOFTWARE.
 #ifndef _WRITER_H
 #define _WRITER_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "common.h"
-#include <iostream>
-#include <fstream>
 #include "libdeflate.h"
 #include "options.h"
+#include <fstream>
+#include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 
 using namespace std;
 
-class Writer{
+class Writer {
 public:
-	Writer(Options* opt, string filename, int compression);
-	~Writer();
-	bool isZipped();
-	bool writeString(const string& str);
-	bool writeString(string* str);
-	bool write(const char* strdata, size_t size);
-	void flush();
-	string filename();
+  Writer(Options *opt, string filename, int compression);
+  ~Writer();
+  bool isZipped();
+  bool writeString(const string &str);
+  bool writeString(string *str);
+  bool write(const char *strdata, size_t size);
+  void flush();
+  string filename();
 
 public:
-	static bool test();
+  static bool test();
 
 private:
-	void init();
-	void close();
-	bool writeInternal(const char* strdata, size_t size);
+  void init();
+  void close();
+  bool writeInternal(const char *strdata, size_t size);
 
 private:
-	string mFilename;
-	libdeflate_compressor* mCompressor;
-	//ofstream* mOutStream;
-	FILE* mFP;
-	bool mZipped;
-	int mCompression;
-	bool haveToClose;
-	char* mBuffer;
-	size_t mBufDataLen;
-	size_t mBufSize;
-	Options* mOptions;
+  string mFilename;
+  libdeflate_compressor *mCompressor;
+  // ofstream* mOutStream;
+  FILE *mFP;
+  bool mZipped;
+  int mCompression;
+  bool haveToClose;
+  char *mBuffer;
+  size_t mBufDataLen;
+  size_t mBufSize;
+  Options *mOptions;
 };
 
 #endif

@@ -1,49 +1,49 @@
 #ifndef WRITER_THREAD_H
 #define WRITER_THREAD_H
 
+#include "options.h"
+#include "singleproducersingleconsumerlist.h"
+#include "writer.h"
+#include <atomic>
+#include <mutex>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <vector>
-#include "writer.h"
-#include "options.h"
-#include <atomic>
-#include <mutex>
-#include "singleproducersingleconsumerlist.h"
 
 using namespace std;
 
-class WriterThread{
+class WriterThread {
 public:
-    WriterThread(Options* opt, string filename);
-    ~WriterThread();
+  WriterThread(Options *opt, string filename);
+  ~WriterThread();
 
-    void initWriter(string filename1);
-    void initBufferLists();
+  void initWriter(string filename1);
+  void initBufferLists();
 
-    void cleanup();
+  void cleanup();
 
-    bool isCompleted();
-    void output();
-    void input(int tid, string* data);
-    bool setInputCompleted();
+  bool isCompleted();
+  void output();
+  void input(int tid, string *data);
+  bool setInputCompleted();
 
-    long bufferLength() {return mBufferLength;};
-    string getFilename() {return mFilename;}
-
-private:
-    void deleteWriter();
+  long bufferLength() { return mBufferLength; };
+  string getFilename() { return mFilename; }
 
 private:
-    Writer* mWriter1;
-    Options* mOptions;
-    string mFilename;
+  void deleteWriter();
 
-    // for spliting output
-    bool mInputCompleted;
-    atomic_long mBufferLength;
-    SingleProducerSingleConsumerList<string*>** mBufferLists;
-    int mWorkingBufferList;
+private:
+  Writer *mWriter1;
+  Options *mOptions;
+  string mFilename;
+
+  // for spliting output
+  bool mInputCompleted;
+  atomic_long mBufferLength;
+  SingleProducerSingleConsumerList<string *> **mBufferLists;
+  int mWorkingBufferList;
 };
 
 #endif

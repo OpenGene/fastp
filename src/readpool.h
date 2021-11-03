@@ -4,35 +4,35 @@
 #ifndef READ_POOL_H
 #define READ_POOL_H
 
+#include "options.h"
+#include "read.h"
+#include "singleproducersingleconsumerlist.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include "read.h"
-#include "options.h"
-#include "singleproducersingleconsumerlist.h"
 
 using namespace std;
 
-class ReadPool{
+class ReadPool {
 public:
-    ReadPool(Options* opt);
-    ~ReadPool();
-    bool input(int tid, Read* r);
-    Read* getOne();
-    void initBufferLists();
-    void cleanup();
-    size_t size();
+  ReadPool(Options *opt);
+  ~ReadPool();
+  bool input(int tid, Read *r);
+  Read *getOne();
+  void initBufferLists();
+  void cleanup();
+  size_t size();
 
 private:
-	void updateFullStatus();
+  void updateFullStatus();
 
 private:
-    Options* mOptions;
-    SingleProducerSingleConsumerList<Read*>** mBufferLists;
-    size_t mProduced;
-    size_t mConsumed;
-    unsigned long mLimit;
-    bool mIsFull;
+  Options *mOptions;
+  SingleProducerSingleConsumerList<Read *> **mBufferLists;
+  size_t mProduced;
+  size_t mConsumed;
+  unsigned long mLimit;
+  bool mIsFull;
 };
 
 #endif

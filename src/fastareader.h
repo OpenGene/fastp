@@ -7,60 +7,45 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <string>
-#include <map>
 
 using namespace std;
 
-class FastaReader
-{
+class FastaReader {
 public:
-    FastaReader(string fastaFile, bool forceUpperCase = true);
-    ~FastaReader();
-    bool hasNext();
-    void readNext();
-    void readAll();
+  FastaReader(string fastaFile, bool forceUpperCase = true);
+  ~FastaReader();
+  bool hasNext();
+  void readNext();
+  void readAll();
 
-    inline string currentID()
-    {
-        return mCurrentID;
-    }
+  inline string currentID() { return mCurrentID; }
 
-    inline string currentDescription()
-    {
-        return mCurrentDescription;
-    }
+  inline string currentDescription() { return mCurrentDescription; }
 
-    inline string currentSequence()
-    {
-        return mCurrentSequence;
-    }
+  inline string currentSequence() { return mCurrentSequence; }
 
-    inline map<string, string>& contigs() {
-        return mAllContigs;
-    }
+  inline map<string, string> &contigs() { return mAllContigs; }
 
-    static bool test();
-
+  static bool test();
 
 public:
-    string mCurrentSequence;
-    string mCurrentID ;
-    string mCurrentDescription;
-    map<string, string> mAllContigs;
+  string mCurrentSequence;
+  string mCurrentID;
+  string mCurrentDescription;
+  map<string, string> mAllContigs;
 
 private:
-    bool readLine();
-    bool endOfLine(char c);
-    void setFastaSequenceIdDescription();
+  bool readLine();
+  bool endOfLine(char c);
+  void setFastaSequenceIdDescription();
 
 private:
-    string mFastaFile;
-    ifstream mFastaFileStream;
-    bool mForceUpperCase;
+  string mFastaFile;
+  ifstream mFastaFileStream;
+  bool mForceUpperCase;
 };
 
-
 #endif
-

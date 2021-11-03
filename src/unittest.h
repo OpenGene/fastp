@@ -7,11 +7,11 @@
 
 using namespace std;
 
-class UnitTest{
+class UnitTest {
 public:
-    UnitTest();
-    void run();
-    bool report(bool result, string message);
+  UnitTest();
+  void run();
+  bool report(bool result, string message);
 };
 
 #endif

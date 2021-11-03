@@ -1,22 +1,21 @@
 #ifndef PROCESSOR_H
 #define PROCESSOR_H
 
+#include "options.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include "options.h"
 
 using namespace std;
 
-class Processor{
+class Processor {
 public:
-    Processor(Options* opt);
-    ~Processor();
-    bool process();
+  Processor(Options *opt);
+  ~Processor();
+  bool process();
 
 private:
-    Options* mOptions;
+  Options *mOptions;
 };
-
 
 #endif
