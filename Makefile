@@ -37,6 +37,7 @@ clean:
 	@if test -d $(DIR_OBJ) ; \
 	then \
 		find $(DIR_OBJ) -name *.o -delete; \
+                rm -rf $(DIR_OBJ); \
 	fi
 	@if test -e $(TARGET) ; \
 	then \
