@@ -42,7 +42,7 @@ jobs:
           path: fastp/src/libs/deflate
       - name: build deflate
         run: |
-          cd src/libs/deflate
+          cd fastp/src/libs/deflate
           bash -c 'make -j $(nproc)'
           sudo make install
           cd -
@@ -53,7 +53,7 @@ jobs:
           path: fastp/src/libs/isa-l
       - name: build isa-l
         run: |
-          cd src/libs/isa-l
+          cd fastp/src/libs/isa-l
           ./autogen.sh
           ./configure --prefix=/usr --libdir=/usr/lib64
           bash -c 'make -j $(nproc)'
