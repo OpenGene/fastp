@@ -47,10 +47,10 @@ jobs:
           sudo make install && cd -
       - name: get isa-l
         uses: actions/checkout@v2
-      - name: build isa-l
         with:
           repo: https://github.com/intel/isa-l.git
           path: src/libs/isa-l
+      - name: build isa-l
         run: |
           cd src/libs/isa-l
           ./autogen.sh
