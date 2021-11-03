@@ -31,7 +31,7 @@ SOFTWARE.
 #include "common.h"
 #include <iostream>
 #include <fstream>
-#include "3rd/isa-l/include/igzip_lib.h"
+#include "libs/isa-l/include/igzip_lib.h"
 #include "readpool.h"
 
 class FastqReader{

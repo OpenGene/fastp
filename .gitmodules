@@ -1,6 +1,6 @@
 [submodule "src/3rd/isa-l"]
-	path = src/3rd/isa-l
+	path = src/libs/isa-l
 	url = https://github.com/intel/isa-l.git
 [submodule "src/3rd/libdeflate"]
-	path = src/3rd/libdeflate
+	path = src/libs/libdeflate
 	url = https://github.com/ebiggers/libdeflate.git
