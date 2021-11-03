@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: install build-essential
-        run: sudo apt install -y build-essential git
+        run: sudo apt update && sudo apt install -y build-essential git
       - name: make deflate
         # run: git submodule sync
         # run: git submodule update --init --recursive src/libs/deflate
@@ -31,10 +31,10 @@ jobs:
           git clone --depth=1 https://github.com/ebiggers/libdeflate.git src/libs/deflate
           cd src/libs/deflate && make -j && sudo make install && cd -
       - name: make isa-l
+        # run: git submodule sync
+        # run: git submodule update --init --recursive src/libs/deflate
         run: |
-          sudo apt install -y autoconfig automake libtools nasm yasml
-          # run: git submodule sync
-          # run: git submodule update --init --recursive src/libs/deflate
+          sudo apt update sudo apt install -y autoconfig automake libtools nasm yasml
           git clone --depth=1 https://github.com/intel/isa-l.git
           cd src/libs/isa-l && ./autogen.sh && ./configure --prefix=/usr --libdir=/usr/lib64 && make -j && sudo make install && cd -
       - name: make fatsp
