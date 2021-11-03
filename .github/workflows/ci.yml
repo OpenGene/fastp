@@ -39,10 +39,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: ebiggers/libdeflate
-          path: fastp/src/libs/deflate
+          path: src/libs/deflate
       - name: build deflate
         run: |
-          cd fastp/src/libs/deflate
+          cd src/libs/deflate
           bash -c 'make -j $(nproc)'
           sudo make install
           cd -
@@ -50,10 +50,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: intel/isa-l
-          path: fastp/src/libs/isa-l
+          path: src/libs/isa-l
       - name: build isa-l
         run: |
-          cd fastp/src/libs/isa-l
+          cd src/libs/isa-l
           ./autogen.sh
           ./configure --prefix=/usr --libdir=/usr/lib64
           bash -c 'make -j $(nproc)'
