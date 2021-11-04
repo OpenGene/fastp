@@ -68,12 +68,12 @@ jobs:
           bash -c 'make -j $(nproc)'
           sudo make install
           cd -
-        if: runner.os == "macOS"
+        if: runner.os == 'macOS'
       - name: make fatsp  (MacOS)
         run: bash -c 'make -j $(nproc)'
         if: runner.os == "macOS"
       - name: make fastp static (Ubuntu)
         run: bash -c 'make -j $(nproc) static'
-        if: runner.os == "Linux"
+        if: runner.os == 'Linux'
       - name: test
         run: chmod a+x ./fastp && ./fastp --version
