@@ -61,8 +61,7 @@ void Options::loadFastaAdapters() {
     if (iter->second.length() >= 6) {
       adapter.seqsInFasta.push_back(iter->second);
     } else {
-      cerr << "skip too short adapter sequence in " << adapter.fastaFile
-           << " (6bp required): " << iter->second << endl;
+      cerr << "skip too short adapter sequence in " << adapter.fastaFile << " (6bp required): " << iter->second << endl;
     }
   }
 
@@ -146,11 +145,9 @@ bool Options::validate() {
       if (merge.out == out2)
         error_exit("--merged_out and --out2 shouldn't have same file name");
       if (merge.out == unpaired1)
-        error_exit(
-            "--merged_out and --unpaired1 shouldn't have same file name");
+        error_exit("--merged_out and --unpaired1 shouldn't have same file name");
       if (merge.out == unpaired2)
-        error_exit(
-            "--merged_out and --unpaired2 shouldn't have same file name");
+        error_exit("--merged_out and --unpaired2 shouldn't have same file name");
     }
   } else {
     // not in merging mode
@@ -227,18 +224,15 @@ bool Options::validate() {
   }
   if (!isPaired()) {
     if (!unpaired1.empty()) {
-      cerr << "Not paired-end mode. Ignoring argument --unpaired1 = "
-           << unpaired1 << endl;
+      cerr << "Not paired-end mode. Ignoring argument --unpaired1 = " << unpaired1 << endl;
       unpaired1 = "";
     }
     if (!unpaired2.empty()) {
-      cerr << "Not paired-end mode. Ignoring argument --unpaired2 = "
-           << unpaired2 << endl;
+      cerr << "Not paired-end mode. Ignoring argument --unpaired2 = " << unpaired2 << endl;
       unpaired2 = "";
     }
     if (!overlappedOut.empty()) {
-      cerr << "Not paired-end mode. Ignoring argument --overlapped_out = "
-           << overlappedOut << endl;
+      cerr << "Not paired-end mode. Ignoring argument --overlapped_out = " << overlappedOut << endl;
       overlappedOut = "";
     }
   }
@@ -315,8 +309,7 @@ bool Options::validate() {
   if (thread < 1) {
     thread = 1;
   } else if (thread > 16) {
-    cerr << "WARNING: fastp uses up to 16 threads although you specified "
-         << thread << endl;
+    cerr << "WARNING: fastp uses up to 16 threads although you specified " << thread << endl;
     thread = 16;
   }
 
@@ -340,14 +333,12 @@ bool Options::validate() {
     error_exit("average quality score requirement (--average_qual) should be 0 "
                "~ 93, suggest 20 ~ 30");
 
-  if (qualfilter.unqualifiedPercentLimit < 0 ||
-      qualfilter.unqualifiedPercentLimit > 100)
+  if (qualfilter.unqualifiedPercentLimit < 0 || qualfilter.unqualifiedPercentLimit > 100)
     error_exit("unqualified percent limit (--unqualified_percent_limit) should "
                "be 0 ~ 100, suggest 20 ~ 60");
 
   if (qualfilter.nBaseLimit < 0 || qualfilter.nBaseLimit > 50)
-    error_exit(
-        "N base limit (--n_base_limit) should be 0 ~ 50, suggest 3 ~ 10");
+    error_exit("N base limit (--n_base_limit) should be 0 ~ 50, suggest 3 ~ 10");
 
   if (lengthFilter.requiredLength < 0)
     error_exit("length requirement (--length_required) should be >0, suggest "
@@ -380,8 +371,7 @@ bool Options::validate() {
     }
   }
 
-  if (qualityCut.enabledFront || qualityCut.enabledTail ||
-      qualityCut.enabledRight) {
+  if (qualityCut.enabledFront || qualityCut.enabledTail || qualityCut.enabledRight) {
     if (qualityCut.windowSizeShared < 1 || qualityCut.windowSizeShared > 1000)
       error_exit("the sliding window size for cutting by quality "
                  "(--cut_window_size) should be between 1~1000.");
@@ -392,23 +382,20 @@ bool Options::validate() {
       error_exit("the sliding window size for cutting by quality "
                  "(--cut_front_window_size) should be between 1~1000.");
     if (qualityCut.qualityFront < 1 || qualityCut.qualityFront > 30)
-      error_exit(
-          "the mean quality requirement for cutting by quality "
-          "(--cut_front_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
+      error_exit("the mean quality requirement for cutting by quality "
+                 "(--cut_front_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
     if (qualityCut.windowSizeTail < 1 || qualityCut.windowSizeTail > 1000)
       error_exit("the sliding window size for cutting by quality "
                  "(--cut_tail_window_size) should be between 1~1000.");
     if (qualityCut.qualityTail < 1 || qualityCut.qualityTail > 30)
-      error_exit(
-          "the mean quality requirement for cutting by quality "
-          "(--cut_tail_mean_quality) should be 1 ~ 30, suggest 13 ~ 20.");
+      error_exit("the mean quality requirement for cutting by quality "
+                 "(--cut_tail_mean_quality) should be 1 ~ 30, suggest 13 ~ 20.");
     if (qualityCut.windowSizeRight < 1 || qualityCut.windowSizeRight > 1000)
       error_exit("the sliding window size for cutting by quality "
                  "(--cut_right_window_size) should be between 1~1000.");
     if (qualityCut.qualityRight < 1 || qualityCut.qualityRight > 30)
-      error_exit(
-          "the mean quality requirement for cutting by quality "
-          "(--cut_right_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
+      error_exit("the mean quality requirement for cutting by quality "
+                 "(--cut_right_mean_quality) should be 1 ~ 30, suggest 15 ~ 20.");
   }
 
   if (adapter.sequence != "auto" && !adapter.sequence.empty()) {
@@ -432,8 +419,7 @@ bool Options::validate() {
   if (adapter.sequenceR2 != "auto" && !adapter.sequenceR2.empty()) {
     // validate adapter sequenceR2 for single end adapter trimming
     if (adapter.sequenceR2.length() <= 3)
-      error_exit(
-          "the sequence of <adapter_sequence_r2> should be longer than 3");
+      error_exit("the sequence of <adapter_sequence_r2> should be longer than 3");
 
     // validate bases
     for (int i = 0; i < adapter.sequenceR2.length(); i++) {
@@ -456,13 +442,11 @@ bool Options::validate() {
   }
 
   if (umi.enabled) {
-    if (umi.location == UMI_LOC_READ1 || umi.location == UMI_LOC_READ2 ||
-        umi.location == UMI_LOC_PER_READ) {
+    if (umi.location == UMI_LOC_READ1 || umi.location == UMI_LOC_READ2 || umi.location == UMI_LOC_PER_READ) {
       if (umi.length < 1 || umi.length > 100)
         error_exit("UMI length should be 1~100");
       if (umi.skip < 0 || umi.skip > 100)
-        error_exit(
-            "The base number to skip after UMI <umi_skip> should be 0~100");
+        error_exit("The base number to skip after UMI <umi_skip> should be 0~100");
     } else {
       if (umi.skip > 0)
         error_exit("Only if the UMI location is in read1/read2/per_read, you "
@@ -476,8 +460,7 @@ bool Options::validate() {
         error_exit("UMI prefix should be shorter than 10");
       for (int i = 0; i < umi.prefix.length(); i++) {
         char c = umi.prefix[i];
-        if (!(c >= 'A' && c <= 'Z') && !(c >= 'a' && c <= 'z') &&
-            !(c >= '0' && c <= '9')) {
+        if (!(c >= 'A' && c <= 'Z') && !(c >= 'a' && c <= 'z') && !(c >= '0' && c <= '9')) {
           error_exit("UMI prefix can only have characters and numbers, but the "
                      "given is: " +
                      umi.prefix);
@@ -510,8 +493,7 @@ bool Options::shallDetectAdapter(bool isR2) {
     return false;
 
   if (isR2) {
-    return isPaired() && adapter.detectAdapterForPE &&
-           adapter.sequenceR2 == "auto";
+    return isPaired() && adapter.detectAdapterForPE && adapter.sequenceR2 == "auto";
   } else {
     if (isPaired())
       return adapter.detectAdapterForPE && adapter.sequence == "auto";
@@ -520,8 +502,7 @@ bool Options::shallDetectAdapter(bool isR2) {
   }
 }
 
-void Options::initIndexFiltering(string blacklistFile1, string blacklistFile2,
-                                 int threshold) {
+void Options::initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold) {
   if (blacklistFile1.empty() && blacklistFile2.empty())
     return;
 
@@ -561,8 +542,7 @@ vector<string> Options::makeListFromFileByLine(string filename) {
     }
     string linestr(line);
     for (int i = 0; i < linestr.length(); i++) {
-      if (linestr[i] != 'A' && linestr[i] != 'T' && linestr[i] != 'C' &&
-          linestr[i] != 'G') {
+      if (linestr[i] != 'A' && linestr[i] != 'T' && linestr[i] != 'C' && linestr[i] != 'G') {
         error_exit("processing " + filename +
                    ", each line should be one barcode, which can only contain "
                    "A/T/C/G");

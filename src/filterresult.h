@@ -33,8 +33,7 @@ public:
   static FilterResult *merge(vector<FilterResult *> &list);
   void print();
   // for single end
-  void addAdapterTrimmed(string adapter, bool isR2 = false,
-                         bool incTrimmedCounter = true);
+  void addAdapterTrimmed(string adapter, bool isR2 = false, bool incTrimmedCounter = true);
   // for paired end
   void addAdapterTrimmed(string adapter1, string adapter2);
   void addPolyXTrimmed(int base, int length);
@@ -50,11 +49,8 @@ public:
   void reportHtml(ofstream &ofs, long totalReads, long totalBases);
   // a part of HTML report for adapters
   void reportAdapterHtml(ofstream &ofs, long totalBases);
-  void outputAdaptersJson(ofstream &ofs,
-                          map<string, long, classcomp> &adapterCounts);
-  void outputAdaptersHtml(ofstream &ofs,
-                          map<string, long, classcomp> &adapterCounts,
-                          long totalBases);
+  void outputAdaptersJson(ofstream &ofs, map<string, long, classcomp> &adapterCounts);
+  void outputAdaptersHtml(ofstream &ofs, map<string, long, classcomp> &adapterCounts, long totalBases);
   // deal with base correction results
   long *getCorrectionMatrix() { return mCorrectionMatrix; }
   long getTotalCorrectedBases();

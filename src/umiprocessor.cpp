@@ -34,8 +34,7 @@ void UmiProcessor::process(Read *r1, Read *r2) {
     string umiMerged = umi1;
     r1->trimFront(umi1.length() + mOptions->umi.skip);
     if (r2) {
-      string umi2 =
-          r2->mSeq->substr(0, min(r2->length(), mOptions->umi.length));
+      string umi2 = r2->mSeq->substr(0, min(r2->length(), mOptions->umi.length));
       umiMerged = umiMerged + "_" + umi2;
       r2->trimFront(umi2.length() + mOptions->umi.skip);
     }
@@ -46,8 +45,7 @@ void UmiProcessor::process(Read *r1, Read *r2) {
     }
   }
 
-  if (mOptions->umi.location != UMI_LOC_PER_INDEX &&
-      mOptions->umi.location != UMI_LOC_PER_READ) {
+  if (mOptions->umi.location != UMI_LOC_PER_INDEX && mOptions->umi.location != UMI_LOC_PER_READ) {
     if (r1 && !umi.empty())
       addUmiToName(r1, umi);
     if (r2 && !umi.empty())

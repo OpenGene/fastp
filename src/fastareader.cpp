@@ -22,8 +22,7 @@ FastaReader::FastaReader(string faFile, bool forceUpperCase) {
   mFastaFileStream.open(mFastaFile.c_str(), ios::in);
   // verify that the file can be read
   if (!mFastaFileStream.is_open()) {
-    string msg =
-        "There is a problem with the provided fasta file: could NOT read ";
+    string msg = "There is a problem with the provided fasta file: could NOT read ";
     msg.append(mFastaFile.c_str());
     msg.append("...\n");
     throw invalid_argument(msg);
@@ -102,12 +101,10 @@ bool FastaReader::test() {
   string contig2 = "GTCTGCACAGCCGCTTTCCACACAGAACCCCCCCCTCCCCCCGCTTCTGGCAAACCCCA"
                    "AAAACAAAGAACCCTA";
 
-  if (reader.mAllContigs.count("contig1") == 0 ||
-      reader.mAllContigs.count("contig2") == 0)
+  if (reader.mAllContigs.count("contig1") == 0 || reader.mAllContigs.count("contig2") == 0)
     return false;
 
-  if (reader.mAllContigs["contig1"] != contig1 ||
-      reader.mAllContigs["contig2"] != contig2)
+  if (reader.mAllContigs["contig1"] != contig1 || reader.mAllContigs["contig2"] != contig2)
     return false;
 
   return true;

@@ -51,15 +51,13 @@ FilterResult *FilterResult::merge(vector<FilterResult *> &list) {
 
     // merge adapter stats
     map<string, long>::iterator iter;
-    for (iter = list[i]->mAdapter1.begin(); iter != list[i]->mAdapter1.end();
-         iter++) {
+    for (iter = list[i]->mAdapter1.begin(); iter != list[i]->mAdapter1.end(); iter++) {
       if (result->mAdapter1.count(iter->first) > 0)
         result->mAdapter1[iter->first] += iter->second;
       else
         result->mAdapter1[iter->first] = iter->second;
     }
-    for (iter = list[i]->mAdapter2.begin(); iter != list[i]->mAdapter2.end();
-         iter++) {
+    for (iter = list[i]->mAdapter2.begin(); iter != list[i]->mAdapter2.end(); iter++) {
       if (result->mAdapter2.count(iter->first) > 0)
         result->mAdapter2[iter->first] += iter->second;
       else
@@ -105,8 +103,7 @@ long FilterResult::getCorrectionNum(char from, char to) {
   return mCorrectionMatrix[f * 8 + t];
 }
 
-void FilterResult::addAdapterTrimmed(string adapter, bool isR2,
-                                     bool incTrimmedCounter) {
+void FilterResult::addAdapterTrimmed(string adapter, bool isR2, bool incTrimmedCounter) {
   if (adapter.empty())
     return;
   if (incTrimmedCounter)
@@ -164,35 +161,27 @@ long FilterResult::getTotalPolyXTrimmedBases() {
 
 void FilterResult::print() {
   cerr << "reads passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
-  cerr << "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY]
-       << endl;
-  cerr << "reads failed due to too many N: " << mFilterReadStats[FAIL_N_BASE]
-       << endl;
+  cerr << "reads failed due to low quality: " << mFilterReadStats[FAIL_QUALITY] << endl;
+  cerr << "reads failed due to too many N: " << mFilterReadStats[FAIL_N_BASE] << endl;
   if (mOptions->lengthFilter.enabled) {
-    cerr << "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH]
-         << endl;
+    cerr << "reads failed due to too short: " << mFilterReadStats[FAIL_LENGTH] << endl;
     if (mOptions->lengthFilter.maxLength > 0)
-      cerr << "reads failed due to too long: "
-           << mFilterReadStats[FAIL_TOO_LONG] << endl;
+      cerr << "reads failed due to too long: " << mFilterReadStats[FAIL_TOO_LONG] << endl;
   }
   if (mOptions->complexityFilter.enabled) {
-    cerr << "reads failed due to low complexity: "
-         << mFilterReadStats[FAIL_COMPLEXITY] << endl;
+    cerr << "reads failed due to low complexity: " << mFilterReadStats[FAIL_COMPLEXITY] << endl;
   }
   if (mOptions->adapter.enabled) {
     cerr << "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
     cerr << "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
   }
   if (mOptions->polyXTrim.enabled) {
-    cerr << "reads with polyX in 3' end: " << getTotalPolyXTrimmedReads()
-         << endl;
-    cerr << "bases trimmed in polyX tail: " << getTotalPolyXTrimmedBases()
-         << endl;
+    cerr << "reads with polyX in 3' end: " << getTotalPolyXTrimmedReads() << endl;
+    cerr << "bases trimmed in polyX tail: " << getTotalPolyXTrimmedBases() << endl;
   }
   if (mOptions->correction.enabled) {
     cerr << "reads corrected by overlap analysis: " << mCorrectedReads << endl;
-    cerr << "bases corrected by overlap analysis: " << getTotalCorrectedBases()
-         << endl;
+    cerr << "bases corrected by overlap analysis: " << getTotalCorrectedBases() << endl;
   }
 }
 
@@ -200,8 +189,7 @@ void FilterResult::reportJson(ofstream &ofs, string padding) {
   ofs << "{" << endl;
 
   ofs << padding << "\t"
-      << "\"passed_filter_reads\": " << mFilterReadStats[PASS_FILTER] << ","
-      << endl;
+      << "\"passed_filter_reads\": " << mFilterReadStats[PASS_FILTER] << "," << endl;
   if (mOptions->correction.enabled) {
     ofs << padding << "\t"
         << "\"corrected_reads\": " << mCorrectedReads << "," << endl;
@@ -209,26 +197,21 @@ void FilterResult::reportJson(ofstream &ofs, string padding) {
         << "\"corrected_bases\": " << getTotalCorrectedBases() << "," << endl;
   }
   ofs << padding << "\t"
-      << "\"low_quality_reads\": " << mFilterReadStats[FAIL_QUALITY] << ","
-      << endl;
+      << "\"low_quality_reads\": " << mFilterReadStats[FAIL_QUALITY] << "," << endl;
   ofs << padding << "\t"
-      << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << ","
-      << endl;
+      << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << "," << endl;
   if (mOptions->complexityFilter.enabled)
     ofs << padding << "\t"
-        << "\"low_complexity_reads\": " << mFilterReadStats[FAIL_COMPLEXITY]
-        << "," << endl;
+        << "\"low_complexity_reads\": " << mFilterReadStats[FAIL_COMPLEXITY] << "," << endl;
   ofs << padding << "\t"
-      << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << ","
-      << endl;
+      << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << "," << endl;
   ofs << padding << "\t"
       << "\"too_long_reads\": " << mFilterReadStats[FAIL_TOO_LONG] << endl;
 
   ofs << padding << "}," << endl;
 }
 
-void FilterResult::outputAdaptersJson(
-    ofstream &ofs, map<string, long, classcomp> &adapterCounts) {
+void FilterResult::outputAdaptersJson(ofstream &ofs, map<string, long, classcomp> &adapterCounts) {
   map<string, long>::iterator iter;
 
   long total = 0;
@@ -275,12 +258,10 @@ void FilterResult::reportAdapterJson(ofstream &ofs, string padding) {
   ofs << padding << "\t"
       << "\"adapter_trimmed_bases\": " << mTrimmedAdapterBases << "," << endl;
   ofs << padding << "\t"
-      << "\"read1_adapter_sequence\": \"" << mOptions->getAdapter1() << "\","
-      << endl;
+      << "\"read1_adapter_sequence\": \"" << mOptions->getAdapter1() << "\"," << endl;
   if (mOptions->isPaired()) {
     ofs << padding << "\t"
-        << "\"read2_adapter_sequence\": \"" << mOptions->getAdapter2() << "\","
-        << endl;
+        << "\"read2_adapter_sequence\": \"" << mOptions->getAdapter2() << "\"," << endl;
   }
 
   ofs << padding << "\t"
@@ -303,8 +284,7 @@ void FilterResult::reportAdapterJson(ofstream &ofs, string padding) {
   ofs << padding << "}," << endl;
 }
 
-void writeBaseCountsJson(ofstream &ofs, string pad, string key, long total,
-                         long (&counts)[4]) {
+void writeBaseCountsJson(ofstream &ofs, string pad, string key, long total, long (&counts)[4]) {
   ofs << pad << "\t\"total_" << key << "\": " << total << "," << endl;
   ofs << pad << "\t\"" << key << "\":{";
   for (int b = 0; b < 4; b++) {
@@ -317,11 +297,9 @@ void writeBaseCountsJson(ofstream &ofs, string pad, string key, long total,
 
 void FilterResult::reportPolyXTrimJson(ofstream &ofs, string padding) {
   ofs << padding << "{" << endl;
-  writeBaseCountsJson(ofs, padding, "polyx_trimmed_reads",
-                      getTotalPolyXTrimmedReads(), mTrimmedPolyXReads);
+  writeBaseCountsJson(ofs, padding, "polyx_trimmed_reads", getTotalPolyXTrimmedReads(), mTrimmedPolyXReads);
   ofs << "," << endl;
-  writeBaseCountsJson(ofs, padding, "polyx_trimmed_bases",
-                      getTotalPolyXTrimmedBases(), mTrimmedPolyXBases);
+  writeBaseCountsJson(ofs, padding, "polyx_trimmed_bases", getTotalPolyXTrimmedBases(), mTrimmedPolyXBases);
   ofs << endl << padding << "}," << endl;
 }
 
@@ -351,46 +329,36 @@ data, layout);\n";
 void FilterResult::reportHtml(ofstream &ofs, long totalReads, long totalBases) {
   double total = (double)totalReads;
   ofs << "<table class='summary_table'>\n";
-  HtmlReporter::outputRow(
-      ofs, "reads passed filters:",
-      HtmlReporter::formatNumber(mFilterReadStats[PASS_FILTER]) + " (" +
-          to_string(mFilterReadStats[PASS_FILTER] * 100.0 / total) + "%)");
+  HtmlReporter::outputRow(ofs, "reads passed filters:",
+                          HtmlReporter::formatNumber(mFilterReadStats[PASS_FILTER]) + " (" +
+                              to_string(mFilterReadStats[PASS_FILTER] * 100.0 / total) + "%)");
   if (mOptions->correction.enabled) {
     HtmlReporter::outputRow(ofs, "reads corrected:",
                             HtmlReporter::formatNumber(mCorrectedReads) + " (" +
-                                to_string(mCorrectedReads * 100.0 / total) +
-                                "%)");
-    HtmlReporter::outputRow(
-        ofs, "bases corrected:",
-        HtmlReporter::formatNumber(getTotalCorrectedBases()) + " (" +
-            to_string(getTotalCorrectedBases() * 100.0 / totalBases) + "%)");
+                                to_string(mCorrectedReads * 100.0 / total) + "%)");
+    HtmlReporter::outputRow(ofs, "bases corrected:",
+                            HtmlReporter::formatNumber(getTotalCorrectedBases()) + " (" +
+                                to_string(getTotalCorrectedBases() * 100.0 / totalBases) + "%)");
   }
-  HtmlReporter::outputRow(
-      ofs, "reads with low quality:",
-      HtmlReporter::formatNumber(mFilterReadStats[FAIL_QUALITY]) + " (" +
-          to_string(mFilterReadStats[FAIL_QUALITY] * 100.0 / total) + "%)");
-  HtmlReporter::outputRow(
-      ofs, "reads with too many N:",
-      HtmlReporter::formatNumber(mFilterReadStats[FAIL_N_BASE]) + " (" +
-          to_string(mFilterReadStats[FAIL_N_BASE] * 100.0 / total) + "%)");
+  HtmlReporter::outputRow(ofs, "reads with low quality:",
+                          HtmlReporter::formatNumber(mFilterReadStats[FAIL_QUALITY]) + " (" +
+                              to_string(mFilterReadStats[FAIL_QUALITY] * 100.0 / total) + "%)");
+  HtmlReporter::outputRow(ofs, "reads with too many N:",
+                          HtmlReporter::formatNumber(mFilterReadStats[FAIL_N_BASE]) + " (" +
+                              to_string(mFilterReadStats[FAIL_N_BASE] * 100.0 / total) + "%)");
   if (mOptions->lengthFilter.enabled) {
-    HtmlReporter::outputRow(
-        ofs, "reads too short:",
-        HtmlReporter::formatNumber(mFilterReadStats[FAIL_LENGTH]) + " (" +
-            to_string(mFilterReadStats[FAIL_LENGTH] * 100.0 / total) + "%)");
+    HtmlReporter::outputRow(ofs, "reads too short:",
+                            HtmlReporter::formatNumber(mFilterReadStats[FAIL_LENGTH]) + " (" +
+                                to_string(mFilterReadStats[FAIL_LENGTH] * 100.0 / total) + "%)");
     if (mOptions->lengthFilter.maxLength > 0)
-      HtmlReporter::outputRow(
-          ofs, "reads too long:",
-          HtmlReporter::formatNumber(mFilterReadStats[FAIL_TOO_LONG]) + " (" +
-              to_string(mFilterReadStats[FAIL_TOO_LONG] * 100.0 / total) +
-              "%)");
+      HtmlReporter::outputRow(ofs, "reads too long:",
+                              HtmlReporter::formatNumber(mFilterReadStats[FAIL_TOO_LONG]) + " (" +
+                                  to_string(mFilterReadStats[FAIL_TOO_LONG] * 100.0 / total) + "%)");
   }
   if (mOptions->complexityFilter.enabled)
-    HtmlReporter::outputRow(
-        ofs, "reads with low complexity:",
-        HtmlReporter::formatNumber(mFilterReadStats[FAIL_COMPLEXITY]) + " (" +
-            to_string(mFilterReadStats[FAIL_COMPLEXITY] * 100.0 / total) +
-            "%)");
+    HtmlReporter::outputRow(ofs, "reads with low complexity:",
+                            HtmlReporter::formatNumber(mFilterReadStats[FAIL_COMPLEXITY]) + " (" +
+                                to_string(mFilterReadStats[FAIL_COMPLEXITY] * 100.0 / total) + "%)");
   ofs << "</table>\n";
 }
 
@@ -411,9 +379,7 @@ void FilterResult::reportAdapterHtml(ofstream &ofs, long totalBases) {
   }
 }
 
-void FilterResult::outputAdaptersHtml(
-    ofstream &ofs, map<string, long, classcomp> &adapterCounts,
-    long totalBases) {
+void FilterResult::outputAdaptersHtml(ofstream &ofs, map<string, long, classcomp> &adapterCounts, long totalBases) {
 
   map<string, long>::iterator iter;
 
@@ -431,8 +397,7 @@ void FilterResult::outputAdaptersHtml(
   if (frac < 0.01) {
     ofs << "<div class='sub_section_tips'>The input has little adapter "
            "percentage (~"
-        << to_string(frac * 100.0)
-        << "%), probably it's trimmed before.</div>\n";
+        << to_string(frac * 100.0) << "%), probably it's trimmed before.</div>\n";
   }
 
   if (total == 0)
@@ -454,8 +419,7 @@ void FilterResult::outputAdaptersHtml(
     if (iter->second / dTotal < reportThreshold)
       continue;
 
-    ofs << "<tr><td class='adapter_col'>" << iter->first
-        << "</td><td class='col2'>" << iter->second << "</td></tr>\n";
+    ofs << "<tr><td class='adapter_col'>" << iter->first << "</td><td class='col2'>" << iter->second << "</td></tr>\n";
 
     reported += iter->second;
   }
@@ -466,8 +430,7 @@ void FilterResult::outputAdaptersHtml(
     string tag = "other adapter sequences";
     if (reported == 0)
       tag = "all adapter sequences";
-    ofs << "<tr><td class='adapter_col'>" << tag << "</td><td class='col2'>"
-        << unreported << "</td></tr>\n";
+    ofs << "<tr><td class='adapter_col'>" << tag << "</td><td class='col2'>" << unreported << "</td></tr>\n";
   }
   ofs << "</table>\n";
 }

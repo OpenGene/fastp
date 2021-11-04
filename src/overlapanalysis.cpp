@@ -4,16 +4,13 @@ OverlapAnalysis::OverlapAnalysis() {}
 
 OverlapAnalysis::~OverlapAnalysis() {}
 
-OverlapResult OverlapAnalysis::analyze(Read *r1, Read *r2, int overlapDiffLimit,
-                                       int overlapRequire,
+OverlapResult OverlapAnalysis::analyze(Read *r1, Read *r2, int overlapDiffLimit, int overlapRequire,
                                        double diffPercentLimit) {
-  return analyze(r1->mSeq, r2->mSeq, overlapDiffLimit, overlapRequire,
-                 diffPercentLimit);
+  return analyze(r1->mSeq, r2->mSeq, overlapDiffLimit, overlapRequire, diffPercentLimit);
 }
 
 // ported from the python code of AfterQC
-OverlapResult OverlapAnalysis::analyze(string *r1, string *r2, int diffLimit,
-                                       int overlapRequire,
+OverlapResult OverlapAnalysis::analyze(string *r1, string *r2, int diffLimit, int overlapRequire,
                                        double diffPercentLimit) {
   string rcr2 = Sequence::reverseComplement(r2);
   int len1 = r1->length();
@@ -33,8 +30,7 @@ OverlapResult OverlapAnalysis::analyze(string *r1, string *r2, int diffLimit,
   while (offset < len1 - overlapRequire) {
     // the overlap length of r1 & r2 when r2 is move right for offset
     overlap_len = min(len1 - offset, len2);
-    int overlapDiffLimit =
-        min(diffLimit, (int)(overlap_len * diffPercentLimit));
+    int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
 
     diff = 0;
     int i = 0;
@@ -46,8 +42,7 @@ OverlapResult OverlapAnalysis::analyze(string *r1, string *r2, int diffLimit,
       }
     }
 
-    if (diff <= overlapDiffLimit ||
-        (diff > overlapDiffLimit && i > complete_compare_require)) {
+    if (diff <= overlapDiffLimit || (diff > overlapDiffLimit && i > complete_compare_require)) {
       OverlapResult ov;
       ov.overlapped = true;
       ov.offset = offset;
@@ -69,8 +64,7 @@ OverlapResult OverlapAnalysis::analyze(string *r1, string *r2, int diffLimit,
   while (offset > -(len2 - overlapRequire)) {
     // the overlap length of r1 & r2 when r2 is move right for offset
     overlap_len = min(len1, len2 - abs(offset));
-    int overlapDiffLimit =
-        min(diffLimit, (int)(overlap_len * diffPercentLimit));
+    int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
 
     diff = 0;
     int i = 0;
@@ -82,8 +76,7 @@ OverlapResult OverlapAnalysis::analyze(string *r1, string *r2, int diffLimit,
       }
     }
 
-    if (diff <= overlapDiffLimit ||
-        (diff > overlapDiffLimit && i > complete_compare_require)) {
+    if (diff <= overlapDiffLimit || (diff > overlapDiffLimit && i > complete_compare_require)) {
       OverlapResult ov;
       ov.overlapped = true;
       ov.offset = offset;
@@ -124,10 +117,9 @@ Read *OverlapAnalysis::merge(Read *r1, Read *r2, OverlapResult ov) {
 
   delete rr2;
 
-  string name =
-      *(r1->mName) + " merged_" + to_string(len1) + "_" + to_string(len2);
-  Read *mergedRead = new Read(new string(name), new string(mergedSeq),
-                              new string(*r1->mStrand), new string(mergedQual));
+  string name = *(r1->mName) + " merged_" + to_string(len1) + "_" + to_string(len2);
+  Read *mergedRead =
+      new Read(new string(name), new string(mergedSeq), new string(*r1->mStrand), new string(mergedQual));
 
   return mergedRead;
 }
@@ -155,6 +147,5 @@ bool OverlapAnalysis::test() {
   Read *mergedRead = OverlapAnalysis::merge(&read1, &read2, ov);
   mergedRead->print();
 
-  return ov.overlapped && ov.offset == 10 && ov.overlap_len == 79 &&
-         ov.diff == 1;
+  return ov.overlapped && ov.offset == 10 && ov.overlap_len == 79 && ov.diff == 1;
 }

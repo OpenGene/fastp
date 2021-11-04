@@ -55,8 +55,7 @@ public:
   }
 };
 
-template <typename Target, typename Source>
-class lexical_cast_t<Target, Source, true> {
+template <typename Target, typename Source> class lexical_cast_t<Target, Source, true> {
 public:
   static Target cast(const Source &arg) { return arg; }
 };
@@ -81,16 +80,12 @@ public:
   }
 };
 
-template <typename T1, typename T2> struct is_same {
-  static const bool value = false;
-};
+template <typename T1, typename T2> struct is_same { static const bool value = false; };
 
 template <typename T> struct is_same<T, T> { static const bool value = true; };
 
-template <typename Target, typename Source>
-Target lexical_cast(const Source &arg) {
-  return lexical_cast_t<Target, Source,
-                        detail::is_same<Target, Source>::value>::cast(arg);
+template <typename Target, typename Source> Target lexical_cast(const Source &arg) {
+  return lexical_cast_t<Target, Source, detail::is_same<Target, Source>::value>::cast(arg);
 }
 
 static inline std::string demangle(const std::string &name) {
@@ -101,17 +96,11 @@ static inline std::string demangle(const std::string &name) {
   return ret;
 }
 
-template <class T> std::string readable_typename() {
-  return demangle(typeid(T).name());
-}
+template <class T> std::string readable_typename() { return demangle(typeid(T).name()); }
 
-template <class T> std::string default_value(T def) {
-  return detail::lexical_cast<std::string>(def);
-}
+template <class T> std::string default_value(T def) { return detail::lexical_cast<std::string>(def); }
 
-template <> inline std::string readable_typename<std::string>() {
-  return "string";
-}
+template <> inline std::string readable_typename<std::string>() { return "string"; }
 
 } // namespace detail
 
@@ -144,9 +133,7 @@ private:
   T low, high;
 };
 
-template <class T> range_reader<T> range(const T &low, const T &high) {
-  return range_reader<T>(low, high);
-}
+template <class T> range_reader<T> range(const T &low, const T &high) { return range_reader<T>(low, high); }
 
 template <class T> struct oneof_reader {
   T operator()(const std::string &s) {
@@ -212,8 +199,7 @@ template <class T> oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6) {
   return ret;
 }
 
-template <class T>
-oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7) {
+template <class T> oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7) {
   oneof_reader<T> ret;
   ret.add(a1);
   ret.add(a2);
@@ -225,8 +211,7 @@ oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7) {
   return ret;
 }
 
-template <class T>
-oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8) {
+template <class T> oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8) {
   oneof_reader<T> ret;
   ret.add(a1);
   ret.add(a2);
@@ -239,8 +224,7 @@ oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8) {
   return ret;
 }
 
-template <class T>
-oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8, T a9) {
+template <class T> oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8, T a9) {
   oneof_reader<T> ret;
   ret.add(a1);
   ret.add(a2);
@@ -254,9 +238,7 @@ oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8, T a9) {
   return ret;
 }
 
-template <class T>
-oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8, T a9,
-                      T a10) {
+template <class T> oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8, T a9, T a10) {
   oneof_reader<T> ret;
   ret.add(a1);
   ret.add(a2);
@@ -277,13 +259,11 @@ class parser {
 public:
   parser() {}
   ~parser() {
-    for (std::map<std::string, option_base *>::iterator p = options.begin();
-         p != options.end(); p++)
+    for (std::map<std::string, option_base *>::iterator p = options.begin(); p != options.end(); p++)
       delete p->second;
   }
 
-  void add(const std::string &name, char short_name = 0,
-           const std::string &desc = "") {
+  void add(const std::string &name, char short_name = 0, const std::string &desc = "") {
     if (options.count(name))
       throw cmdline_error("multiple definition: " + name);
     options[name] = new option_without_value(name, short_name, desc);
@@ -291,19 +271,17 @@ public:
   }
 
   template <class T>
-  void add(const std::string &name, char short_name = 0,
-           const std::string &desc = "", bool need = true, const T def = T()) {
+  void add(const std::string &name, char short_name = 0, const std::string &desc = "", bool need = true,
+           const T def = T()) {
     add(name, short_name, desc, need, def, default_reader<T>());
   }
 
   template <class T, class F>
-  void add(const std::string &name, char short_name = 0,
-           const std::string &desc = "", bool need = true, const T def = T(),
-           F reader = F()) {
+  void add(const std::string &name, char short_name = 0, const std::string &desc = "", bool need = true,
+           const T def = T(), F reader = F()) {
     if (options.count(name))
       throw cmdline_error("multiple definition: " + name);
-    options[name] = new option_with_value_with_reader<T, F>(
-        name, short_name, need, def, desc, reader);
+    options[name] = new option_with_value_with_reader<T, F>(name, short_name, need, def, desc, reader);
     ordered.push_back(options[name]);
   }
 
@@ -320,8 +298,7 @@ public:
   template <class T> const T &get(const std::string &name) const {
     if (options.count(name) == 0)
       throw cmdline_error("there is no flag: --" + name);
-    const option_with_value<T> *p =
-        dynamic_cast<const option_with_value<T> *>(options.find(name)->second);
+    const option_with_value<T> *p = dynamic_cast<const option_with_value<T> *>(options.find(name)->second);
     if (p == NULL)
       throw cmdline_error("type mismatch flag '" + name + "'");
     return p->get();
@@ -393,16 +370,14 @@ public:
       prog_name = argv[0];
 
     std::map<char, std::string> lookup;
-    for (std::map<std::string, option_base *>::iterator p = options.begin();
-         p != options.end(); p++) {
+    for (std::map<std::string, option_base *>::iterator p = options.begin(); p != options.end(); p++) {
       if (p->first.length() == 0)
         continue;
       char initial = p->second->short_name();
       if (initial) {
         if (lookup.count(initial) > 0) {
           lookup[initial] = "";
-          errors.push_back(std::string("short option '") + initial +
-                           "' is ambiguous");
+          errors.push_back(std::string("short option '") + initial + "' is ambiguous");
           return false;
         } else
           lookup[initial] = p->first;
@@ -441,13 +416,11 @@ public:
         for (int j = 2; argv[i][j]; j++) {
           last = argv[i][j];
           if (lookup.count(argv[i][j - 1]) == 0) {
-            errors.push_back(std::string("undefined short option: -") +
-                             argv[i][j - 1]);
+            errors.push_back(std::string("undefined short option: -") + argv[i][j - 1]);
             continue;
           }
           if (lookup[argv[i][j - 1]] == "") {
-            errors.push_back(std::string("ambiguous short option: -") +
-                             argv[i][j - 1]);
+            errors.push_back(std::string("ambiguous short option: -") + argv[i][j - 1]);
             continue;
           }
           set_option(lookup[argv[i][j - 1]]);
@@ -473,8 +446,7 @@ public:
       }
     }
 
-    for (std::map<std::string, option_base *>::iterator p = options.begin();
-         p != options.end(); p++)
+    for (std::map<std::string, option_base *>::iterator p = options.begin(); p != options.end(); p++)
       if (!p->second->valid())
         errors.push_back("need option: --" + std::string(p->first));
 
@@ -592,8 +564,7 @@ private:
 
   class option_without_value : public option_base {
   public:
-    option_without_value(const std::string &name, char short_name,
-                         const std::string &desc)
+    option_without_value(const std::string &name, char short_name, const std::string &desc)
         : nam(name), snam(short_name), desc(desc), has(false) {}
     ~option_without_value() {}
 
@@ -629,10 +600,8 @@ private:
 
   template <class T> class option_with_value : public option_base {
   public:
-    option_with_value(const std::string &name, char short_name, bool need,
-                      const T &def, const std::string &desc)
-        : nam(name), snam(short_name), need(need), has(false), def(def),
-          actual(def) {
+    option_with_value(const std::string &name, char short_name, bool need, const T &def, const std::string &desc)
+        : nam(name), snam(short_name), need(need), has(false), def(def), actual(def) {
       this->desc = full_description(desc);
     }
     ~option_with_value() {}
@@ -669,14 +638,12 @@ private:
 
     const std::string &description() const { return desc; }
 
-    std::string short_description() const {
-      return "--" + nam + "=" + detail::readable_typename<T>();
-    }
+    std::string short_description() const { return "--" + nam + "=" + detail::readable_typename<T>(); }
 
   protected:
     std::string full_description(const std::string &desc) {
-      return desc + " (" + detail::readable_typename<T>() +
-             (need ? "" : " [=" + detail::default_value<T>(def) + "]") + ")";
+      return desc + " (" + detail::readable_typename<T>() + (need ? "" : " [=" + detail::default_value<T>(def) + "]") +
+             ")";
     }
 
     virtual T read(const std::string &s) = 0;
@@ -691,14 +658,11 @@ private:
     T actual;
   };
 
-  template <class T, class F>
-  class option_with_value_with_reader : public option_with_value<T> {
+  template <class T, class F> class option_with_value_with_reader : public option_with_value<T> {
   public:
-    option_with_value_with_reader(const std::string &name, char short_name,
-                                  bool need, const T def,
+    option_with_value_with_reader(const std::string &name, char short_name, bool need, const T def,
                                   const std::string &desc, F reader)
-        : option_with_value<T>(name, short_name, need, def, desc),
-          reader(reader) {}
+        : option_with_value<T>(name, short_name, need, def, desc), reader(reader) {}
 
   private:
     T read(const std::string &s) { return reader(s); }

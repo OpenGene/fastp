@@ -40,14 +40,10 @@ void ThreadConfig::cleanup() {
   }
 }
 
-void ThreadConfig::setInputList(
-    SingleProducerSingleConsumerList<ReadPack *> *list) {
-  mLeftInputList = list;
-}
+void ThreadConfig::setInputList(SingleProducerSingleConsumerList<ReadPack *> *list) { mLeftInputList = list; }
 
-void ThreadConfig::setInputListPair(
-    SingleProducerSingleConsumerList<ReadPack *> *left,
-    SingleProducerSingleConsumerList<ReadPack *> *right) {
+void ThreadConfig::setInputListPair(SingleProducerSingleConsumerList<ReadPack *> *left,
+                                    SingleProducerSingleConsumerList<ReadPack *> *right) {
   mLeftInputList = left;
   mRightInputList = right;
 }
@@ -74,13 +70,9 @@ void ThreadConfig::initWriter(string filename1, string filename2) {
   mWriter2 = new Writer(mOptions, filename2, mOptions->compression);
 }
 
-void ThreadConfig::addFilterResult(int result, int readNum) {
-  mFilterResult->addFilterResult(result, readNum);
-}
+void ThreadConfig::addFilterResult(int result, int readNum) { mFilterResult->addFilterResult(result, readNum); }
 
-void ThreadConfig::addMergedPairs(int pairs) {
-  mFilterResult->addMergedPairs(pairs);
-}
+void ThreadConfig::addMergedPairs(int pairs) { mFilterResult->addMergedPairs(pairs); }
 
 void ThreadConfig::initWriterForSplit() {
   if (mOptions->out1.empty())
@@ -94,13 +86,11 @@ void ThreadConfig::initWriterForSplit() {
       num = "0" + num;
   }
 
-  string filename1 =
-      joinpath(dirname(mOptions->out1), num + "." + basename(mOptions->out1));
+  string filename1 = joinpath(dirname(mOptions->out1), num + "." + basename(mOptions->out1));
   if (!mOptions->isPaired()) {
     initWriter(filename1);
   } else {
-    string filename2 =
-        joinpath(dirname(mOptions->out2), num + "." + basename(mOptions->out2));
+    string filename2 = joinpath(dirname(mOptions->out2), num + "." + basename(mOptions->out2));
     initWriter(filename1, filename2);
   }
 }
@@ -113,16 +103,14 @@ void ThreadConfig::markProcessed(long readNum) {
   if (mCurrentSplitReads >= mOptions->split.size) {
     // if it's splitting by file number, totally we cannot exceed split.number
     // if it's splitting by file lines, then we don't need to check
-    if (mOptions->split.byFileLines ||
-        mWorkingSplit + mOptions->thread < mOptions->split.number) {
+    if (mOptions->split.byFileLines || mWorkingSplit + mOptions->thread < mOptions->split.number) {
       mWorkingSplit += mOptions->thread;
       initWriterForSplit();
       mCurrentSplitReads = 0;
     } else {
       // this thread can be stoped now since all its tasks are done
       // only a part of threads have to deal with the remaining reads
-      if (mOptions->split.number % mOptions->thread > 0 &&
-          mThreadId >= mOptions->split.number % mOptions->thread)
+      if (mOptions->split.number % mOptions->thread > 0 && mThreadId >= mOptions->split.number % mOptions->thread)
         mCanBeStopped = true;
     }
   }

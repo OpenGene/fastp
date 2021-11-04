@@ -301,8 +301,7 @@ public:
   bool polyXTrimmingEnabled();
   string getAdapter1();
   string getAdapter2();
-  void initIndexFiltering(string blacklistFile1, string blacklistFile2,
-                          int threshold = 0);
+  void initIndexFiltering(string blacklistFile1, string blacklistFile2, int threshold = 0);
   vector<string> makeListFromFileByLine(string filename);
   bool shallDetectAdapter(bool isR2 = false);
   void loadFastaAdapters();

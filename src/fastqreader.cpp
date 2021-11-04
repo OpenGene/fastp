@@ -78,8 +78,7 @@ void FastqReader::readToBufIgzip() {
       return;
     if (mGzipState.avail_in == 0) {
       mGzipState.next_in = mGzipInputBuffer;
-      mGzipState.avail_in =
-          fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+      mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
       mGzipInputUsedBytes += mGzipState.avail_in;
     }
     mGzipState.next_out = mGzipOutputBuffer;
@@ -100,8 +99,7 @@ void FastqReader::readToBufIgzip() {
       if (mGzipState.avail_in == 0) {
         isal_inflate_reset(&mGzipState);
         mGzipState.next_in = mGzipInputBuffer;
-        mGzipState.avail_in =
-            fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+        mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
         mGzipInputUsedBytes += mGzipState.avail_in;
       } else if (mGzipState.avail_in >= GZIP_HEADER_BYTES_REQ) {
         unsigned char *old_next_in = mGzipState.next_in;
@@ -114,8 +112,7 @@ void FastqReader::readToBufIgzip() {
         memmove(mGzipInputBuffer, mGzipState.next_in, mGzipState.avail_in);
         size_t added = 0;
         if (!eof()) {
-          added = fread(mGzipInputBuffer + mGzipState.avail_in, 1,
-                        mGzipInputBufferSize - mGzipState.avail_in, mFile);
+          added = fread(mGzipInputBuffer + mGzipState.avail_in, 1, mGzipInputBufferSize - mGzipState.avail_in, mFile);
           mGzipInputUsedBytes += added;
         }
         isal_inflate_reset(&mGzipState);
@@ -156,8 +153,7 @@ void FastqReader::init() {
     isal_inflate_init(&mGzipState);
     mGzipState.crc_flag = ISAL_GZIP_NO_HDR_VER;
     mGzipState.next_in = mGzipInputBuffer;
-    mGzipState.avail_in =
-        fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+    mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
     mGzipInputUsedBytes += mGzipState.avail_in;
     int ret = isal_read_gzip_header(&mGzipState, &mGzipHeader);
     if (ret != ISAL_DECOMP_OK) {
@@ -227,8 +223,7 @@ void FastqReader::getLine(string *line) {
     // skip \n or \r
     end++;
     // handle \r\n
-    if (end < mBufDataLen - 1 && mFastqBuf[end - 1] == '\r' &&
-        mFastqBuf[end] == '\n')
+    if (end < mBufDataLen - 1 && mFastqBuf[end - 1] == '\r' && mFastqBuf[end] == '\n')
       end++;
 
     mBufUsedLen = end;
@@ -385,9 +380,7 @@ FastqReaderPair::FastqReaderPair(FastqReader *left, FastqReader *right) {
   mRight = right;
 }
 
-FastqReaderPair::FastqReaderPair(string leftName, string rightName,
-                                 bool hasQuality, bool phred64,
-                                 bool interleaved) {
+FastqReaderPair::FastqReaderPair(string leftName, string rightName, bool hasQuality, bool phred64, bool interleaved) {
   mInterleaved = interleaved;
   mLeft = new FastqReader(leftName, hasQuality, phred64);
   if (mInterleaved)

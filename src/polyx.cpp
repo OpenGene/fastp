@@ -29,8 +29,7 @@ void PolyX::trimPolyG(Read *r, FilterResult *fr, int compareReq) {
     }
 
     int allowedMismatch = (i + 1) / allowOneMismatchForEach;
-    if (mismatch > maxMismatch ||
-        (mismatch > allowedMismatch && i >= compareReq - 1))
+    if (mismatch > maxMismatch || (mismatch > allowedMismatch && i >= compareReq - 1))
       break;
   }
 
@@ -86,8 +85,7 @@ void PolyX::trimPolyX(Read *r, FilterResult *fr, int compareReq) {
       if (cmp - atcgNumbers[b] <= allowedMismatch)
         needToBreak = false;
     }
-    if (needToBreak &&
-        (pos >= allowOneMismatchForEach || pos + 1 >= compareReq - 1)) {
+    if (needToBreak && (pos >= allowOneMismatchForEach || pos + 1 >= compareReq - 1)) {
       break;
     }
   }
@@ -115,13 +113,12 @@ void PolyX::trimPolyX(Read *r, FilterResult *fr, int compareReq) {
 
 bool PolyX::test() {
 
-  Read r("@name", "ATTTTAAAAAAAAAATAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAT",
-         "+", "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
+  Read r("@name", "ATTTTAAAAAAAAAATAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAT", "+",
+         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
 
   FilterResult fr(NULL, false);
   PolyX::trimPolyX(&r, &fr, 10);
   r.print();
 
-  return *r.mSeq == "ATTTT" && fr.getTotalPolyXTrimmedReads() == 1 &&
-         fr.getTotalPolyXTrimmedBases() == 51;
+  return *r.mSeq == "ATTTT" && fr.getTotalPolyXTrimmedReads() == 1 && fr.getTotalPolyXTrimmedBases() == 51;
 }

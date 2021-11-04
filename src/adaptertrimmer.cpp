@@ -4,16 +4,13 @@ AdapterTrimmer::AdapterTrimmer() {}
 
 AdapterTrimmer::~AdapterTrimmer() {}
 
-bool AdapterTrimmer::trimByOverlapAnalysis(Read *r1, Read *r2, FilterResult *fr,
-                                           int diffLimit, int overlapRequire,
+bool AdapterTrimmer::trimByOverlapAnalysis(Read *r1, Read *r2, FilterResult *fr, int diffLimit, int overlapRequire,
                                            double diffPercentLimit) {
-  OverlapResult ov = OverlapAnalysis::analyze(r1, r2, diffLimit, overlapRequire,
-                                              diffPercentLimit);
+  OverlapResult ov = OverlapAnalysis::analyze(r1, r2, diffLimit, overlapRequire, diffPercentLimit);
   return trimByOverlapAnalysis(r1, r2, fr, ov);
 }
 
-bool AdapterTrimmer::trimByOverlapAnalysis(Read *r1, Read *r2, FilterResult *fr,
-                                           OverlapResult ov, int frontTrimmed1,
+bool AdapterTrimmer::trimByOverlapAnalysis(Read *r1, Read *r2, FilterResult *fr, OverlapResult ov, int frontTrimmed1,
                                            int frontTrimmed2) {
   int ol = ov.overlap_len;
   if (ov.overlapped && ov.offset < 0) {
@@ -34,8 +31,7 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read *r1, Read *r2, FilterResult *fr,
       cerr << adapter2 << endl;
       cerr << "frontTrimmed2: " << frontTrimmed1 << endl;
       cerr << "frontTrimmed2: " << frontTrimmed2 << endl;
-      cerr << "overlap:" << ov.offset << "," << ov.overlap_len << ", "
-           << ov.diff << endl;
+      cerr << "overlap:" << ov.offset << "," << ov.overlap_len << ", " << ov.diff << endl;
       r1->print();
       r2->reverseComplement()->print();
       cerr << endl;
@@ -49,9 +45,8 @@ bool AdapterTrimmer::trimByOverlapAnalysis(Read *r1, Read *r2, FilterResult *fr,
   return false;
 }
 
-bool AdapterTrimmer::trimByMultiSequences(Read *r, FilterResult *fr,
-                                          vector<string> &adapterList,
-                                          bool isR2, bool incTrimmedCounter) {
+bool AdapterTrimmer::trimByMultiSequences(Read *r, FilterResult *fr, vector<string> &adapterList, bool isR2,
+                                          bool incTrimmedCounter) {
   int matchReq = 4;
   if (adapterList.size() > 16)
     matchReq = 5;
@@ -65,8 +60,7 @@ bool AdapterTrimmer::trimByMultiSequences(Read *r, FilterResult *fr,
   }
 
   if (trimmed) {
-    string adapter =
-        originalSeq->substr(r->length(), originalSeq->length() - r->length());
+    string adapter = originalSeq->substr(r->length(), originalSeq->length() - r->length());
     if (fr)
       fr->addAdapterTrimmed(adapter, isR2, incTrimmedCounter);
     else
@@ -76,9 +70,7 @@ bool AdapterTrimmer::trimByMultiSequences(Read *r, FilterResult *fr,
   return trimmed;
 }
 
-bool AdapterTrimmer::trimBySequence(Read *r, FilterResult *fr,
-                                    string &adapterseq, bool isR2,
-                                    int matchReq) {
+bool AdapterTrimmer::trimBySequence(Read *r, FilterResult *fr, string &adapterseq, bool isR2, int matchReq) {
   const int allowOneMismatchForEach = 8;
 
   int rlen = r->length();
@@ -144,8 +136,8 @@ bool AdapterTrimmer::trimBySequence(Read *r, FilterResult *fr,
 }
 
 bool AdapterTrimmer::test() {
-  Read r("@name", "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCCCGGGG",
-         "+", "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
+  Read r("@name", "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCCCGGGG", "+",
+         "///EEEEEEEEEEEEEEEEEEEEEEEEEE////EEEEEEEEEEEEE////E////E");
   string adapter = "TTTTCCACGGGGATACTACTG";
   bool trimmed = AdapterTrimmer::trimBySequence(&r, NULL, adapter);
   if (*r.mSeq != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAA")
@@ -163,8 +155,7 @@ bool AdapterTrimmer::test() {
   adapterList.push_back("ATCGATCGATCGATCG");
   adapterList.push_back("AATTCCGGAATTCCGG");
   trimmed = AdapterTrimmer::trimByMultiSequences(&read, NULL, adapterList);
-  if (*read.mSeq !=
-      "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCCCGGGG") {
+  if (*read.mSeq != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCCCGGGG") {
     cerr << read.mSeq << endl;
     return false;
   }

@@ -75,8 +75,7 @@ bool SingleEndProcessor::process() {
   if (!mOptions->split.enabled)
     initOutput();
 
-  mInputLists =
-      new SingleProducerSingleConsumerList<ReadPack *> *[mOptions->thread];
+  mInputLists = new SingleProducerSingleConsumerList<ReadPack *> *[mOptions->thread];
 
   ThreadConfig **configs = new ThreadConfig *[mOptions->thread];
   for (int t = 0; t < mOptions->thread; t++) {
@@ -90,18 +89,15 @@ bool SingleEndProcessor::process() {
 
   std::thread **threads = new thread *[mOptions->thread];
   for (int t = 0; t < mOptions->thread; t++) {
-    threads[t] = new std::thread(
-        std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
+    threads[t] = new std::thread(std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
   }
 
   std::thread *leftWriterThread = NULL;
   std::thread *failedWriterThread = NULL;
   if (mLeftWriter)
-    leftWriterThread = new std::thread(
-        std::bind(&SingleEndProcessor::writerTask, this, mLeftWriter));
+    leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mLeftWriter));
   if (mFailedWriter)
-    failedWriterThread = new std::thread(
-        std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
+    failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
 
   readerThread.join();
   for (int t = 0; t < mOptions->thread; t++) {
@@ -151,8 +147,7 @@ bool SingleEndProcessor::process() {
   if (mOptions->duplicate.enabled) {
     dupRate = mDuplicate->getDupRate();
     cerr << endl;
-    cerr << "Duplication rate (may be overestimated since this is SE data): "
-         << dupRate * 100.0 << "%" << endl;
+    cerr << "Duplication rate (may be overestimated since this is SE data): " << dupRate * 100.0 << "%" << endl;
   }
 
   // make JSON report
@@ -197,8 +192,7 @@ void SingleEndProcessor::recycleToPool(int tid, Read *r) {
     delete r;
 }
 
-bool SingleEndProcessor::processSingleEnd(ReadPack *pack,
-                                          ThreadConfig *config) {
+bool SingleEndProcessor::processSingleEnd(ReadPack *pack, ThreadConfig *config) {
   string *outstr = new string();
   string *failedOut = new string();
   int tid = config->getThreadId();
@@ -237,32 +231,27 @@ bool SingleEndProcessor::processSingleEnd(ReadPack *pack,
 
     int frontTrimmed = 0;
     // trim in head and tail, and apply quality cut in sliding window
-    Read *r1 = mFilter->trimAndCut(or1, mOptions->trim.front1,
-                                   mOptions->trim.tail1, frontTrimmed);
+    Read *r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1, frontTrimmed);
 
     if (r1 != NULL) {
       if (mOptions->polyGTrim.enabled)
-        PolyX::trimPolyG(r1, config->getFilterResult(),
-                         mOptions->polyGTrim.minLen);
+        PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen);
     }
 
     if (r1 != NULL && mOptions->adapter.enabled) {
       bool trimmed = false;
       if (mOptions->adapter.hasSeqR1)
-        trimmed = AdapterTrimmer::trimBySequence(
-            r1, config->getFilterResult(), mOptions->adapter.sequence, false);
+        trimmed = AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
       bool incTrimmedCounter = !trimmed;
       if (mOptions->adapter.hasFasta) {
-        AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(),
-                                             mOptions->adapter.seqsInFasta,
-                                             false, incTrimmedCounter);
+        AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false,
+                                             incTrimmedCounter);
       }
     }
 
     if (r1 != NULL) {
       if (mOptions->polyXTrim.enabled)
-        PolyX::trimPolyX(r1, config->getFilterResult(),
-                         mOptions->polyXTrim.minLen);
+        PolyX::trimPolyX(r1, config->getFilterResult(), mOptions->polyXTrim.minLen);
     }
 
     if (r1 != NULL) {
@@ -360,8 +349,7 @@ void SingleEndProcessor::readerTask() {
     data[count] = read;
     count++;
     // configured to process only first N reads
-    if (mOptions->readsToProcess > 0 &&
-        count + readNum >= mOptions->readsToProcess) {
+    if (mOptions->readsToProcess > 0 && count + readNum >= mOptions->readsToProcess) {
       needToBreak = true;
     }
     if (mOptions->verbose && count + readNum >= lastReported + 1000000) {
@@ -443,8 +431,7 @@ void SingleEndProcessor::processorTask(ThreadConfig *config) {
     if (input->isProducerFinished()) {
       if (!input->canBeConsumed()) {
         if (mOptions->verbose) {
-          string msg = "thread " + to_string(config->getThreadId() + 1) +
-                       " data processing completed";
+          string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
           loginfo(msg);
         }
         break;

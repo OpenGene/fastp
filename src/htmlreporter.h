@@ -21,8 +21,8 @@ public:
   ~HtmlReporter();
   void setDup(double dupRate);
   void setInsertHist(atomic_long *insertHist, int insertSizePeak);
-  void report(FilterResult *result, Stats *preStats1, Stats *postStats1,
-              Stats *preStats2 = NULL, Stats *postStats2 = NULL);
+  void report(FilterResult *result, Stats *preStats1, Stats *postStats1, Stats *preStats2 = NULL,
+              Stats *postStats2 = NULL);
 
   static void outputRow(ofstream &ofs, string key, long value);
   static void outputRow(ofstream &ofs, string key, string value);
@@ -37,8 +37,8 @@ private:
   void printFooter(ofstream &ofs);
   void reportDuplication(ofstream &ofs);
   void reportInsertSize(ofstream &ofs, int isizeLimit);
-  void printSummary(ofstream &ofs, FilterResult *result, Stats *preStats1,
-                    Stats *postStats1, Stats *preStats2, Stats *postStats2);
+  void printSummary(ofstream &ofs, FilterResult *result, Stats *preStats1, Stats *postStats1, Stats *preStats2,
+                    Stats *postStats2);
 
 private:
   Options *mOptions;

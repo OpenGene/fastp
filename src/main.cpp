@@ -16,8 +16,7 @@ mutex logmtx;
 int main(int argc, char *argv[]) {
   // display version info if no argument is given
   if (argc == 1) {
-    cerr << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl
-         << "version " << FASTP_VER << endl;
+    cerr << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
     // cerr << "fastp --help to see the help"<<endl;
     // return 0;
   }
@@ -26,8 +25,7 @@ int main(int argc, char *argv[]) {
     tester.run();
     return 0;
   }
-  if (argc == 2 &&
-      (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+  if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
     cerr << "fastp " << FASTP_VER << endl;
     return 0;
   }
@@ -41,20 +39,16 @@ int main(int argc, char *argv[]) {
                   "for PE input, if read1 passed QC but read2 not, it will be "
                   "written to unpaired1. Default is to discard it.",
                   false, "");
-  cmd.add<string>(
-      "unpaired2", 0,
-      "for PE input, if read2 passed QC but read1 not, it will be written to "
-      "unpaired2. If --unpaired2 is same as --unpaired1 (default mode), both "
-      "unpaired reads will be written to this same file.",
-      false, "");
+  cmd.add<string>("unpaired2", 0,
+                  "for PE input, if read2 passed QC but read1 not, it will be written to "
+                  "unpaired2. If --unpaired2 is same as --unpaired1 (default mode), both "
+                  "unpaired reads will be written to this same file.",
+                  false, "");
   cmd.add<string>("overlapped_out", 0,
                   "for each read pair, output the overlapped region if it has "
                   "no any mismatched base.",
                   false, "");
-  cmd.add<string>(
-      "failed_out", 0,
-      "specify the file to store reads that cannot pass the filters.", false,
-      "");
+  cmd.add<string>("failed_out", 0, "specify the file to store reads that cannot pass the filters.", false, "");
   cmd.add("merge", 'm',
           "for paired-end input, merge each pair of reads into a single read "
           "if they are overlapped. The merged reads will be written to the "
@@ -78,10 +72,9 @@ int main(int argc, char *argv[]) {
   cmd.add("stdin", 0,
           "input from STDIN. If the STDIN is interleaved paired-end FASTQ, "
           "please also add --interleaved_in.");
-  cmd.add(
-      "stdout", 0,
-      "stream passing-filters reads to STDOUT. This option will result in "
-      "interleaved FASTQ output for paired-end output. Disabled by default.");
+  cmd.add("stdout", 0,
+          "stream passing-filters reads to STDOUT. This option will result in "
+          "interleaved FASTQ output for paired-end output. Disabled by default.");
   cmd.add("interleaved_in", 0,
           "indicate that <in1> is an interleaved FASTQ which contains both "
           "read1 and read2. Disabled by default.");
@@ -89,9 +82,7 @@ int main(int argc, char *argv[]) {
                "specify how many reads/pairs to be processed. Default 0 means "
                "process all reads.",
                false, 0);
-  cmd.add(
-      "dont_overwrite", 0,
-      "don't overwrite existing files. Overwritting is allowed by default.");
+  cmd.add("dont_overwrite", 0, "don't overwrite existing files. Overwritting is allowed by default.");
   cmd.add("fix_mgi_id", 0,
           "the MGI FASTQ ID format is not compatible with many BAM operation "
           "tools, enable this option to fix it.");
@@ -122,12 +113,8 @@ int main(int argc, char *argv[]) {
           "only, turn on this option to enable it for PE data.");
 
   // trimming
-  cmd.add<int>("trim_front1", 'f',
-               "trimming how many bases in front for read1, default is 0",
-               false, 0);
-  cmd.add<int>("trim_tail1", 't',
-               "trimming how many bases in tail for read1, default is 0", false,
-               0);
+  cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
+  cmd.add<int>("trim_tail1", 't', "trimming how many bases in tail for read1, default is 0", false, 0);
   cmd.add<int>("max_len1", 'b',
                "if read1 is longer than max_len1, then trim read1 at its tail "
                "to make it as long as max_len1. Default 0 means no limitation",
@@ -147,34 +134,26 @@ int main(int argc, char *argv[]) {
                false, 0);
 
   // duplication evaluation and deduplication
-  cmd.add("dedup", 'D',
-          "enable deduplication to drop the duplicated reads/pairs");
+  cmd.add("dedup", 'D', "enable deduplication to drop the duplicated reads/pairs");
   cmd.add<int>("dup_calc_accuracy", 0,
                "accuracy level to calculate duplication (1~6), higher level "
                "uses more memory (1G, 2G, 4G, 8G, 16G, 24G). Default 1 for "
                "no-dedup mode, and 3 for dedup mode.",
                false);
-  cmd.add("dont_eval_duplication", 0,
-          "don't evaluate duplication rate to save time and use less memory.");
+  cmd.add("dont_eval_duplication", 0, "don't evaluate duplication rate to save time and use less memory.");
 
   // polyG tail trimming
   cmd.add("trim_poly_g", 'g',
           "force polyG tail trimming, by default trimming is automatically "
           "enabled for Illumina NextSeq/NovaSeq data");
-  cmd.add<int>(
-      "poly_g_min_len", 0,
-      "the minimum length to detect polyG in the read tail. 10 by default.",
-      false, 10);
+  cmd.add<int>("poly_g_min_len", 0, "the minimum length to detect polyG in the read tail. 10 by default.", false, 10);
   cmd.add("disable_trim_poly_g", 'G',
           "disable polyG tail trimming, by default trimming is automatically "
           "enabled for Illumina NextSeq/NovaSeq data");
 
   // polyX tail trimming
   cmd.add("trim_poly_x", 'x', "enable polyX trimming in 3' ends.");
-  cmd.add<int>(
-      "poly_x_min_len", 0,
-      "the minimum length to detect polyX in the read tail. 10 by default.",
-      false, 10);
+  cmd.add<int>("poly_x_min_len", 0, "the minimum length to detect polyX in the read tail. 10 by default.", false, 10);
 
   // cutting by quality
   cmd.add("cut_front", '5',
@@ -245,10 +224,8 @@ int main(int argc, char *argv[]) {
   cmd.add("disable_length_filtering", 'L',
           "length filtering is enabled by default. If this option is "
           "specified, length filtering is disabled");
-  cmd.add<int>(
-      "length_required", 'l',
-      "reads shorter than length_required will be discarded, default is 15.",
-      false, 15);
+  cmd.add<int>("length_required", 'l', "reads shorter than length_required will be discarded, default is 15.", false,
+               15);
   cmd.add<int>("length_limit", 0,
                "reads longer than length_limit will be discarded, default 0 "
                "means no limitation.",
@@ -292,36 +269,30 @@ int main(int argc, char *argv[]) {
                "region of PE reads. This will affect overlap analysis based PE "
                "merge, adapter trimming and correction. 5 by default.",
                false, 5);
-  cmd.add<int>(
-      "overlap_diff_percent_limit", 0,
-      "the maximum percentage of mismatched bases to detect overlapped region "
-      "of PE reads. This will affect overlap analysis based PE merge, adapter "
-      "trimming and correction. Default 20 means 20%.",
-      false, 20);
+  cmd.add<int>("overlap_diff_percent_limit", 0,
+               "the maximum percentage of mismatched bases to detect overlapped region "
+               "of PE reads. This will affect overlap analysis based PE merge, adapter "
+               "trimming and correction. Default 20 means 20%.",
+               false, 20);
 
   // umi
   cmd.add("umi", 'U', "enable unique molecular identifier (UMI) preprocessing");
-  cmd.add<string>(
-      "umi_loc", 0,
-      "specify the location of UMI, can be "
-      "(index1/index2/read1/read2/per_index/per_read, default is none",
-      false, "");
-  cmd.add<int>("umi_len", 0,
-               "if the UMI is in read1/read2, its length should be provided",
-               false, 0);
-  cmd.add<string>(
-      "umi_prefix", 0,
-      "if specified, an underline will be used to connect prefix and UMI (i.e. "
-      "prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default",
-      false, "");
+  cmd.add<string>("umi_loc", 0,
+                  "specify the location of UMI, can be "
+                  "(index1/index2/read1/read2/per_index/per_read, default is none",
+                  false, "");
+  cmd.add<int>("umi_len", 0, "if the UMI is in read1/read2, its length should be provided", false, 0);
+  cmd.add<string>("umi_prefix", 0,
+                  "if specified, an underline will be used to connect prefix and UMI (i.e. "
+                  "prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default",
+                  false, "");
   cmd.add<int>("umi_skip", 0,
                "if the UMI is in read1/read2, fastp can skip several bases "
                "following UMI, default is 0",
                false, 0);
 
   // overrepresented sequence analysis
-  cmd.add("overrepresentation_analysis", 'p',
-          "enable overrepresented sequence analysis.");
+  cmd.add("overrepresentation_analysis", 'p', "enable overrepresented sequence analysis.");
   cmd.add<int>("overrepresentation_sampling", 'P',
                "one in (--overrepresentation_sampling) reads will be computed "
                "for overrepresentation analysis (1~10000), smaller is slower, "
@@ -329,43 +300,35 @@ int main(int argc, char *argv[]) {
                false, 20);
 
   // reporting
-  cmd.add<string>("json", 'j', "the json format report file name", false,
-                  "fastp.json");
-  cmd.add<string>("html", 'h', "the html format report file name", false,
-                  "fastp.html");
-  cmd.add<string>("report_title", 'R',
-                  "should be quoted with \' or \", default is \"fastp report\"",
-                  false, "fastp report");
+  cmd.add<string>("json", 'j', "the json format report file name", false, "fastp.json");
+  cmd.add<string>("html", 'h', "the html format report file name", false, "fastp.html");
+  cmd.add<string>("report_title", 'R', "should be quoted with \' or \", default is \"fastp report\"", false,
+                  "fastp report");
 
   // threading
   cmd.add<int>("thread", 'w', "worker thread number, default is 3", false, 3);
 
   // split the output
-  cmd.add<int>(
-      "split", 's',
-      "split output by limiting total split file number with this option "
-      "(2~999), a sequential number prefix will be added to output name ( "
-      "0001.out.fq, 0002.out.fq...), disabled by default",
-      false, 0);
-  cmd.add<long>(
-      "split_by_lines", 'S',
-      "split output by limiting lines of each file with this option(>=1000), a "
-      "sequential number prefix will be added to output name ( 0001.out.fq, "
-      "0002.out.fq...), disabled by default",
-      false, 0);
-  cmd.add<int>(
-      "split_prefix_digits", 'd',
-      "the digits for the sequential number padding (1~10), default is 4, so "
-      "the filename will be padded as 0001.xxx, 0 to disable padding",
-      false, 4);
+  cmd.add<int>("split", 's',
+               "split output by limiting total split file number with this option "
+               "(2~999), a sequential number prefix will be added to output name ( "
+               "0001.out.fq, 0002.out.fq...), disabled by default",
+               false, 0);
+  cmd.add<long>("split_by_lines", 'S',
+                "split output by limiting lines of each file with this option(>=1000), a "
+                "sequential number prefix will be added to output name ( 0001.out.fq, "
+                "0002.out.fq...), disabled by default",
+                false, 0);
+  cmd.add<int>("split_prefix_digits", 'd',
+               "the digits for the sequential number padding (1~10), default is 4, so "
+               "the filename will be padded as 0001.xxx, 0 to disable padding",
+               false, 4);
 
   // deprecated options
   cmd.add("cut_by_quality5", 0, "DEPRECATED, use --cut_front instead.");
   cmd.add("cut_by_quality3", 0, "DEPRECATED, use --cut_tail instead.");
-  cmd.add("cut_by_quality_aggressive", 0,
-          "DEPRECATED, use --cut_right instead.");
-  cmd.add("discard_unmerged", 0,
-          "DEPRECATED, no effect now, see the introduction for merging.");
+  cmd.add("cut_by_quality_aggressive", 0, "DEPRECATED, use --cut_right instead.");
+  cmd.add("discard_unmerged", 0, "DEPRECATED, no effect now, see the introduction for merging.");
 
   cmd.parse_check(argc, argv);
 
@@ -406,16 +369,14 @@ int main(int argc, char *argv[]) {
 
   // duplication evaluation and deduplication
   opt.duplicate.dedup = cmd.exist("dedup");
-  opt.duplicate.enabled =
-      !cmd.exist("dont_eval_duplication") || cmd.exist("dedup");
+  opt.duplicate.enabled = !cmd.exist("dont_eval_duplication") || cmd.exist("dedup");
   if (!cmd.exist("dup_calc_accuracy")) {
     if (opt.duplicate.dedup)
       opt.duplicate.accuracyLevel = 3;
     else
       opt.duplicate.accuracyLevel = 1;
   } else {
-    opt.duplicate.accuracyLevel =
-        min(6, max(1, cmd.get<int>("dup_calc_accuracy")));
+    opt.duplicate.accuracyLevel = min(6, max(1, cmd.get<int>("dup_calc_accuracy")));
   }
 
   // merge PE
@@ -429,8 +390,7 @@ int main(int argc, char *argv[]) {
   opt.adapter.sequence = cmd.get<string>("adapter_sequence");
   opt.adapter.sequenceR2 = cmd.get<string>("adapter_sequence_r2");
   opt.adapter.fastaFile = cmd.get<string>("adapter_fasta");
-  if (opt.adapter.sequenceR2 == "auto" && !opt.adapter.detectAdapterForPE &&
-      opt.adapter.sequence != "auto") {
+  if (opt.adapter.sequenceR2 == "auto" && !opt.adapter.detectAdapterForPE && opt.adapter.sequence != "auto") {
     opt.adapter.sequenceR2 = opt.adapter.sequence;
   }
   if (!opt.adapter.fastaFile.empty()) {
@@ -531,15 +491,10 @@ int main(int argc, char *argv[]) {
     opt.qualityCut.qualityRight = opt.qualityCut.qualityShared;
 
   // raise a warning if cutting option is not enabled but -W/-M is enabled
-  if (!opt.qualityCut.enabledFront && !opt.qualityCut.enabledTail &&
-      !opt.qualityCut.enabledRight) {
-    if (cmd.exist("cut_window_size") || cmd.exist("cut_mean_quality") ||
-        cmd.exist("cut_front_window_size") ||
-        cmd.exist("cut_front_mean_quality") ||
-        cmd.exist("cut_tail_window_size") ||
-        cmd.exist("cut_tail_mean_quality") ||
-        cmd.exist("cut_right_window_size") ||
-        cmd.exist("cut_right_mean_quality"))
+  if (!opt.qualityCut.enabledFront && !opt.qualityCut.enabledTail && !opt.qualityCut.enabledRight) {
+    if (cmd.exist("cut_window_size") || cmd.exist("cut_mean_quality") || cmd.exist("cut_front_window_size") ||
+        cmd.exist("cut_front_mean_quality") || cmd.exist("cut_tail_window_size") ||
+        cmd.exist("cut_tail_mean_quality") || cmd.exist("cut_right_window_size") || cmd.exist("cut_right_mean_quality"))
       cerr << "WARNING: you specified the options for cutting by quality, but "
               "forogt to enable any of cut_front/cut_tail/cut_right. This will "
               "have no effect."
@@ -548,10 +503,8 @@ int main(int argc, char *argv[]) {
 
   // quality filtering
   opt.qualfilter.enabled = !cmd.exist("disable_quality_filtering");
-  opt.qualfilter.qualifiedQual =
-      num2qual(cmd.get<int>("qualified_quality_phred"));
-  opt.qualfilter.unqualifiedPercentLimit =
-      cmd.get<int>("unqualified_percent_limit");
+  opt.qualfilter.qualifiedQual = num2qual(cmd.get<int>("qualified_quality_phred"));
+  opt.qualfilter.unqualifiedPercentLimit = cmd.get<int>("unqualified_percent_limit");
   opt.qualfilter.avgQualReq = cmd.get<int>("average_qual");
   opt.qualfilter.nBaseLimit = cmd.get<int>("n_base_limit");
 
@@ -562,8 +515,7 @@ int main(int argc, char *argv[]) {
 
   // low complexity filter
   opt.complexityFilter.enabled = cmd.exist("low_complexity_filter");
-  opt.complexityFilter.threshold =
-      (min(100, max(0, cmd.get<int>("complexity_threshold")))) / 100.0;
+  opt.complexityFilter.threshold = (min(100, max(0, cmd.get<int>("complexity_threshold")))) / 100.0;
 
   // overlap correction
   opt.correction.enabled = cmd.exist("correction");
@@ -583,9 +535,8 @@ int main(int argc, char *argv[]) {
   opt.split.enabled = cmd.exist("split") || cmd.exist("split_by_lines");
   opt.split.digits = cmd.get<int>("split_prefix_digits");
   if (cmd.exist("split") && cmd.exist("split_by_lines")) {
-    error_exit(
-        "You cannot set both splitting by file number (--split) and splitting "
-        "by file lines (--split_by_lines), please choose either.");
+    error_exit("You cannot set both splitting by file number (--split) and splitting "
+               "by file lines (--split_by_lines), please choose either.");
   }
   if (cmd.exist("split")) {
     opt.split.number = cmd.get<int>("split");
@@ -619,18 +570,15 @@ int main(int argc, char *argv[]) {
     if (umiLoc.empty())
       error_exit("You've enabled UMI by (--umi), you should specify the UMI "
                  "location by (--umi_loc)");
-    if (umiLoc != "index1" && umiLoc != "index2" && umiLoc != "read1" &&
-        umiLoc != "read2" && umiLoc != "per_index" && umiLoc != "per_read") {
+    if (umiLoc != "index1" && umiLoc != "index2" && umiLoc != "read1" && umiLoc != "read2" && umiLoc != "per_index" &&
+        umiLoc != "per_read") {
       error_exit("UMI location can only be "
                  "index1/index2/read1/read2/per_index/per_read");
     }
     if (!opt.isPaired() && (umiLoc == "index2" || umiLoc == "read2"))
-      error_exit("You specified the UMI location as " + umiLoc +
-                 ", but the input data is not paired end.");
-    if (opt.umi.length == 0 &&
-        (umiLoc == "read1" || umiLoc == "read2" || umiLoc == "per_read"))
-      error_exit("You specified the UMI location as " + umiLoc +
-                 ", but the length is not specified (--umi_len).");
+      error_exit("You specified the UMI location as " + umiLoc + ", but the input data is not paired end.");
+    if (opt.umi.length == 0 && (umiLoc == "read1" || umiLoc == "read2" || umiLoc == "per_read"))
+      error_exit("You specified the UMI location as " + umiLoc + ", but the length is not specified (--umi_len).");
     if (umiLoc == "index1") {
       opt.umi.location = UMI_LOC_INDEX1;
     } else if (umiLoc == "index2") {
@@ -733,8 +681,7 @@ int main(int argc, char *argv[]) {
   }
 
   // using evaluator to check if it's two color system
-  if (!cmd.exist("trim_poly_g") && !cmd.exist("disable_trim_poly_g") &&
-      supportEvaluation) {
+  if (!cmd.exist("trim_poly_g") && !cmd.exist("disable_trim_poly_g") && supportEvaluation) {
     bool twoColorSystem = eva.isTwoColorSystem();
     if (twoColorSystem) {
       opt.polyGTrim.enabled = true;
@@ -749,8 +696,7 @@ int main(int argc, char *argv[]) {
   cerr << endl << "JSON report: " << opt.jsonFile << endl;
   cerr << "HTML report: " << opt.htmlFile << endl;
   cerr << endl << command << endl;
-  cerr << "fastp v" << FASTP_VER << ", time used: " << (t2)-t1 << " seconds"
-       << endl;
+  cerr << "fastp v" << FASTP_VER << ", time used: " << (t2)-t1 << " seconds" << endl;
 
   return 0;
 }

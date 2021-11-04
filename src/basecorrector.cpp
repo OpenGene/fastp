@@ -5,18 +5,13 @@ BaseCorrector::BaseCorrector() {}
 
 BaseCorrector::~BaseCorrector() {}
 
-int BaseCorrector::correctByOverlapAnalysis(Read *r1, Read *r2,
-                                            FilterResult *fr, int diffLimit,
-                                            int overlapRequire,
+int BaseCorrector::correctByOverlapAnalysis(Read *r1, Read *r2, FilterResult *fr, int diffLimit, int overlapRequire,
                                             double diffPercentLimit) {
-  OverlapResult ov = OverlapAnalysis::analyze(r1, r2, diffLimit, overlapRequire,
-                                              diffPercentLimit);
+  OverlapResult ov = OverlapAnalysis::analyze(r1, r2, diffLimit, overlapRequire, diffPercentLimit);
   return correctByOverlapAnalysis(r1, r2, fr, ov);
 }
 
-int BaseCorrector::correctByOverlapAnalysis(Read *r1, Read *r2,
-                                            FilterResult *fr,
-                                            OverlapResult ov) {
+int BaseCorrector::correctByOverlapAnalysis(Read *r1, Read *r2, FilterResult *fr, OverlapResult ov) {
   // we only correct overlap
   if (ov.diff == 0 || !ov.overlapped)
     return 0;
@@ -88,16 +83,10 @@ int BaseCorrector::correctByOverlapAnalysis(Read *r1, Read *r2,
 }
 
 bool BaseCorrector::test() {
-  Read r1(
-      new string("@name"),
-      new string("TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCACGGGG"),
-      new string("+"),
-      new string("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE/EEEEE"));
-  Read r2(
-      new string("@name"),
-      new string("AAAAAAAAAACCCCGGGGAAAATTTTAAAATTGGGGGGGGGGTGGGGGGGGGGGGG"),
-      new string("+"),
-      new string("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE/EEEEEEEEEEEEE"));
+  Read r1(new string("@name"), new string("TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCACGGGG"), new string("+"),
+          new string("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE/EEEEE"));
+  Read r2(new string("@name"), new string("AAAAAAAAAACCCCGGGGAAAATTTTAAAATTGGGGGGGGGGTGGGGGGGGGGGGG"), new string("+"),
+          new string("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE/EEEEEEEEEEEEE"));
 
   correctByOverlapAnalysis(&r1, &r2, NULL, 5, 30, 0.2);
 
@@ -105,11 +94,9 @@ bool BaseCorrector::test() {
     return false;
   if (*r2.mSeq != "AAAAAAAAAACCCCGGGGAAAATTTTAAAATTGGGGGGGGGGGGGGGGGGGGGGGG")
     return false;
-  if (*r1.mQuality !=
-      "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+  if (*r1.mQuality != "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
     return false;
-  if (*r2.mQuality !=
-      "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+  if (*r2.mQuality != "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
     return false;
 
   return true;

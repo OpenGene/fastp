@@ -21,8 +21,7 @@ public:
   bool isTwoColorSystem();
   void evaluateSeqLen();
   void evaluateOverRepSeqs();
-  void computeOverRepSeq(string filename, map<string, long> &hotseqs,
-                         int seqLen);
+  void computeOverRepSeq(string filename, map<string, long> &hotseqs, int seqLen);
   int computeSeqLen(string filename);
 
   static bool test();
@@ -33,8 +32,7 @@ private:
   string int2seq(unsigned int val, int seqlen);
   int seq2int(string *seq, int pos, int seqlen, int lastVal = -1);
   int seq2int(string &seq, int pos, int seqlen, int lastVal = -1);
-  string getAdapterWithSeed(int seed, Read **loadedReads, long records,
-                            int keylen);
+  string getAdapterWithSeed(int seed, Read **loadedReads, long records, int keylen);
 };
 
 #endif

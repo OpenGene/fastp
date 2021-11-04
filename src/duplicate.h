@@ -18,8 +18,7 @@ public:
 
   bool checkRead(Read *r1);
   bool checkPair(Read *r1, Read *r2);
-  void seq2intvector(const char *data, int len, uint64 *output,
-                     int posOffset = 0);
+  void seq2intvector(const char *data, int len, uint64 *output, int posOffset = 0);
 
   double getDupRate();
 

@@ -25,10 +25,8 @@ public:
   OverlapAnalysis();
   ~OverlapAnalysis();
 
-  static OverlapResult analyze(string *r1, string *r2, int diffLimit,
-                               int overlapRequire, double diffPercentLimit);
-  static OverlapResult analyze(Read *r1, Read *r2, int diffLimit,
-                               int overlapRequire, double diffPercentLimit);
+  static OverlapResult analyze(string *r1, string *r2, int diffLimit, int overlapRequire, double diffPercentLimit);
+  static OverlapResult analyze(Read *r1, Read *r2, int diffLimit, int overlapRequire, double diffPercentLimit);
   static Read *merge(Read *r1, Read *r2, OverlapResult ov);
 
 public:

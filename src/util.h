@@ -38,9 +38,7 @@ inline bool starts_with(string const &value, string const &starting) {
   return equal(starting.begin(), starting.end(), value.begin());
 }
 
-inline bool starts_with(string *value, string const &starting) {
-  return starts_with(*value, starting);
-}
+inline bool starts_with(string *value, string const &starting) { return starts_with(*value, starting); }
 
 inline bool ends_with(string const &value, string const &ending) {
   if (ending.size() > value.size())
@@ -85,8 +83,7 @@ inline int split(const string &str, vector<string> &ret_, string sep = ",") {
   return 0;
 }
 
-inline string replace(const string &str, const string &src,
-                      const string &dest) {
+inline string replace(const string &str, const string &src, const string &dest) {
   string ret;
 
   string::size_type pos_begin = 0;
@@ -179,16 +176,13 @@ inline void check_file_valid(const string &s) {
 }
 
 inline bool check_filename_valid(const string &s) {
-  return 0 < trim(s).length() && trim(s).length() <= 255 &&
-         regex_match(s, regex("^[A-Za-z0-9_\\.\\-]+$"));
+  return 0 < trim(s).length() && trim(s).length() <= 255 && regex_match(s, regex("^[A-Za-z0-9_\\.\\-]+$"));
 }
 
 inline void check_file_writable(const string &s) {
   string dir = dirname(s);
   if (!file_exists(dir)) {
-    cerr << "ERROR: '" << dir
-         << " doesn't exist. Create this folder and run this command again."
-         << endl;
+    cerr << "ERROR: '" << dir << " doesn't exist. Create this folder and run this command again." << endl;
     exit(-1);
   }
   if (is_directory(s)) {
@@ -226,8 +220,7 @@ inline void str_keep_valid_sequence(string &s, bool forceUpperCase = false) {
   s.resize(total);
 }
 
-inline int find_with_right_pos(const string &str, const string &pattern,
-                               int start = 0) {
+inline int find_with_right_pos(const string &str, const string &pattern, int start = 0) {
   int pos = str.find(pattern, start);
   if (pos < 0)
     return -1;
@@ -235,13 +228,9 @@ inline int find_with_right_pos(const string &str, const string &pattern,
     return pos + pattern.length();
 }
 
-inline void str2upper(string &s) {
-  transform(s.begin(), s.end(), s.begin(), (int (*)(int))toupper);
-}
+inline void str2upper(string &s) { transform(s.begin(), s.end(), s.begin(), (int (*)(int))toupper); }
 
-inline void str2lower(string &s) {
-  transform(s.begin(), s.end(), s.begin(), (int (*)(int))tolower);
-}
+inline void str2lower(string &s) { transform(s.begin(), s.end(), s.begin(), (int (*)(int))tolower); }
 
 inline char num2qual(int num) {
   if (num > 127 - 33)
@@ -263,8 +252,7 @@ inline void loginfo(const string s) {
   logmtx.lock();
   time_t tt = time(NULL);
   tm *t = localtime(&tt);
-  fprintf(stderr, "[%02d:%02d:%02d] %s \n", t->tm_hour, t->tm_min, t->tm_sec,
-          s.c_str());
+  fprintf(stderr, "[%02d:%02d:%02d] %s \n", t->tm_hour, t->tm_min, t->tm_sec, s.c_str());
   logmtx.unlock();
 }
 

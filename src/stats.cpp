@@ -185,10 +185,8 @@ void Stats::summarize(bool forced) {
       if (mCycleBaseContents[b][c] == 0)
         qualCurve[c] = meanQualCurve[c];
       else
-        qualCurve[c] =
-            (double)mCycleBaseQual[b][c] / (double)mCycleBaseContents[b][c];
-      contentCurve[c] =
-          (double)mCycleBaseContents[b][c] / (double)mCycleTotalBase[c];
+        qualCurve[c] = (double)mCycleBaseQual[b][c] / (double)mCycleBaseContents[b][c];
+      contentCurve[c] = (double)mCycleBaseContents[b][c] / (double)mCycleTotalBase[c];
     }
     mQualityCurves[string(1, base)] = qualCurve;
     mContentCurves[string(1, base)] = contentCurve;
@@ -201,8 +199,7 @@ void Stats::summarize(bool forced) {
   char cBase = 'C' & 0x07;
   for (int c = 0; c < mCycles; c++) {
     gcContentCurve[c] =
-        (double)(mCycleBaseContents[gBase][c] + mCycleBaseContents[cBase][c]) /
-        (double)mCycleTotalBase[c];
+        (double)(mCycleBaseContents[gBase][c] + mCycleBaseContents[cBase][c]) / (double)mCycleTotalBase[c];
   }
   mContentCurves["GC"] = gcContentCurve;
 
@@ -381,10 +378,8 @@ void Stats::print() {
   }
   cerr << "total reads: " << mReads << endl;
   cerr << "total bases: " << mBases << endl;
-  cerr << "Q20 bases: " << mQ20Total << "(" << (mQ20Total * 100.0) / mBases
-       << "%)" << endl;
-  cerr << "Q30 bases: " << mQ30Total << "(" << (mQ30Total * 100.0) / mBases
-       << "%)" << endl;
+  cerr << "Q20 bases: " << mQ20Total << "(" << (mQ20Total * 100.0) / mBases << "%)" << endl;
+  cerr << "Q30 bases: " << mQ30Total << "(" << (mQ30Total * 100.0) / mBases << "%)" << endl;
 }
 
 void Stats::reportJson(ofstream &ofs, string padding) {
@@ -562,16 +557,14 @@ bool Stats::overRepPassed(string &seq, long count) {
   }
 }
 
-void Stats::reportHtmlORA(ofstream &ofs, string filteringType,
-                          string readName) {
+void Stats::reportHtmlORA(ofstream &ofs, string filteringType, string readName) {
   // over represented seqs
   double dBases = mBases;
   map<string, long>::iterator iter;
   int displayed = 0;
 
   // KMER
-  string subsection =
-      filteringType + ": " + readName + ": overrepresented sequences";
+  string subsection = filteringType + ": " + readName + ": overrepresented sequences";
   string divName = replace(subsection, " ", "_");
   divName = replace(divName, ":", "_");
   string title = "";
@@ -580,8 +573,7 @@ void Stats::reportHtmlORA(ofstream &ofs, string filteringType,
          "onclick=showOrHide('"
       << divName << "')>" + subsection + "</a></div>\n";
   ofs << "<div  id='" << divName << "'>\n";
-  ofs << "<div class='sub_section_tips'>Sampling rate: 1 / "
-      << mOptions->overRepAnalysis.sampling << "</div>\n";
+  ofs << "<div class='sub_section_tips'>Sampling rate: 1 / " << mOptions->overRepAnalysis.sampling << "</div>\n";
   ofs << "<table class='summary_table'>\n";
   ofs << "<tr style='font-weight:bold;'><td>overrepresented "
          "sequence</td><td>count (% of bases)</td><td>distribution: cycle 1 ~ "
@@ -594,21 +586,15 @@ void Stats::reportHtmlORA(ofstream &ofs, string filteringType,
     if (!overRepPassed(seq, count))
       continue;
     found++;
-    double percent =
-        (100.0 * count * seq.length() * mOptions->overRepAnalysis.sampling) /
-        dBases;
+    double percent = (100.0 * count * seq.length() * mOptions->overRepAnalysis.sampling) / dBases;
     ofs << "<tr>";
-    ofs << "<td width='400' style='word-break:break-all;font-size:8px;'>" << seq
-        << "</td>";
-    ofs << "<td width='200'>" << count << " (" << to_string(percent)
-        << "%)</td>";
-    ofs << "<td width='250'><canvas id='" << divName << "_" << seq
-        << "' width='240' height='20'></td>";
+    ofs << "<td width='400' style='word-break:break-all;font-size:8px;'>" << seq << "</td>";
+    ofs << "<td width='200'>" << count << " (" << to_string(percent) << "%)</td>";
+    ofs << "<td width='250'><canvas id='" << divName << "_" << seq << "' width='240' height='20'></td>";
     ofs << "</tr>" << endl;
   }
   if (found == 0)
-    ofs << "<tr><td style='text-align:center' colspan='3'>not found</td></tr>"
-        << endl;
+    ofs << "<tr><td style='text-align:center' colspan='3'>not found</td></tr>" << endl;
   ofs << "</table>\n";
   ofs << "</div>\n";
 
@@ -663,8 +649,7 @@ void Stats::reportHtmlORA(ofstream &ofs, string filteringType,
 
 bool Stats::isLongRead() { return mCycles > 300; }
 
-void Stats::reportHtmlKMER(ofstream &ofs, string filteringType,
-                           string readName) {
+void Stats::reportHtmlKMER(ofstream &ofs, string filteringType, string readName) {
 
   // KMER
   string subsection = filteringType + ": " + readName + ": KMER counting";
@@ -729,8 +714,7 @@ string Stats::makeKmerTD(int i, int j) {
   if (b < 16)
     ss << "0";
   ss << hex << b;
-  ss << dec << "' title='" << kmer << ": " << val << "\n"
-     << prop << " times as mean value'>";
+  ss << dec << "' title='" << kmer << ": " << val << "\n" << prop << " times as mean value'>";
   ss << kmer << "</td>";
   return ss.str();
 }
@@ -752,8 +736,7 @@ string Stats::kmer2(int val) {
   return ret;
 }
 
-void Stats::reportHtmlQuality(ofstream &ofs, string filteringType,
-                              string readName) {
+void Stats::reportHtmlQuality(ofstream &ofs, string filteringType, string readName) {
 
   // quality
   string subsection = filteringType + ": " + readName + ": quality";
@@ -771,8 +754,7 @@ void Stats::reportHtmlQuality(ofstream &ofs, string filteringType,
   ofs << "</div>\n";
 
   string alphabets[5] = {"A", "T", "C", "G", "mean"};
-  string colors[5] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)",
-                      "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)",
+  string colors[5] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)", "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)",
                       "rgba(20,20,20,1.0)"};
   ofs << "\n<script type=\"text/javascript\">" << endl;
   string json_str = "var data=[";
@@ -833,8 +815,7 @@ void Stats::reportHtmlQuality(ofstream &ofs, string filteringType,
   delete[] x;
 }
 
-void Stats::reportHtmlContents(ofstream &ofs, string filteringType,
-                               string readName) {
+void Stats::reportHtmlContents(ofstream &ofs, string filteringType, string readName) {
 
   // content
   string subsection = filteringType + ": " + readName + ": base contents";
@@ -852,9 +833,8 @@ void Stats::reportHtmlContents(ofstream &ofs, string filteringType,
   ofs << "</div>\n";
 
   string alphabets[6] = {"A", "T", "C", "G", "N", "GC"};
-  string colors[6] = {"rgba(128,128,0,1.0)",  "rgba(128,0,128,1.0)",
-                      "rgba(0,255,0,1.0)",    "rgba(0,0,255,1.0)",
-                      "rgba(255, 0, 0, 1.0)", "rgba(20,20,20,1.0)"};
+  string colors[6] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)",  "rgba(0,255,0,1.0)",
+                      "rgba(0,0,255,1.0)",   "rgba(255, 0, 0, 1.0)", "rgba(20,20,20,1.0)"};
   ofs << "\n<script type=\"text/javascript\">" << endl;
   string json_str = "var data=[";
 
@@ -973,10 +953,8 @@ Stats *Stats::merge(vector<Stats *> &list) {
     for (iter = s->mOverRepSeq.begin(); iter != s->mOverRepSeq.end(); iter++) {
       string seq = iter->first;
       s->mOverRepSeq[seq] += list[t]->mOverRepSeq[seq];
-      if (s->mIsRead2 != list[t]->mIsRead2 ||
-          list[t]->mOverRepSeqDist[seq] == NULL)
-        cerr << t << seq << ":" << (s->mIsRead2 ? 2 : 1) << ","
-             << (list[t]->mIsRead2 ? 2 : 1) << endl;
+      if (s->mIsRead2 != list[t]->mIsRead2 || list[t]->mOverRepSeqDist[seq] == NULL)
+        cerr << t << seq << ":" << (s->mIsRead2 ? 2 : 1) << "," << (list[t]->mIsRead2 ? 2 : 1) << endl;
       for (int i = 0; i < s->mEvaluatedSeqLen; i++) {
         s->mOverRepSeqDist[seq][i] += list[t]->mOverRepSeqDist[seq][i];
       }

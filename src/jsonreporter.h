@@ -22,8 +22,8 @@ public:
 
   void setDup(double dupRate);
   void setInsertHist(atomic_long *insertHist, int insertSizePeak);
-  void report(FilterResult *result, Stats *preStats1, Stats *postStats1,
-              Stats *preStats2 = NULL, Stats *postStats2 = NULL);
+  void report(FilterResult *result, Stats *preStats1, Stats *postStats1, Stats *preStats2 = NULL,
+              Stats *postStats2 = NULL);
 
 private:
   Options *mOptions;

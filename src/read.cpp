@@ -3,8 +3,7 @@
 #include <cstring>
 #include <sstream>
 
-Read::Read(string *name, string *seq, string *strand, string *quality,
-           bool phred64) {
+Read::Read(string *name, string *seq, string *strand, string *quality, bool phred64) {
   mName = name;
   mSeq = seq;
   mStrand = strand;
@@ -13,8 +12,7 @@ Read::Read(string *name, string *seq, string *strand, string *quality,
     convertPhred64To33();
 }
 
-Read::Read(const char *name, const char *seq, const char *strand,
-           const char *quality, bool phred64) {
+Read::Read(const char *name, const char *seq, const char *strand, const char *quality, bool phred64) {
   mName = new string(name);
   mSeq = new string(seq);
   mStrand = new string(strand);
@@ -113,13 +111,10 @@ int Read::lowQualCount(int qual) {
 
 int Read::length() { return mSeq->length(); }
 
-string Read::toString() {
-  return *mName + "\n" + *mSeq + "\n" + *mStrand + "\n" + *mQuality + "\n";
-}
+string Read::toString() { return *mName + "\n" + *mSeq + "\n" + *mStrand + "\n" + *mQuality + "\n"; }
 
 void Read::appendToString(string *target) {
-  size_t size = mName->length() + mSeq->length() + mStrand->length() +
-                mQuality->length() + 4;
+  size_t size = mName->length() + mSeq->length() + mStrand->length() + mQuality->length() + 4;
   char *str = new char[size + 1];
   size_t total = 0;
   memcpy(str + total, mName->data(), mName->length());
@@ -145,8 +140,7 @@ void Read::appendToString(string *target) {
 }
 
 void Read::appendToStringWithTag(string *target, string tag) {
-  size_t size = mName->length() + 1 + tag.length() + mSeq->length() +
-                mStrand->length() + mQuality->length() + 4;
+  size_t size = mName->length() + 1 + tag.length() + mSeq->length() + mStrand->length() + mQuality->length() + 4;
   char *str = new char[size + 1];
   size_t total = 0;
   memcpy(str + total, mName->data(), mName->length());
@@ -176,16 +170,14 @@ void Read::appendToStringWithTag(string *target, string tag) {
 }
 
 string Read::toStringWithTag(string tag) {
-  return *mName + " " + tag + "\n" + *mSeq + "\n" + *mStrand + "\n" +
-         *mQuality + "\n";
+  return *mName + " " + tag + "\n" + *mSeq + "\n" + *mStrand + "\n" + *mQuality + "\n";
 }
 
 bool Read::fixMGI() {
   int len = mName->length();
   if ((*mName)[len - 1] == '1' || (*mName)[len - 1] == '2') {
     if ((*mName)[len - 2] == '/') {
-      mName = new string(mName->substr(0, len - 2) + " " +
-                         mName->substr(len - 2, 2));
+      mName = new string(mName->substr(0, len - 2) + " " + mName->substr(len - 2, 2));
       return true;
     }
   }
@@ -193,16 +185,14 @@ bool Read::fixMGI() {
 }
 
 bool Read::test() {
-  Read r(
-      new string(
-          "@NS500713:64:HFKJJBGXY:1:11101:20469:1097 1:N:0:TATAGCCT+GGTCCCGA"),
-      new string("CTCTTGGACTCTAACACTGTTTTTTCTTATGAAAACACAGGAGTGATGACTAGTTGAGTGC"
-                 "ATTCTTATGAGACTCATAGTCATTCTATGATGTAGTTTTCCTTAGGAGGACATTTTTTACA"
-                 "TGAAATTATTAACCTAAATAGAGTTGATC"),
-      new string("+"),
-      new string("AAAAA6EEEEEEEEEEEEEEEEE#EEEEEEEEEEEEEEEEE/"
-                 "EEEEEEEEEEEEEEEEAEEEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE<"
-                 "EEEEAEEEEEEEEEEEEEEEAEEE/EEEEEEEEEEAAEAEAAEEEAEEAA"));
+  Read r(new string("@NS500713:64:HFKJJBGXY:1:11101:20469:1097 1:N:0:TATAGCCT+GGTCCCGA"),
+         new string("CTCTTGGACTCTAACACTGTTTTTTCTTATGAAAACACAGGAGTGATGACTAGTTGAGTGC"
+                    "ATTCTTATGAGACTCATAGTCATTCTATGATGTAGTTTTCCTTAGGAGGACATTTTTTACA"
+                    "TGAAATTATTAACCTAAATAGAGTTGATC"),
+         new string("+"),
+         new string("AAAAA6EEEEEEEEEEEEEEEEE#EEEEEEEEEEEEEEEEE/"
+                    "EEEEEEEEEEEEEEEEAEEEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE<"
+                    "EEEEAEEEEEEEEEEEEEEEAEEE/EEEEEEEEEEAAEAEAAEEEAEEAA"));
   string idx = r.lastIndex();
   return idx == "GGTCCCGA";
 }
@@ -250,8 +240,7 @@ Read *ReadPair::fastMerge() {
       if (str1[offset + i] != str2[i]) {
         diff++;
         // one is >= Q30 and the other is <= Q15
-        if ((qual1[offset + i] >= '?' && qual2[i] <= '0') ||
-            (qual1[offset + i] <= '0' && qual2[i] >= '?')) {
+        if ((qual1[offset + i] >= '?' && qual2[i] <= '0') || (qual1[offset + i] <= '0' && qual2[i] >= '?')) {
           lowQualDiff++;
         }
         // we disallow high quality diff, and only allow up to 3 low qual diff
@@ -271,12 +260,10 @@ Read *ReadPair::fastMerge() {
   if (overlapped) {
     int offset = len1 - olen;
     stringstream ss;
-    ss << mLeft->mName << " merged offset:" << offset << " overlap:" << olen
-       << " diff:" << diff;
+    ss << mLeft->mName << " merged offset:" << offset << " overlap:" << olen << " diff:" << diff;
     string mergedName = ss.str();
     string mergedSeq = mLeft->mSeq->substr(0, offset) + *(rcRight->mSeq);
-    string mergedQual =
-        mLeft->mQuality->substr(0, offset) + *(rcRight->mQuality);
+    string mergedQual = mLeft->mQuality->substr(0, offset) + *(rcRight->mQuality);
     // quality adjuction and correction for low qual diff
     for (int i = 0; i < olen; i++) {
       if (str1[offset + i] != str2[i]) {
@@ -293,8 +280,7 @@ Read *ReadPair::fastMerge() {
       }
     }
     delete rcRight;
-    return new Read(new string(mergedName), new string(mergedSeq),
-                    new string("+"), new string(mergedQual));
+    return new Read(new string(mergedName), new string(mergedSeq), new string("+"), new string(mergedQual));
   }
 
   delete rcRight;
@@ -302,34 +288,29 @@ Read *ReadPair::fastMerge() {
 }
 
 bool ReadPair::test() {
-  Read *left = new Read(
-      new string(
-          "@NS500713:64:HFKJJBGXY:1:11101:20469:1097 1:N:0:TATAGCCT+GGTCCCGA"),
-      new string("TTTTTTCTCTTGGACTCTAACACTGTTTTTTCTTATGAAAACACAGGAGTGATGACTAGTT"
-                 "GAGTGCATTCTTATGAGACTCATAGTCATTCTATGATGTAG"),
-      new string("+"),
-      new string("AAAAA6EEEEEEEEEEEEEEEEE#"
-                 "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEEEAEEEEEEEEEEEEEEEEEEEEEE"
-                 "EEEEEEEEEEEEEEEEE"));
-  Read *right = new Read(
-      new string(
-          "@NS500713:64:HFKJJBGXY:1:11101:20469:1097 1:N:0:TATAGCCT+GGTCCCGA"),
-      new string("AAAAAACTACACCATAGAATGACTATGAGTCTCATAAGAATGCACTCAACTAGTCATCACT"
-                 "CCTGTGTTTTCATAAGAAAAAACAGTGTTAGAGTCCAAGAG"),
-      new string("+"),
-      new string("AAAAA6EEEEE/"
-                 "EEEEEEEEEEE#"
-                 "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEEEAEEEEEEEEEEEEEEEEEEEEEE"
-                 "EEEEEEEEEEEEEEEEE"));
+  Read *left = new Read(new string("@NS500713:64:HFKJJBGXY:1:11101:20469:1097 1:N:0:TATAGCCT+GGTCCCGA"),
+                        new string("TTTTTTCTCTTGGACTCTAACACTGTTTTTTCTTATGAAAACACAGGAGTGATGACTAGTT"
+                                   "GAGTGCATTCTTATGAGACTCATAGTCATTCTATGATGTAG"),
+                        new string("+"),
+                        new string("AAAAA6EEEEEEEEEEEEEEEEE#"
+                                   "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEEEAEEEEEEEEEEEEEEEEEEEEEE"
+                                   "EEEEEEEEEEEEEEEEE"));
+  Read *right = new Read(new string("@NS500713:64:HFKJJBGXY:1:11101:20469:1097 1:N:0:TATAGCCT+GGTCCCGA"),
+                         new string("AAAAAACTACACCATAGAATGACTATGAGTCTCATAAGAATGCACTCAACTAGTCATCACT"
+                                    "CCTGTGTTTTCATAAGAAAAAACAGTGTTAGAGTCCAAGAG"),
+                         new string("+"),
+                         new string("AAAAA6EEEEE/"
+                                    "EEEEEEEEEEE#"
+                                    "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEEEAEEEEEEEEEEEEEEEEEEEEEE"
+                                    "EEEEEEEEEEEEEEEEE"));
 
   ReadPair pair(left, right);
   Read *merged = pair.fastMerge();
   if (merged == NULL)
     return false;
 
-  if (*(merged->mSeq) !=
-      "TTTTTTCTCTTGGACTCTAACACTGTTTTTTCTTATGAAAACACAGGAGTGATGACTAGTTGAGTGCATTCT"
-      "TATGAGACTCATAGTCATTCTATGATGTAGTTTTTT")
+  if (*(merged->mSeq) != "TTTTTTCTCTTGGACTCTAACACTGTTTTTTCTTATGAAAACACAGGAGTGATGACTAGTTGAGTGCATTCT"
+                         "TATGAGACTCATAGTCATTCTATGATGTAGTTTTTT")
     return false;
 
   return true;

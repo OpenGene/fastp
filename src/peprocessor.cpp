@@ -64,8 +64,7 @@ void PairEndProcessor::initOutput() {
   if (!mOptions->unpaired1.empty())
     mUnpairedLeftWriter = new WriterThread(mOptions, mOptions->unpaired1);
 
-  if (!mOptions->unpaired2.empty() &&
-      mOptions->unpaired2 != mOptions->unpaired1)
+  if (!mOptions->unpaired2.empty() && mOptions->unpaired2 != mOptions->unpaired1)
     mUnpairedRightWriter = new WriterThread(mOptions, mOptions->unpaired2);
 
   if (mOptions->merge.enabled) {
@@ -134,10 +133,8 @@ bool PairEndProcessor::process() {
   std::thread *readerRight = NULL;
   std::thread *readerInterveleaved = NULL;
 
-  mLeftInputLists =
-      new SingleProducerSingleConsumerList<ReadPack *> *[mOptions->thread];
-  mRightInputLists =
-      new SingleProducerSingleConsumerList<ReadPack *> *[mOptions->thread];
+  mLeftInputLists = new SingleProducerSingleConsumerList<ReadPack *> *[mOptions->thread];
+  mRightInputLists = new SingleProducerSingleConsumerList<ReadPack *> *[mOptions->thread];
 
   ThreadConfig **configs = new ThreadConfig *[mOptions->thread];
   for (int t = 0; t < mOptions->thread; t++) {
@@ -149,19 +146,15 @@ bool PairEndProcessor::process() {
   }
 
   if (mOptions->interleavedInput)
-    readerInterveleaved = new std::thread(
-        std::bind(&PairEndProcessor::interleavedReaderTask, this));
+    readerInterveleaved = new std::thread(std::bind(&PairEndProcessor::interleavedReaderTask, this));
   else {
-    readerLeft =
-        new std::thread(std::bind(&PairEndProcessor::readerTask, this, true));
-    readerRight =
-        new std::thread(std::bind(&PairEndProcessor::readerTask, this, false));
+    readerLeft = new std::thread(std::bind(&PairEndProcessor::readerTask, this, true));
+    readerRight = new std::thread(std::bind(&PairEndProcessor::readerTask, this, false));
   }
 
   std::thread **threads = new thread *[mOptions->thread];
   for (int t = 0; t < mOptions->thread; t++) {
-    threads[t] = new std::thread(
-        std::bind(&PairEndProcessor::processorTask, this, configs[t]));
+    threads[t] = new std::thread(std::bind(&PairEndProcessor::processorTask, this, configs[t]));
   }
 
   std::thread *leftWriterThread = NULL;
@@ -172,26 +165,19 @@ bool PairEndProcessor::process() {
   std::thread *failedWriterThread = NULL;
   std::thread *overlappedWriterThread = NULL;
   if (mLeftWriter)
-    leftWriterThread = new std::thread(
-        std::bind(&PairEndProcessor::writerTask, this, mLeftWriter));
+    leftWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mLeftWriter));
   if (mRightWriter)
-    rightWriterThread = new std::thread(
-        std::bind(&PairEndProcessor::writerTask, this, mRightWriter));
+    rightWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mRightWriter));
   if (mUnpairedLeftWriter)
-    unpairedLeftWriterThread = new std::thread(
-        std::bind(&PairEndProcessor::writerTask, this, mUnpairedLeftWriter));
+    unpairedLeftWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mUnpairedLeftWriter));
   if (mUnpairedRightWriter)
-    unpairedRightWriterThread = new std::thread(
-        std::bind(&PairEndProcessor::writerTask, this, mUnpairedRightWriter));
+    unpairedRightWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mUnpairedRightWriter));
   if (mMergedWriter)
-    mergedWriterThread = new std::thread(
-        std::bind(&PairEndProcessor::writerTask, this, mMergedWriter));
+    mergedWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mMergedWriter));
   if (mFailedWriter)
-    failedWriterThread = new std::thread(
-        std::bind(&PairEndProcessor::writerTask, this, mFailedWriter));
+    failedWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mFailedWriter));
   if (mOverlappedWriter)
-    overlappedWriterThread = new std::thread(
-        std::bind(&PairEndProcessor::writerTask, this, mOverlappedWriter));
+    overlappedWriterThread = new std::thread(std::bind(&PairEndProcessor::writerTask, this, mOverlappedWriter));
 
   if (readerInterveleaved) {
     readerInterveleaved->join();
@@ -273,20 +259,16 @@ bool PairEndProcessor::process() {
   // insert size distribution
   int peakInsertSize = getPeakInsertSize();
   cerr << endl;
-  cerr << "Insert size peak (evaluated by paired-end reads): " << peakInsertSize
-       << endl;
+  cerr << "Insert size peak (evaluated by paired-end reads): " << peakInsertSize << endl;
 
   if (mOptions->merge.enabled) {
     cerr << endl;
     cerr << "Read pairs merged: " << finalFilterResult->mMergedPairs << endl;
     if (finalPostStats1->getReads() > 0) {
-      double postMergedPercent =
-          100.0 * finalFilterResult->mMergedPairs / finalPostStats1->getReads();
-      double preMergedPercent =
-          100.0 * finalFilterResult->mMergedPairs / finalPreStats1->getReads();
+      double postMergedPercent = 100.0 * finalFilterResult->mMergedPairs / finalPostStats1->getReads();
+      double preMergedPercent = 100.0 * finalFilterResult->mMergedPairs / finalPreStats1->getReads();
       cerr << "% of original read pairs: " << preMergedPercent << "%" << endl;
-      cerr << "% in reads after filtering: " << postMergedPercent << "%"
-           << endl;
+      cerr << "% in reads after filtering: " << postMergedPercent << "%" << endl;
     }
     cerr << endl;
   }
@@ -295,15 +277,13 @@ bool PairEndProcessor::process() {
   JsonReporter jr(mOptions);
   jr.setDup(dupRate);
   jr.setInsertHist(mInsertSizeHist, peakInsertSize);
-  jr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2,
-            finalPostStats2);
+  jr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
   // make HTML report
   HtmlReporter hr(mOptions);
   hr.setDup(dupRate);
   hr.setInsertHist(mInsertSizeHist, peakInsertSize);
-  hr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2,
-            finalPostStats2);
+  hr.report(finalFilterResult, finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
 
   // clean up
   for (int t = 0; t < mOptions->thread; t++) {
@@ -374,12 +354,10 @@ void PairEndProcessor::recycleToPool2(int tid, Read *r) {
     delete r;
 }
 
-bool PairEndProcessor::processPairEnd(ReadPack *leftPack, ReadPack *rightPack,
-                                      ThreadConfig *config) {
+bool PairEndProcessor::processPairEnd(ReadPack *leftPack, ReadPack *rightPack, ThreadConfig *config) {
   if (leftPack->count != rightPack->count) {
     cerr << endl;
-    cerr << "WARNNIG: different read numbers of the " << mPackProcessedCounter
-         << " pack" << endl;
+    cerr << "WARNNIG: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
     cerr << "Read1 pack size: " << leftPack->count << endl;
     cerr << "Read2 pack size: " << rightPack->count << endl;
     cerr << endl;
@@ -439,86 +417,67 @@ bool PairEndProcessor::processPairEnd(ReadPack *leftPack, ReadPack *rightPack,
     // trim in head and tail, and apply quality cut in sliding window
     int frontTrimmed1 = 0;
     int frontTrimmed2 = 0;
-    Read *r1 = mFilter->trimAndCut(or1, mOptions->trim.front1,
-                                   mOptions->trim.tail1, frontTrimmed1);
-    Read *r2 = mFilter->trimAndCut(or2, mOptions->trim.front2,
-                                   mOptions->trim.tail2, frontTrimmed2);
+    Read *r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1, frontTrimmed1);
+    Read *r2 = mFilter->trimAndCut(or2, mOptions->trim.front2, mOptions->trim.tail2, frontTrimmed2);
 
     if (r1 != NULL && r2 != NULL) {
       if (mOptions->polyGTrim.enabled)
-        PolyX::trimPolyG(r1, r2, config->getFilterResult(),
-                         mOptions->polyGTrim.minLen);
+        PolyX::trimPolyG(r1, r2, config->getFilterResult(), mOptions->polyGTrim.minLen);
     }
     bool isizeEvaluated = false;
-    if (r1 != NULL && r2 != NULL &&
-        (mOptions->adapter.enabled || mOptions->correction.enabled)) {
-      OverlapResult ov = OverlapAnalysis::analyze(
-          r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire,
-          mOptions->overlapDiffPercentLimit / 100.0);
+    if (r1 != NULL && r2 != NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)) {
+      OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire,
+                                                  mOptions->overlapDiffPercentLimit / 100.0);
       // we only use thread 0 to evaluae ISIZE
       if (config->getThreadId() == 0) {
         statInsertSize(r1, r2, ov, frontTrimmed1, frontTrimmed2);
         isizeEvaluated = true;
       }
       if (mOptions->correction.enabled) {
-        BaseCorrector::correctByOverlapAnalysis(r1, r2,
-                                                config->getFilterResult(), ov);
+        BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
       }
       if (mOptions->adapter.enabled) {
-        bool trimmed = AdapterTrimmer::trimByOverlapAnalysis(
-            r1, r2, config->getFilterResult(), ov, frontTrimmed1,
-            frontTrimmed2);
+        bool trimmed =
+            AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov, frontTrimmed1, frontTrimmed2);
         bool trimmed1 = trimmed;
         bool trimmed2 = trimmed;
         if (!trimmed) {
           if (mOptions->adapter.hasSeqR1)
-            trimmed1 = AdapterTrimmer::trimBySequence(
-                r1, config->getFilterResult(), mOptions->adapter.sequence,
-                false);
+            trimmed1 = AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
           if (mOptions->adapter.hasSeqR2)
-            trimmed2 = AdapterTrimmer::trimBySequence(
-                r2, config->getFilterResult(), mOptions->adapter.sequenceR2,
-                true);
+            trimmed2 =
+                AdapterTrimmer::trimBySequence(r2, config->getFilterResult(), mOptions->adapter.sequenceR2, true);
         }
         if (mOptions->adapter.hasFasta) {
-          AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(),
-                                               mOptions->adapter.seqsInFasta,
-                                               false, !trimmed1);
-          AdapterTrimmer::trimByMultiSequences(r2, config->getFilterResult(),
-                                               mOptions->adapter.seqsInFasta,
-                                               true, !trimmed2);
+          AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false,
+                                               !trimmed1);
+          AdapterTrimmer::trimByMultiSequences(r2, config->getFilterResult(), mOptions->adapter.seqsInFasta, true,
+                                               !trimmed2);
         }
       }
     }
 
     if (r1 != NULL && r2 != NULL && mOverlappedWriter) {
-      OverlapResult ov = OverlapAnalysis::analyze(
-          r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, 0);
+      OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, 0);
       if (ov.overlapped) {
-        Read *overlappedRead = new Read(
-            r1->mName,
-            new string(r1->mSeq->substr(max(0, ov.offset)), ov.overlap_len),
-            r1->mStrand,
-            new string(r1->mQuality->substr(max(0, ov.offset)),
-                       ov.overlap_len));
+        Read *overlappedRead =
+            new Read(r1->mName, new string(r1->mSeq->substr(max(0, ov.offset)), ov.overlap_len), r1->mStrand,
+                     new string(r1->mQuality->substr(max(0, ov.offset)), ov.overlap_len));
         overlappedRead->appendToString(overlappedOut);
         recycleToPool1(tid, overlappedRead);
       }
     }
 
-    if (config->getThreadId() == 0 && !isizeEvaluated && r1 != NULL &&
-        r2 != NULL) {
-      OverlapResult ov = OverlapAnalysis::analyze(
-          r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire,
-          mOptions->overlapDiffPercentLimit / 100.0);
+    if (config->getThreadId() == 0 && !isizeEvaluated && r1 != NULL && r2 != NULL) {
+      OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire,
+                                                  mOptions->overlapDiffPercentLimit / 100.0);
       statInsertSize(r1, r2, ov, frontTrimmed1, frontTrimmed2);
       isizeEvaluated = true;
     }
 
     if (r1 != NULL && r2 != NULL) {
       if (mOptions->polyXTrim.enabled)
-        PolyX::trimPolyX(r1, r2, config->getFilterResult(),
-                         mOptions->polyXTrim.minLen);
+        PolyX::trimPolyX(r1, r2, config->getFilterResult(), mOptions->polyXTrim.minLen);
     }
 
     if (r1 != NULL && r2 != NULL) {
@@ -532,9 +491,8 @@ bool PairEndProcessor::processPairEnd(ReadPack *leftPack, ReadPack *rightPack,
     // merging mode
     bool mergeProcessed = false;
     if (mOptions->merge.enabled && r1 && r2) {
-      OverlapResult ov = OverlapAnalysis::analyze(
-          r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire,
-          mOptions->overlapDiffPercentLimit / 100.0);
+      OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire,
+                                                  mOptions->overlapDiffPercentLimit / 100.0);
       if (ov.overlapped) {
         merged = OverlapAnalysis::merge(r1, r2, ov);
         int result = mFilter->passFilter(merged);
@@ -576,8 +534,7 @@ bool PairEndProcessor::processPairEnd(ReadPack *leftPack, ReadPack *rightPack,
 
       if (!dedupOut) {
 
-        if (r1 != NULL && result1 == PASS_FILTER && r2 != NULL &&
-            result2 == PASS_FILTER) {
+        if (r1 != NULL && result1 == PASS_FILTER && r2 != NULL && result2 == PASS_FILTER) {
 
           if (mOptions->outputToSTDOUT && !mOptions->merge.enabled) {
             r1->appendToString(singleOutput);
@@ -741,13 +698,11 @@ bool PairEndProcessor::processPairEnd(ReadPack *leftPack, ReadPack *rightPack,
   return true;
 }
 
-void PairEndProcessor::statInsertSize(Read *r1, Read *r2, OverlapResult &ov,
-                                      int frontTrimmed1, int frontTrimmed2) {
+void PairEndProcessor::statInsertSize(Read *r1, Read *r2, OverlapResult &ov, int frontTrimmed1, int frontTrimmed2) {
   int isize = mOptions->insertSizeMax;
   if (ov.overlapped) {
     if (ov.offset > 0)
-      isize = r1->length() + r2->length() - ov.overlap_len + frontTrimmed1 +
-              frontTrimmed2;
+      isize = r1->length() + r2->length() - ov.overlap_len + frontTrimmed1 + frontTrimmed2;
     else
       isize = ov.overlap_len + frontTrimmed1 + frontTrimmed2;
   }
@@ -794,8 +749,7 @@ void PairEndProcessor::readerTask(bool isLeft) {
         mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
         mLeftPackReadCounter++;
       } else {
-        mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(
-            pack);
+        mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
         mRightPackReadCounter++;
       }
       data = NULL;
@@ -808,8 +762,7 @@ void PairEndProcessor::readerTask(bool isLeft) {
     data[count] = read;
     count++;
     // configured to process only first N reads
-    if (mOptions->readsToProcess > 0 &&
-        count + readNum >= mOptions->readsToProcess) {
+    if (mOptions->readsToProcess > 0 && count + readNum >= mOptions->readsToProcess) {
       needToBreak = true;
     }
     if (mOptions->verbose && count + readNum >= lastReported + 1000000) {
@@ -832,8 +785,7 @@ void PairEndProcessor::readerTask(bool isLeft) {
         mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
         mLeftPackReadCounter++;
       } else {
-        mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(
-            pack);
+        mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
         mRightPackReadCounter++;
       }
 
@@ -843,15 +795,13 @@ void PairEndProcessor::readerTask(bool isLeft) {
       // if the processor is far behind this reader, sleep and wait to limit
       // memory usage
       if (isLeft) {
-        while (mLeftPackReadCounter - mPackProcessedCounter >
-               PACK_IN_MEM_LIMIT) {
+        while (mLeftPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT) {
           // cerr<<"sleep"<<endl;
           slept++;
           usleep(100);
         }
       } else {
-        while (mRightPackReadCounter - mPackProcessedCounter >
-               PACK_IN_MEM_LIMIT) {
+        while (mRightPackReadCounter - mPackProcessedCounter > PACK_IN_MEM_LIMIT) {
           // cerr<<"sleep"<<endl;
           slept++;
           usleep(100);
@@ -861,10 +811,8 @@ void PairEndProcessor::readerTask(bool isLeft) {
       // if the writer threads are far behind this producer, sleep and wait
       // check this only when necessary
       if (readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-        while (
-            (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) ||
-            (mRightWriter &&
-             mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT)) {
+        while ((mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) ||
+               (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT)) {
           slept++;
           usleep(1000);
         }
@@ -899,12 +847,10 @@ void PairEndProcessor::readerTask(bool isLeft) {
   if (mOptions->verbose) {
     if (isLeft) {
       mLeftReaderFinished = true;
-      loginfo("Read1: loading completed with " +
-              to_string(mLeftPackReadCounter) + " packs");
+      loginfo("Read1: loading completed with " + to_string(mLeftPackReadCounter) + " packs");
     } else {
       mRightReaderFinished = true;
-      loginfo("Read2: loading completed with " +
-              to_string(mRightPackReadCounter) + " packs");
+      loginfo("Read2: loading completed with " + to_string(mRightPackReadCounter) + " packs");
     }
   }
 
@@ -926,8 +872,7 @@ void PairEndProcessor::interleavedReaderTask() {
   Read **dataRight = new Read *[PACK_SIZE];
   memset(dataLeft, 0, sizeof(Read *) * PACK_SIZE);
   memset(dataRight, 0, sizeof(Read *) * PACK_SIZE);
-  FastqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64,
-                         true);
+  FastqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64, true);
   int count = 0;
   bool needToBreak = false;
   while (true) {
@@ -943,12 +888,10 @@ void PairEndProcessor::interleavedReaderTask() {
       packLeft->count = count;
       packRight->count = count;
 
-      mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(
-          packLeft);
+      mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
       mLeftPackReadCounter++;
 
-      mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(
-          packRight);
+      mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
       mRightPackReadCounter++;
 
       dataLeft = NULL;
@@ -963,14 +906,12 @@ void PairEndProcessor::interleavedReaderTask() {
     dataRight[count] = pair->mRight;
     count++;
     // configured to process only first N reads
-    if (mOptions->readsToProcess > 0 &&
-        count + readNum >= mOptions->readsToProcess) {
+    if (mOptions->readsToProcess > 0 && count + readNum >= mOptions->readsToProcess) {
       needToBreak = true;
     }
     if (mOptions->verbose && count + readNum >= lastReported + 1000000) {
       lastReported = count + readNum;
-      string msg =
-          "loaded " + to_string((lastReported / 1000000)) + "M read pairs";
+      string msg = "loaded " + to_string((lastReported / 1000000)) + "M read pairs";
       loginfo(msg);
     }
     // a full pack
@@ -982,12 +923,10 @@ void PairEndProcessor::interleavedReaderTask() {
       packLeft->count = count;
       packRight->count = count;
 
-      mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(
-          packLeft);
+      mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
       mLeftPackReadCounter++;
 
-      mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(
-          packRight);
+      mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
       mRightPackReadCounter++;
 
       // re-initialize data for next pack
@@ -1006,10 +945,8 @@ void PairEndProcessor::interleavedReaderTask() {
       // if the writer threads are far behind this producer, sleep and wait
       // check this only when necessary
       if (readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-        while (
-            (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) ||
-            (mRightWriter &&
-             mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT)) {
+        while ((mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) ||
+               (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT)) {
           slept++;
           usleep(1000);
         }
@@ -1047,10 +984,8 @@ void PairEndProcessor::interleavedReaderTask() {
 }
 
 void PairEndProcessor::processorTask(ThreadConfig *config) {
-  SingleProducerSingleConsumerList<ReadPack *> *inputLeft =
-      config->getLeftInput();
-  SingleProducerSingleConsumerList<ReadPack *> *inputRight =
-      config->getRightInput();
+  SingleProducerSingleConsumerList<ReadPack *> *inputLeft = config->getLeftInput();
+  SingleProducerSingleConsumerList<ReadPack *> *inputRight = config->getRightInput();
   while (true) {
     if (config->canBeStopped()) {
       break;
@@ -1062,8 +997,7 @@ void PairEndProcessor::processorTask(ThreadConfig *config) {
     }
     if (inputLeft->isProducerFinished() && !inputLeft->canBeConsumed()) {
       break;
-    } else if (inputRight->isProducerFinished() &&
-               !inputRight->canBeConsumed()) {
+    } else if (inputRight->isProducerFinished() && !inputRight->canBeConsumed()) {
       break;
     } else {
       usleep(100);
@@ -1074,8 +1008,7 @@ void PairEndProcessor::processorTask(ThreadConfig *config) {
 
   mFinishedThreads++;
   if (mOptions->verbose) {
-    string msg = "thread " + to_string(config->getThreadId() + 1) +
-                 " data processing completed";
+    string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
     loginfo(msg);
   }
 

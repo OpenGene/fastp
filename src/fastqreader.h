@@ -89,8 +89,8 @@ private:
 class FastqReaderPair {
 public:
   FastqReaderPair(FastqReader *left, FastqReader *right);
-  FastqReaderPair(string leftName, string rightName, bool hasQuality = true,
-                  bool phred64 = false, bool interleaved = false);
+  FastqReaderPair(string leftName, string rightName, bool hasQuality = true, bool phred64 = false,
+                  bool interleaved = false);
   ~FastqReaderPair();
   ReadPair *read();
 

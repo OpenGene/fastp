@@ -44,12 +44,8 @@ public:
   void setInputList(SingleProducerSingleConsumerList<ReadPack *> *list);
   void setInputListPair(SingleProducerSingleConsumerList<ReadPack *> *left,
                         SingleProducerSingleConsumerList<ReadPack *> *right);
-  SingleProducerSingleConsumerList<ReadPack *> *getLeftInput() {
-    return mLeftInputList;
-  }
-  SingleProducerSingleConsumerList<ReadPack *> *getRightInput() {
-    return mRightInputList;
-  }
+  SingleProducerSingleConsumerList<ReadPack *> *getLeftInput() { return mLeftInputList; }
+  SingleProducerSingleConsumerList<ReadPack *> *getRightInput() { return mRightInputList; }
 
 private:
   void deleteWriter();

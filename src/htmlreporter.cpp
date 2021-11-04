@@ -20,13 +20,11 @@ void HtmlReporter::setInsertHist(atomic_long *insertHist, int insertSizePeak) {
 }
 
 void HtmlReporter::outputRow(ofstream &ofs, string key, long v) {
-  ofs << "<tr><td class='col1'>" + key + "</td><td class='col2'>" +
-             to_string(v) + "</td></tr>\n";
+  ofs << "<tr><td class='col1'>" + key + "</td><td class='col2'>" + to_string(v) + "</td></tr>\n";
 }
 
 void HtmlReporter::outputRow(ofstream &ofs, string key, string v) {
-  ofs << "<tr><td class='col1'>" + key + "</td><td class='col2'>" + v +
-             "</td></tr>\n";
+  ofs << "<tr><td class='col1'>" + key + "</td><td class='col2'>" + v + "</td></tr>\n";
 }
 
 string HtmlReporter::formatNumber(long number) {
@@ -51,8 +49,7 @@ string HtmlReporter::getPercents(long numerator, long denominator) {
     return to_string((double)numerator * 100.0 / (double)denominator);
 }
 
-void HtmlReporter::printSummary(ofstream &ofs, FilterResult *result,
-                                Stats *preStats1, Stats *postStats1,
+void HtmlReporter::printSummary(ofstream &ofs, FilterResult *result, Stats *preStats1, Stats *postStats1,
                                 Stats *preStats2, Stats *postStats2) {
   long pre_total_reads = preStats1->getReads();
   if (preStats2)
@@ -96,8 +93,8 @@ void HtmlReporter::printSummary(ofstream &ofs, FilterResult *result,
 
   string sequencingInfo = mOptions->isPaired() ? "paired end" : "single end";
   if (mOptions->isPaired()) {
-    sequencingInfo += " (" + to_string(preStats1->getCycles()) + " cycles + " +
-                      to_string(preStats2->getCycles()) + " cycles)";
+    sequencingInfo +=
+        " (" + to_string(preStats1->getCycles()) + " cycles + " + to_string(preStats2->getCycles()) + " cycles)";
   } else {
     sequencingInfo += " (" + to_string(preStats1->getCycles()) + " cycles)";
   }
@@ -118,26 +115,21 @@ void HtmlReporter::printSummary(ofstream &ofs, FilterResult *result,
   ofs << "<div id='general'>\n";
   ofs << "<table class='summary_table'>\n";
   outputRow(ofs, "fastp version:",
-            string(FASTP_VER) +
-                " (<a "
-                "href='https://github.com/OpenGene/fastp'>https://github.com/"
-                "OpenGene/fastp</a>)");
+            string(FASTP_VER) + " (<a "
+                                "href='https://github.com/OpenGene/fastp'>https://github.com/"
+                                "OpenGene/fastp</a>)");
   outputRow(ofs, "sequencing:", sequencingInfo);
 
   // report read length change
   if (mOptions->isPaired()) {
     outputRow(ofs, "mean length before filtering:",
-              to_string(preStats1->getMeanLength()) + "bp, " +
-                  to_string(preStats2->getMeanLength()) + "bp");
+              to_string(preStats1->getMeanLength()) + "bp, " + to_string(preStats2->getMeanLength()) + "bp");
     if (!mOptions->merge.enabled)
       outputRow(ofs, "mean length after filtering:",
-                to_string(postStats1->getMeanLength()) + "bp, " +
-                    to_string(postStats2->getMeanLength()) + "bp");
+                to_string(postStats1->getMeanLength()) + "bp, " + to_string(postStats2->getMeanLength()) + "bp");
   } else {
-    outputRow(ofs, "mean length before filtering:",
-              to_string(preStats1->getMeanLength()) + "bp");
-    outputRow(ofs, "mean length after filtering:",
-              to_string(postStats1->getMeanLength()) + "bp");
+    outputRow(ofs, "mean length before filtering:", to_string(preStats1->getMeanLength()) + "bp");
+    outputRow(ofs, "mean length after filtering:", to_string(postStats1->getMeanLength()) + "bp");
   }
 
   if (mOptions->duplicate.enabled) {
@@ -151,11 +143,9 @@ void HtmlReporter::printSummary(ofstream &ofs, FilterResult *result,
   }
   if (mOptions->adapterCuttingEnabled()) {
     if (!mOptions->adapter.detectedAdapter1.empty())
-      outputRow(ofs,
-                "Detected read1 adapter:", mOptions->adapter.detectedAdapter1);
+      outputRow(ofs, "Detected read1 adapter:", mOptions->adapter.detectedAdapter1);
     if (!mOptions->adapter.detectedAdapter2.empty())
-      outputRow(ofs,
-                "Detected read2 adapter:", mOptions->adapter.detectedAdapter2);
+      outputRow(ofs, "Detected read2 adapter:", mOptions->adapter.detectedAdapter2);
   }
   ofs << "</table>\n";
   ofs << "</div>\n";
@@ -167,14 +157,9 @@ void HtmlReporter::printSummary(ofstream &ofs, FilterResult *result,
   ofs << "<table class='summary_table'>\n";
   outputRow(ofs, "total reads:", formatNumber(pre_total_reads));
   outputRow(ofs, "total bases:", formatNumber(pre_total_bases));
-  outputRow(ofs, "Q20 bases:",
-            formatNumber(pre_q20_bases) + " (" +
-                getPercents(pre_q20_bases, pre_total_bases) + "%)");
-  outputRow(ofs, "Q30 bases:",
-            formatNumber(pre_q30_bases) + " (" +
-                getPercents(pre_q30_bases, pre_total_bases) + "%)");
-  outputRow(ofs,
-            "GC content:", getPercents(pre_total_gc, pre_total_bases) + "%");
+  outputRow(ofs, "Q20 bases:", formatNumber(pre_q20_bases) + " (" + getPercents(pre_q20_bases, pre_total_bases) + "%)");
+  outputRow(ofs, "Q30 bases:", formatNumber(pre_q30_bases) + " (" + getPercents(pre_q30_bases, pre_total_bases) + "%)");
+  outputRow(ofs, "GC content:", getPercents(pre_total_gc, pre_total_bases) + "%");
   ofs << "</table>\n";
   ofs << "</div>\n";
 
@@ -185,14 +170,11 @@ void HtmlReporter::printSummary(ofstream &ofs, FilterResult *result,
   ofs << "<table class='summary_table'>\n";
   outputRow(ofs, "total reads:", formatNumber(post_total_reads));
   outputRow(ofs, "total bases:", formatNumber(post_total_bases));
-  outputRow(ofs, "Q20 bases:",
-            formatNumber(post_q20_bases) + " (" +
-                getPercents(post_q20_bases, post_total_bases) + "%)");
-  outputRow(ofs, "Q30 bases:",
-            formatNumber(post_q30_bases) + " (" +
-                getPercents(post_q30_bases, post_total_bases) + "%)");
   outputRow(ofs,
-            "GC content:", getPercents(post_total_gc, post_total_bases) + "%");
+            "Q20 bases:", formatNumber(post_q20_bases) + " (" + getPercents(post_q20_bases, post_total_bases) + "%)");
+  outputRow(ofs,
+            "Q30 bases:", formatNumber(post_q30_bases) + " (" + getPercents(post_q30_bases, post_total_bases) + "%)");
+  outputRow(ofs, "GC content:", getPercents(post_total_gc, post_total_bases) + "%");
   ofs << "</table>\n";
   ofs << "</div>\n";
 
@@ -236,8 +218,7 @@ void HtmlReporter::printSummary(ofstream &ofs, FilterResult *result,
            "name='summary'>Insert size estimation</a></div>\n";
     ofs << "<div id='insert_size'>\n";
 
-    reportInsertSize(ofs, preStats1->getCycles() + preStats2->getCycles() -
-                              mOptions->overlapRequire);
+    reportInsertSize(ofs, preStats1->getCycles() + preStats2->getCycles() - mOptions->overlapRequire);
 
     ofs << "</div>\n";
     ofs << "</div>\n";
@@ -263,8 +244,7 @@ void HtmlReporter::reportInsertSize(ofstream &ofs, int isizeLimit) {
     }
   }
 
-  double unknownPercents =
-      (double)mInsertHist[mOptions->insertSizeMax] * 100.0 / (double)allCount;
+  double unknownPercents = (double)mInsertHist[mOptions->insertSizeMax] * 100.0 / (double)allCount;
 
   ofs << "<div id='insert_size_figure'>\n";
   ofs << "<div class='figure' id='plot_insert_size' "
@@ -295,8 +275,7 @@ void HtmlReporter::reportInsertSize(ofstream &ofs, int isizeLimit) {
 
   json_str += "];\n";
 
-  json_str += "var layout={title:'Insert size distribution (" +
-              to_string(unknownPercents) +
+  json_str += "var layout={title:'Insert size distribution (" + to_string(unknownPercents) +
               "% reads are with unknown length)', xaxis:{title:'Insert size'}, "
               "yaxis:{title:'Read percent (%)'}};\n";
   json_str += "Plotly.newPlot('plot_insert_size', data, layout);\n";
@@ -359,8 +338,7 @@ void HtmlReporter::reportDuplication(ofstream &ofs) {
 
   json_str += "];\n";
 
-  json_str += "var layout={title:'duplication rate (" +
-              to_string(mDupRate * 100.0) +
+  json_str += "var layout={title:'duplication rate (" + to_string(mDupRate * 100.0) +
               "%)', xaxis:{title:'duplication level'}, yaxis:{title:'Read "
               "percent (%) & GC ratio'}};\n";
   json_str += "Plotly.newPlot('plot_duplication', data, layout);\n";
@@ -373,8 +351,7 @@ void HtmlReporter::reportDuplication(ofstream &ofs) {
   delete[] gc;
 }
 
-void HtmlReporter::report(FilterResult *result, Stats *preStats1,
-                          Stats *postStats1, Stats *preStats2,
+void HtmlReporter::report(FilterResult *result, Stats *preStats1, Stats *postStats1, Stats *preStats2,
                           Stats *postStats2) {
   ofstream ofs;
   ofs.open(mOptions->htmlFile, ifstream::out);
@@ -453,8 +430,7 @@ void HtmlReporter::printCSS(ofstream &ofs) {
   ofs << ".alignleft {text-align:left;}" << endl;
   ofs << ".alignright {text-align:right;}" << endl;
   ofs << ".figure {width:800px;height:600px;}" << endl;
-  ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}"
-      << endl;
+  ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}" << endl;
   ofs << ".section_title "
          "{color:#ffffff;font-size:20px;padding:5px;text-align:left;background:"
          "#663355; margin-top:10px;}"
@@ -490,8 +466,7 @@ void HtmlReporter::printCSS(ofstream &ofs) {
 }
 
 void HtmlReporter::printJS(ofstream &ofs) {
-  ofs << "<script src='http://opengene.org/plotly-1.2.0.min.js'></script>"
-      << endl;
+  ofs << "<script src='http://opengene.org/plotly-1.2.0.min.js'></script>" << endl;
   ofs << "\n<script type='text/javascript'>" << endl;
   ofs << "    window.Plotly || document.write('<script "
          "src=\"https://cdn.plot.ly/plotly-1.2.0.min.js\"><\\/script>')"
@@ -509,13 +484,11 @@ void HtmlReporter::printJS(ofstream &ofs) {
 }
 
 const string HtmlReporter::getCurrentSystemTime() {
-  auto tt =
-      std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  auto tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
   struct tm *ptm = localtime(&tt);
   char date[60] = {0};
-  sprintf(date, "%d-%02d-%02d      %02d:%02d:%02d", (int)ptm->tm_year + 1900,
-          (int)ptm->tm_mon + 1, (int)ptm->tm_mday, (int)ptm->tm_hour,
-          (int)ptm->tm_min, (int)ptm->tm_sec);
+  sprintf(date, "%d-%02d-%02d      %02d:%02d:%02d", (int)ptm->tm_year + 1900, (int)ptm->tm_mon + 1, (int)ptm->tm_mday,
+          (int)ptm->tm_hour, (int)ptm->tm_min, (int)ptm->tm_sec);
   return std::string(date);
 }
 
@@ -523,7 +496,6 @@ void HtmlReporter::printFooter(ofstream &ofs) {
   ofs << "\n</div>" << endl;
   ofs << "<div id='footer'> ";
   ofs << "<p>" << command << "</p>";
-  ofs << "fastp " << FASTP_VER << ", at " << getCurrentSystemTime()
-      << " </div>";
+  ofs << "fastp " << FASTP_VER << ", at " << getCurrentSystemTime() << " </div>";
   ofs << "</body></html>";
 }

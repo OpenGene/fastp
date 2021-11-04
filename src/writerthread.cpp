@@ -19,9 +19,7 @@ WriterThread::WriterThread(Options *opt, string filename) {
 
 WriterThread::~WriterThread() { cleanup(); }
 
-bool WriterThread::isCompleted() {
-  return mInputCompleted && (mBufferLength == 0);
-}
+bool WriterThread::isCompleted() { return mInputCompleted && (mBufferLength == 0); }
 
 bool WriterThread::setInputCompleted() {
   mInputCompleted = true;
@@ -32,8 +30,7 @@ bool WriterThread::setInputCompleted() {
 }
 
 void WriterThread::output() {
-  SingleProducerSingleConsumerList<string *> *list =
-      mBufferLists[mWorkingBufferList];
+  SingleProducerSingleConsumerList<string *> *list = mBufferLists[mWorkingBufferList];
   if (!list->canBeConsumed()) {
     usleep(100);
   } else {
@@ -65,8 +62,7 @@ void WriterThread::initWriter(string filename1) {
 }
 
 void WriterThread::initBufferLists() {
-  mBufferLists =
-      new SingleProducerSingleConsumerList<string *> *[mOptions->thread];
+  mBufferLists = new SingleProducerSingleConsumerList<string *> *[mOptions->thread];
   for (int t = 0; t < mOptions->thread; t++) {
     mBufferLists[t] = new SingleProducerSingleConsumerList<string *>();
   }

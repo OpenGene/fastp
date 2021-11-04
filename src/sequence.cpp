@@ -77,13 +77,11 @@ bool Sequence::test() {
   Sequence s(new string("AAAATTTTCCCCGGGG"));
   Sequence rc = ~s;
   if (*(s.mStr) != "AAAATTTTCCCCGGGG") {
-    cerr << "Failed in reverseComplement() expect AAAATTTTCCCCGGGG, but get "
-         << *(s.mStr);
+    cerr << "Failed in reverseComplement() expect AAAATTTTCCCCGGGG, but get " << *(s.mStr);
     return false;
   }
   if (*(rc.mStr) != "CCCCGGGGAAAATTTT") {
-    cerr << "Failed in reverseComplement() expect CCCCGGGGAAAATTTT, but get "
-         << *(rc.mStr);
+    cerr << "Failed in reverseComplement() expect CCCCGGGGAAAATTTT, but get " << *(rc.mStr);
     return false;
   }
   return true;

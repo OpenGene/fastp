@@ -35,8 +35,7 @@ void ReadPool::cleanup() {
 }
 
 void ReadPool::initBufferLists() {
-  mBufferLists =
-      new SingleProducerSingleConsumerList<Read *> *[mOptions->thread];
+  mBufferLists = new SingleProducerSingleConsumerList<Read *> *[mOptions->thread];
   for (int t = 0; t < mOptions->thread; t++) {
     mBufferLists[t] = new SingleProducerSingleConsumerList<Read *>();
   }

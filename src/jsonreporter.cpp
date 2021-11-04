@@ -16,8 +16,7 @@ void JsonReporter::setInsertHist(atomic_long *insertHist, int insertSizePeak) {
 }
 
 extern string command;
-void JsonReporter::report(FilterResult *result, Stats *preStats1,
-                          Stats *postStats1, Stats *preStats2,
+void JsonReporter::report(FilterResult *result, Stats *preStats1, Stats *postStats1, Stats *preStats2,
                           Stats *postStats2) {
   ofstream ofs;
   ofs.open(mOptions->jsonFile, ifstream::out);
@@ -26,8 +25,8 @@ void JsonReporter::report(FilterResult *result, Stats *preStats1,
   // sequencing info
   string sequencingInfo = mOptions->isPaired() ? "paired end" : "single end";
   if (mOptions->isPaired()) {
-    sequencingInfo += " (" + to_string(preStats1->getCycles()) + " cycles + " +
-                      to_string(preStats2->getCycles()) + " cycles)";
+    sequencingInfo +=
+        " (" + to_string(preStats1->getCycles()) + " cycles + " + to_string(preStats2->getCycles()) + " cycles)";
   } else {
     sequencingInfo += " (" + to_string(preStats1->getCycles()) + " cycles)";
   }
@@ -90,28 +89,18 @@ void JsonReporter::report(FilterResult *result, Stats *preStats1,
   ofs << "\t\t\t"
       << "\"q30_bases\":" << pre_q30_bases << "," << endl;
   ofs << "\t\t\t"
-      << "\"q20_rate\":"
-      << (pre_total_bases == 0
-              ? 0.0
-              : (double)pre_q20_bases / (double)pre_total_bases)
-      << "," << endl;
+      << "\"q20_rate\":" << (pre_total_bases == 0 ? 0.0 : (double)pre_q20_bases / (double)pre_total_bases) << ","
+      << endl;
   ofs << "\t\t\t"
-      << "\"q30_rate\":"
-      << (pre_total_bases == 0
-              ? 0.0
-              : (double)pre_q30_bases / (double)pre_total_bases)
-      << "," << endl;
+      << "\"q30_rate\":" << (pre_total_bases == 0 ? 0.0 : (double)pre_q30_bases / (double)pre_total_bases) << ","
+      << endl;
   ofs << "\t\t\t"
       << "\"read1_mean_length\":" << preStats1->getMeanLength() << "," << endl;
   if (mOptions->isPaired())
     ofs << "\t\t\t"
-        << "\"read2_mean_length\":" << preStats2->getMeanLength() << ","
-        << endl;
+        << "\"read2_mean_length\":" << preStats2->getMeanLength() << "," << endl;
   ofs << "\t\t\t"
-      << "\"gc_content\":"
-      << (pre_total_bases == 0 ? 0.0
-                               : (double)pre_total_gc / (double)pre_total_bases)
-      << endl;
+      << "\"gc_content\":" << (pre_total_bases == 0 ? 0.0 : (double)pre_total_gc / (double)pre_total_bases) << endl;
   ofs << "\t\t"
       << "}," << endl;
 
@@ -126,29 +115,18 @@ void JsonReporter::report(FilterResult *result, Stats *preStats1,
   ofs << "\t\t\t"
       << "\"q30_bases\":" << post_q30_bases << "," << endl;
   ofs << "\t\t\t"
-      << "\"q20_rate\":"
-      << (post_total_bases == 0
-              ? 0.0
-              : (double)post_q20_bases / (double)post_total_bases)
-      << "," << endl;
+      << "\"q20_rate\":" << (post_total_bases == 0 ? 0.0 : (double)post_q20_bases / (double)post_total_bases) << ","
+      << endl;
   ofs << "\t\t\t"
-      << "\"q30_rate\":"
-      << (post_total_bases == 0
-              ? 0.0
-              : (double)post_q30_bases / (double)post_total_bases)
-      << "," << endl;
+      << "\"q30_rate\":" << (post_total_bases == 0 ? 0.0 : (double)post_q30_bases / (double)post_total_bases) << ","
+      << endl;
   ofs << "\t\t\t"
       << "\"read1_mean_length\":" << postStats1->getMeanLength() << "," << endl;
   if (mOptions->isPaired() && !mOptions->merge.enabled)
     ofs << "\t\t\t"
-        << "\"read2_mean_length\":" << postStats2->getMeanLength() << ","
-        << endl;
+        << "\"read2_mean_length\":" << postStats2->getMeanLength() << "," << endl;
   ofs << "\t\t\t"
-      << "\"gc_content\":"
-      << (post_total_bases == 0
-              ? 0.0
-              : (double)post_total_gc / (double)post_total_bases)
-      << endl;
+      << "\"gc_content\":" << (post_total_bases == 0 ? 0.0 : (double)post_total_gc / (double)post_total_bases) << endl;
   ofs << "\t\t"
       << "}";
 
@@ -176,8 +154,7 @@ void JsonReporter::report(FilterResult *result, Stats *preStats1,
     ofs << "\t"
         << "\"insert_size\": {" << endl;
     ofs << "\t\t\"peak\": " << mInsertSizePeak << "," << endl;
-    ofs << "\t\t\"unknown\": " << mInsertHist[mOptions->insertSizeMax] << ","
-        << endl;
+    ofs << "\t\t\"unknown\": " << mInsertHist[mOptions->insertSizeMax] << "," << endl;
     ofs << "\t\t\"histogram\": [";
     for (int d = 0; d < mOptions->insertSizeMax; d++) {
       ofs << mInsertHist[d];

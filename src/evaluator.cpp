@@ -18,8 +18,8 @@ bool Evaluator::isTwoColorSystem() {
     return false;
 
   // NEXTSEQ500, NEXTSEQ 550/550DX, NOVASEQ
-  if (starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") ||
-      starts_with(r->mName, "@NDX") || starts_with(r->mName, "@A0")) {
+  if (starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@NDX") ||
+      starts_with(r->mName, "@A0")) {
     delete r;
     return true;
   }
@@ -59,8 +59,7 @@ int Evaluator::computeSeqLen(string filename) {
   return seqlen;
 }
 
-void Evaluator::computeOverRepSeq(string filename, map<string, long> &hotseqs,
-                                  int seqlen) {
+void Evaluator::computeOverRepSeq(string filename, map<string, long> &hotseqs, int seqlen) {
   FastqReader reader(filename);
 
   map<string, long> seqCounts;
@@ -135,8 +134,7 @@ void Evaluator::computeOverRepSeq(string filename, map<string, long> &hotseqs,
     for (iter2 = hotseqs.begin(); iter2 != hotseqs.end(); iter2++) {
       string seq2 = iter2->first;
       long count2 = iter2->second;
-      if (seq != seq2 && seq2.find(seq) != string::npos &&
-          count / count2 < 10) {
+      if (seq != seq2 && seq2.find(seq) != string::npos && count / count2 < 10) {
         isSubString = true;
         break;
       }
@@ -580,8 +578,7 @@ string Evaluator::evalAdapterAndReadNum(long &readNum, bool isR2) {
   return "";
 }
 
-string Evaluator::getAdapterWithSeed(int seed, Read **loadedReads, long records,
-                                     int keylen) {
+string Evaluator::getAdapterWithSeed(int seed, Read **loadedReads, long records, int keylen) {
   // we have to shift last cycle for evaluation since it is so noisy, especially
   // for Illumina data
   const int shiftTail = max(1, mOptions->trim.tail1);
@@ -594,8 +591,7 @@ string Evaluator::getAdapterWithSeed(int seed, Read **loadedReads, long records,
     for (int pos = 20; pos <= r->length() - keylen - shiftTail; pos++) {
       key = seq2int(r->mSeq, pos, keylen, key);
       if (key == seed) {
-        forwardTree.addSeq(r->mSeq->substr(pos + keylen, r->length() - keylen -
-                                                             shiftTail - pos));
+        forwardTree.addSeq(r->mSeq->substr(pos + keylen, r->length() - keylen - shiftTail - pos));
       }
     }
   }
@@ -670,9 +666,7 @@ string Evaluator::int2seq(unsigned int val, int seqlen) {
   return ret;
 }
 
-int Evaluator::seq2int(string *seq, int pos, int keylen, int lastVal) {
-  return seq2int(*seq, pos, keylen, lastVal);
-}
+int Evaluator::seq2int(string *seq, int pos, int keylen, int lastVal) { return seq2int(*seq, pos, keylen, lastVal); }
 
 int Evaluator::seq2int(string &seq, int pos, int keylen, int lastVal) {
   int rlen = seq.length();

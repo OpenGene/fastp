@@ -51,8 +51,7 @@ Duplicate::Duplicate(Options *opt) {
   mBufLenInBits = mBufLenInBytes << 3;
   mDupBuf = new atomic_uchar[mBufLenInBytes * mBufNum];
   if (!mDupBuf) {
-    error_exit("Out of memory, failed to allocate " +
-               to_string(mBufLenInBytes * mBufNum) +
+    error_exit("Out of memory, failed to allocate " + to_string(mBufLenInBytes * mBufNum) +
                " bytes buffer for duplication analysis, please reduce the "
                "dup_accuracy_level and try again.");
   }
@@ -91,8 +90,7 @@ Duplicate::~Duplicate() {
   delete[] mPrimeArrays;
 }
 
-void Duplicate::seq2intvector(const char *data, int len, uint64 *output,
-                              int posOffset) {
+void Duplicate::seq2intvector(const char *data, int len, uint64 *output, int posOffset) {
   for (int p = 0; p < len; p++) {
     uint64 base = 0;
     switch (data[p]) {

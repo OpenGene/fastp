@@ -38,11 +38,9 @@ int Filter::passFilter(Read *r) {
   }
 
   if (mOptions->qualfilter.enabled) {
-    if (lowQualNum >
-        (mOptions->qualfilter.unqualifiedPercentLimit * rlen / 100.0))
+    if (lowQualNum > (mOptions->qualfilter.unqualifiedPercentLimit * rlen / 100.0))
       return FAIL_QUALITY;
-    else if (mOptions->qualfilter.avgQualReq > 0 &&
-             (totalQual / rlen) < mOptions->qualfilter.avgQualReq)
+    else if (mOptions->qualfilter.avgQualReq > 0 && (totalQual / rlen) < mOptions->qualfilter.avgQualReq)
       return FAIL_QUALITY;
     else if (nBaseNum > mOptions->qualfilter.nBaseLimit)
       return FAIL_N_BASE;
@@ -51,8 +49,7 @@ int Filter::passFilter(Read *r) {
   if (mOptions->lengthFilter.enabled) {
     if (rlen < mOptions->lengthFilter.requiredLength)
       return FAIL_LENGTH;
-    if (mOptions->lengthFilter.maxLength > 0 &&
-        rlen > mOptions->lengthFilter.maxLength)
+    if (mOptions->lengthFilter.maxLength > 0 && rlen > mOptions->lengthFilter.maxLength)
       return FAIL_TOO_LONG;
   }
 
@@ -74,8 +71,7 @@ bool Filter::passLowComplexityFilter(Read *r) {
     if (data[i] != data[i + 1])
       diff++;
   }
-  if ((double)diff / (double)(length - 1) >=
-      mOptions->complexityFilter.threshold)
+  if ((double)diff / (double)(length - 1) >= mOptions->complexityFilter.threshold)
     return true;
   else
     return false;
@@ -84,20 +80,19 @@ bool Filter::passLowComplexityFilter(Read *r) {
 Read *Filter::trimAndCut(Read *r, int front, int tail, int &frontTrimmed) {
   frontTrimmed = 0;
   // return the same read for speed if no change needed
-  if (front == 0 && tail == 0 && !mOptions->qualityCut.enabledFront &&
-      !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight)
+  if (front == 0 && tail == 0 && !mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail &&
+      !mOptions->qualityCut.enabledRight)
     return r;
 
   int rlen = r->length() - front - tail;
   if (rlen < 0)
     return NULL;
 
-  if (front == 0 && !mOptions->qualityCut.enabledFront &&
-      !mOptions->qualityCut.enabledTail && !mOptions->qualityCut.enabledRight) {
+  if (front == 0 && !mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail &&
+      !mOptions->qualityCut.enabledRight) {
     r->resize(rlen);
     return r;
-  } else if (!mOptions->qualityCut.enabledFront &&
-             !mOptions->qualityCut.enabledTail &&
+  } else if (!mOptions->qualityCut.enabledFront && !mOptions->qualityCut.enabledTail &&
              !mOptions->qualityCut.enabledRight) {
     r->mSeq->erase(0, front);
     r->mSeq->resize(rlen);
@@ -132,8 +127,7 @@ Read *Filter::trimAndCut(Read *r, int front, int tail, int &frontTrimmed) {
         totalQual -= qualstr[s - 1];
       }
       // add 33 for phred33 transforming
-      if ((double)totalQual / (double)w >=
-          33 + mOptions->qualityCut.qualityFront)
+      if ((double)totalQual / (double)w >= 33 + mOptions->qualityCut.qualityFront)
         break;
     }
 
@@ -168,8 +162,7 @@ Read *Filter::trimAndCut(Read *r, int front, int tail, int &frontTrimmed) {
         totalQual -= qualstr[s - 1];
       }
       // add 33 for phred33 transforming
-      if ((double)totalQual / (double)w <
-          33 + mOptions->qualityCut.qualityRight) {
+      if ((double)totalQual / (double)w < 33 + mOptions->qualityCut.qualityRight) {
         foundLowQualWindow = true;
         break;
       }
@@ -203,8 +196,7 @@ Read *Filter::trimAndCut(Read *r, int front, int tail, int &frontTrimmed) {
         totalQual -= qualstr[t + 1];
       }
       // add 33 for phred33 transforming
-      if ((double)totalQual / (double)w >=
-          33 + mOptions->qualityCut.qualityTail)
+      if ((double)totalQual / (double)w >= 33 + mOptions->qualityCut.qualityTail)
         break;
     }
 
@@ -230,8 +222,7 @@ Read *Filter::trimAndCut(Read *r, int front, int tail, int &frontTrimmed) {
 
 bool Filter::filterByIndex(Read *r) {
   if (mOptions->indexFilter.enabled) {
-    if (match(mOptions->indexFilter.blacklist1, r->firstIndex(),
-              mOptions->indexFilter.threshold))
+    if (match(mOptions->indexFilter.blacklist1, r->firstIndex(), mOptions->indexFilter.threshold))
       return true;
   }
   return false;
@@ -239,11 +230,9 @@ bool Filter::filterByIndex(Read *r) {
 
 bool Filter::filterByIndex(Read *r1, Read *r2) {
   if (mOptions->indexFilter.enabled) {
-    if (match(mOptions->indexFilter.blacklist1, r1->firstIndex(),
-              mOptions->indexFilter.threshold))
+    if (match(mOptions->indexFilter.blacklist1, r1->firstIndex(), mOptions->indexFilter.threshold))
       return true;
-    if (match(mOptions->indexFilter.blacklist2, r2->lastIndex(),
-              mOptions->indexFilter.threshold))
+    if (match(mOptions->indexFilter.blacklist2, r2->lastIndex(), mOptions->indexFilter.threshold))
       return true;
   }
   return false;
@@ -268,8 +257,7 @@ bool Filter::match(vector<string> &list, string target, int threshold) {
 }
 
 bool Filter::test() {
-  Read r("@name", "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTT", "+",
-         "/////CCCCCCCCCCCC////CCCCCCCCCCCCCC////E");
+  Read r("@name", "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTT", "+", "/////CCCCCCCCCCCC////CCCCCCCCCCCCCC////E");
   Options opt;
   opt.qualityCut.enabledFront = true;
   opt.qualityCut.enabledTail = true;
@@ -282,6 +270,5 @@ bool Filter::test() {
   Read *ret = filter.trimAndCut(&r, 0, 1, frontTrimmed);
   ret->print();
 
-  return *ret->mSeq == "CCCCCCCCCCCCCCCCCCCCCCCCCCCC" &&
-         *ret->mQuality == "CCCCCCCCCCC////CCCCCCCCCCCCC";
+  return *ret->mSeq == "CCCCCCCCCCCCCCCCCCCCCCCCCCCC" && *ret->mQuality == "CCCCCCCCCCC////CCCCCCCCCCCCC";
 }

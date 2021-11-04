@@ -58,8 +58,7 @@ string Writer::filename() { return mFilename; }
 void Writer::init() {
   mBuffer = (char *)malloc(mBufSize);
   if (mBuffer == NULL) {
-    error_exit("Failed to allocate write buffer with size: " +
-               to_string(mBufSize));
+    error_exit("Failed to allocate write buffer with size: " + to_string(mBufSize));
   }
   if (ends_with(mFilename, ".gz")) {
     mCompressor = libdeflate_alloc_compressor(mCompression);
@@ -82,13 +81,9 @@ void Writer::init() {
   }
 }
 
-bool Writer::writeString(const string &str) {
-  return write(str.data(), str.length());
-}
+bool Writer::writeString(const string &str) { return write(str.data(), str.length()); }
 
-bool Writer::writeString(string *str) {
-  return write(str->data(), str->length());
-}
+bool Writer::writeString(string *str) { return write(str->data(), str->length()); }
 
 bool Writer::write(const char *strdata, size_t size) {
   if (size + mBufDataLen > mBufSize)
@@ -109,8 +104,7 @@ bool Writer::writeInternal(const char *strdata, size_t size) {
   if (mZipped) {
     size_t bound = libdeflate_gzip_compress_bound(mCompressor, size);
     void *out = malloc(bound);
-    size_t outsize =
-        libdeflate_gzip_compress(mCompressor, strdata, size, out, bound);
+    size_t outsize = libdeflate_gzip_compress(mCompressor, strdata, size, out, bound);
     if (outsize == 0)
       status = false;
     else {
