@@ -51,7 +51,7 @@ jobs:
         with:
           repository: intel/isa-l
           path: src/libs/isa-l
-      - name: build isa-l (Ubuntu)
+      - name: build isa-l
         run: |
           cd src/libs/isa-l
           ./autogen.sh
@@ -59,16 +59,6 @@ jobs:
           bash -c 'make -j $(nproc)'
           sudo make install
           cd -
-        if: runner.os == 'Linux'
-      - name: build isa-l (MacOS)
-        run: |
-          cd src/libs/isa-l
-          ./autogen.sh
-          ./configure
-          bash -c 'make -j $(nproc)'
-          sudo make install
-          cd -
-        if: runner.os == 'macOS'
       - name: make fatsp  (MacOS)
         run: bash -c 'make -j $(nproc)'
         if: runner.os == 'macOS'
