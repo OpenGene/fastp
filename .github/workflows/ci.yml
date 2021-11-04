@@ -60,6 +60,6 @@ jobs:
           sudo make install
           cd -
       - name: make fatsp
-        run: bash -c 'make -j $(nproc) static'
+        run: bash -c 'make -j $(nproc)'
       - name: test
         run: chmod a+x ./fastp && ./fastp --version
