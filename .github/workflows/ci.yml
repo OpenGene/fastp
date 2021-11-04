@@ -55,7 +55,7 @@ jobs:
         run: |
           cd src/libs/isa-l
           ./autogen.sh
-          ./configure
+          ./configure --prefix=/usr/local
           bash -c 'make -j $(nproc)'
           sudo make install
           cd -
