@@ -923,8 +923,8 @@ void PairEndProcessor::interleavedReaderTask()
             mRightPackReadCounter++;
 
             //re-initialize data for next pack
-            Read** dataLeft = new Read*[PACK_SIZE];
-            Read** dataRight = new Read*[PACK_SIZE];
+            dataLeft = new Read*[PACK_SIZE];
+            dataRight = new Read*[PACK_SIZE];
             memset(dataLeft, 0, sizeof(Read*)*PACK_SIZE);
             memset(dataRight, 0, sizeof(Read*)*PACK_SIZE);
             // if the consumer is far behind this producer, sleep and wait to limit memory usage
@@ -961,10 +961,17 @@ void PairEndProcessor::interleavedReaderTask()
         }
     }
 
+    for(int t=0; t<mOptions->thread; t++) {
+        mLeftInputLists[t]->setProducerFinished();
+        mRightInputLists[t]->setProducerFinished();
+    }
+
+    if(mOptions->verbose) {
+        loginfo("interleaved: loading completed with " + to_string(mLeftPackReadCounter) + " packs");
+    }
+
     mLeftReaderFinished = true;
     mRightReaderFinished = true;
-    if(mOptions->verbose)
-        loginfo("Reads loading: completed");
 
     // if the last data initialized is not used, free it
     if(dataLeft != NULL)
