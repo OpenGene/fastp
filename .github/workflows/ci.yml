@@ -8,7 +8,6 @@ on:
       - master
 jobs:
   build:
-    needs: code-lint
     strategy:
       matrix:
         os:
