@@ -99,11 +99,13 @@ This binary was compiled on CentOS, and tested on CentOS/Ubuntu
 # download the latest build
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
+sudo mv fastp /usr/local/bin/fastp
 
 # or download specified version, i.e. fastp v0.23.1
 wget http://opengene.org/fastp/fastp.0.23.1
 mv fastp.0.23.1 fastp
 chmod a+x ./fastp
+sudo mv fastp /usr/local/bin/fastp
 ```
 ## or compile from source
 `fastp` depends on `libdeflate` and `libisal`, while `libisal` is not compatible with gcc 4.8. If you use gcc 4.8, your fastp will fail to run. Please upgrade your gcc before you build the libraries and fastp.
