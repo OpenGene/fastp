@@ -366,7 +366,7 @@ fastp uses a hash algorithm to find the identical sequences. Due to the possible
 | 6 | 3 | 8G | 24G | moderate | |
 
 ## deduplication
-Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. When `--dedup` is enabled, the `dup_calc_accracy` level is default to `3`, and it can be changed to any value of 1 ~ 6.
+Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. When `--dedup` is enabled, the `dup_calc_accuracy` level is default to `3`, and it can be changed to any value of 1 ~ 6.
 
 
 # all options
