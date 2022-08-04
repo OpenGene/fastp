@@ -128,6 +128,7 @@ int main(int argc, char* argv[]){
     cmd.add<int>("umi_len", 0, "if the UMI is in read1/read2, its length should be provided", false, 0);
     cmd.add<string>("umi_prefix", 0, "if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default", false, "");
     cmd.add<int>("umi_skip", 0, "if the UMI is in read1/read2, fastp can skip several bases following UMI, default is 0", false, 0);
+    cmd.add<string>("umi_delim", 0, "delimiter to use between the read name and the UMI, default is :", false, ":");
 
     // overrepresented sequence analysis
     cmd.add("overrepresentation_analysis", 'p', "enable overrepresented sequence analysis.");
@@ -376,6 +377,7 @@ int main(int argc, char* argv[]){
     opt.umi.length = cmd.get<int>("umi_len");
     opt.umi.prefix = cmd.get<string>("umi_prefix");
     opt.umi.skip = cmd.get<int>("umi_skip");
+    opt.umi.delimiter = cmd.get<string>("umi_delim");
     if(opt.umi.enabled) {
         string umiLoc = cmd.get<string>("umi_loc");
         str2lower(umiLoc);

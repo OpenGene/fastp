@@ -108,6 +108,7 @@ public:
         location = UMI_LOC_NONE;
         length = 0;
         skip = 0;
+        delimiter= ":";
     }
 public:
     bool enabled;
@@ -116,6 +117,7 @@ public:
     int skip;
     string prefix;
     string separator;
+    string delimiter;
 };
 
 class CorrectionOptions {
