@@ -67,7 +67,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 14. support ultra-fast FASTQ-level deduplication
 15. ...
 
-This tool is being intensively developed, and new features can be implemented soon if they are considered useful. If you have any additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
+If you find a bug or have additional requirement for `fastp`, please file an issue:https://github.com/OpenGene/fastp/issues/new
 
 # simple usage
 * for single end data (not compressed)
