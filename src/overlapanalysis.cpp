@@ -119,7 +119,8 @@ Read* OverlapAnalysis::merge(Read* r1, Read* r2, OverlapResult ov) {
     delete rr2;
 
     string name = *(r1->mName) + " merged_" + to_string(len1) + "_" + to_string(len2);
-    Read* mergedRead = new Read(new string(name), new string(mergedSeq), new string(*r1->mStrand), new string(mergedQual));
+    string strand = *(r1->mStrand) + " merged_" + to_string(len1) + "_" + to_string(len2);
+    Read* mergedRead = new Read(new string(name), new string(mergedSeq), new string(strand), new string(mergedQual));
 
     return mergedRead;
 }
