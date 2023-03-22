@@ -16,29 +16,36 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout scm
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: install build dependencies (Ubuntu)
         run: sudo apt update && sudo apt install -y build-essential nasm
         if: runner.os == 'Linux'
+
       - name: install build dependencies (MacOS)
         run: brew install automake autoconf coreutils nasm
         if: runner.os == 'macOS'
+
       - name: get deflate
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ebiggers/libdeflate
           path: src/libs/deflate
+
       - name: build deflate
         run: |
           cd src/libs/deflate
-          bash -c 'make -j $(nproc)'
-          sudo make install
+          cmake-B build
+          cmake --build build
+          cmake --install build
           cd -
+
       - name: get isa-l
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: intel/isa-l
           path: src/libs/isa-l
+
       - name: build isa-l
         run: |
           cd src/libs/isa-l
@@ -47,11 +54,14 @@ jobs:
           bash -c 'make -j $(nproc)'
           sudo make install
           cd -
+
       - name: make fatsp  (MacOS)
         run: bash -c 'make -j $(nproc)'
         if: runner.os == 'macOS'
+
       - name: make fastp static (Ubuntu)
         run: bash -c 'make -j $(nproc) static'
         if: runner.os == 'Linux'
+
       - name: test
         run: chmod a+x ./fastp && ./fastp --version

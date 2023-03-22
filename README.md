@@ -6,16 +6,18 @@ https://anaconda.org/bioconda/fastp/badges/downloads.svg)](https://anaconda.org/
 https://badges.debian.net/badges/debian/unstable/fastp/version.svg)](https://packages.debian.org/unstable/fastp)
 [![Build Status](https://travis-ci.org/OpenGene/fastp.svg?branch=master)](https://travis-ci.org/OpenGene/fastp)
 # fastp
-A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance. 
+A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance.
 - [fastp](#fastp)
 - [features](#features)
 - [simple usage](#simple-usage)
 - [examples of report](#examples-of-report)
 - [get fastp](#get-fastp)
   - [install with Bioconda](#install-with-bioconda)
-  - [or download binary (only for Linux systems, http://opengene.org/fastp/fastp)](#or-download-binary-only-for-linux-systems-httpopengeneorgfastpfastp)
+  - [or download the latest prebuilt binary for Linux users](#or-download-the-latest-prebuilt-binary-for-linux-users)
   - [or compile from source](#or-compile-from-source)
-  - [compile from source for windows user with MinGW64-distro](#compile-from-source-for-windows-user-with-mingw64-distro)
+    - [Step 1: download and build libisal](#step-1-download-and-build-libisal)
+    - [step 2: download and build libdeflate](#step-2-download-and-build-libdeflate)
+    - [Step 3: download and build fastp](#step-3-download-and-build-fastp)
 - [input and output](#input-and-output)
   - [output to STDOUT](#output-to-stdout)
   - [input from STDIN](#input-from-stdin)
@@ -25,9 +27,6 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
   - [do not overwrite exiting files](#do-not-overwrite-exiting-files)
   - [split the output to multiple files for parallel processing](#split-the-output-to-multiple-files-for-parallel-processing)
   - [merge PE reads](#merge-pe-reads)
-- [duplication rate and deduplication](#duplication-rate-and-deduplication)
-  - [duplication rate evaluation](#duplication-rate-evaluation)
-  - [deduplication](#deduplication)
 - [filtering](#filtering)
   - [quality filter](#quality-filter)
   - [length filter](#length-filter)
@@ -46,6 +45,9 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
   - [splitting by limiting the lines of each file](#splitting-by-limiting-the-lines-of-each-file)
 - [overrepresented sequence analysis](#overrepresented-sequence-analysis)
 - [merge paired-end reads](#merge-paired-end-reads)
+- [duplication rate and deduplication](#duplication-rate-and-deduplication)
+  - [duplication rate evaluation](#duplication-rate-evaluation)
+  - [deduplication](#deduplication)
 - [all options](#all-options)
 - [citation](#citation)
 
@@ -58,7 +60,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
 5. correct mismatched base pairs in overlapped regions of paired end reads, if one base is with high quality while the other is with ultra low quality
 6. trim polyG in 3' ends, which is commonly seen in NovaSeq/NextSeq data. Trim polyX in 3' ends to remove unwanted polyX tailing (i.e. polyA tailing for mRNA-Seq data)
 7. preprocess unique molecular identifier (UMI) enabled data, shift UMI to sequence name.
-8. report JSON format result for further interpreting. 
+8. report JSON format result for further interpreting.
 9. visualize quality control and filtering results on a single HTML page (like FASTQC but faster and more informative).
 10. split the output to multiple files (0001.R1.gz, 0002.R1.gz...) to support parallel processing. Two modes can be used, limiting the total split file number, or limitting the lines of each split file.
 11. support long reads (data from PacBio / Nanopore devices).
@@ -109,7 +111,7 @@ chmod a+x ./fastp
 `fastp` depends on `libdeflate` and `libisal`, while `libisal` is not compatible with gcc 4.8. If you use gcc 4.8, your fastp will fail to run. Please upgrade your gcc before you build the libraries and fastp.
 
 ### Step 1: download and build libisal
-See https://github.com/intel/isa-l   
+See https://github.com/intel/isa-l
 `autoconf`, `automake`, `libtools`, `nasm (>=v2.11.01)` and `yasm (>=1.2.0)` are required to build this isal
 ```shell
 git clone https://github.com/intel/isa-l.git
@@ -125,8 +127,9 @@ See https://github.com/ebiggers/libdeflate
 ```shell
 git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
-make
-sudo make install
+cmake -B build
+cmake --build build
+cmake --install build
 ```
 
 ### Step 3: download and build fastp
@@ -149,9 +152,9 @@ sudo make install
 * if you don't specify the output file names, no output files will be written, but the QC will still be done for both data before and after filtering.
 * the output will be gzip-compressed if its file name ends with `.gz`
 ## output to STDOUT
-`fastp` supports streaming the passing-filter reads to STDOUT, so that it can be passed to other compressors like `bzip2`, or be passed to aligners like `bwa` and `bowtie2`. 
+`fastp` supports streaming the passing-filter reads to STDOUT, so that it can be passed to other compressors like `bzip2`, or be passed to aligners like `bwa` and `bowtie2`.
 * specify `--stdout` to enable this mode to stream output to STDOUT
-* for PE data, the output will be interleaved FASTQ, which means the output will contain records like `record1-R1 -> record1-R2 -> record2-R1 -> record2-R2 -> record3-R1 -> record3-R2 ... ` 
+* for PE data, the output will be interleaved FASTQ, which means the output will contain records like `record1-R1 -> record1-R2 -> record2-R1 -> record2-R2 -> record3-R1 -> record3-R2 ... `
 ## input from STDIN
 * specify `--stdin` if you want to read the STDIN for processing.
 * if the STDIN is an interleaved paired-end stream, specify `--interleaved_in` to indicate that.
@@ -177,7 +180,7 @@ Multiple filters have been implemented.
 Quality filtering is enabled by default, but you can disable it by `-Q` or `disable_quality_filtering`. Currently it supports filtering by limiting the N base number (`-n, --n_base_limit`),  and the percentage of unqualified bases.  
 
 To filter reads by its percentage of unqualified bases, two options should be provided:
-* `-q, --qualified_quality_phred`       the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. 
+* `-q, --qualified_quality_phred`       the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified.
 * `-u, --unqualified_percent_limit`    how many percents of bases are allowed to be unqualified (0~100). Default 40 means 40%
 
 You can also filter reads by its average quality score
@@ -221,7 +224,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 The adapter sequence in this file should be at least 6bp long, otherwise it will be skipped. And you can give whatever you want to trim, rather than regular sequencing adapters (i.e. polyA).
 
-`fastp` first trims the auto-detected adapter or the adapter sequences given by `--adapter_sequence | --adapter_sequence_r2`, then trims the adapters given by `--adapter_fasta` one by one. 
+`fastp` first trims the auto-detected adapter or the adapter sequences given by `--adapter_sequence | --adapter_sequence_r2`, then trims the adapters given by `--adapter_fasta` one by one.
 
 The sequence distribution of trimmed adapters can be found at the HTML/JSON reports.
 
@@ -270,12 +273,12 @@ Please note that the trimming for `--max_len` limitation will be applied at the 
 ```
 
 # polyG tail trimming
-For Illumina NextSeq/NovaSeq data, `polyG` can happen in read tails since `G` means no signal in the Illumina two-color systems. `fastp` can detect the polyG in read tails and trim them. This feature is enabled for NextSeq/NovaSeq data by default, and you can specify `-g` or `--trim_poly_g` to enable it for any data, or specify `-G` or `--disable_trim_poly_g` to disable it. NextSeq/NovaSeq data is detected by the machine ID in the FASTQ records.   
+For Illumina NextSeq/NovaSeq data, `polyG` can happen in read tails since `G` means no signal in the Illumina two-color systems. `fastp` can detect the polyG in read tails and trim them. This feature is enabled for NextSeq/NovaSeq data by default, and you can specify `-g` or `--trim_poly_g` to enable it for any data, or specify `-G` or `--disable_trim_poly_g` to disable it. NextSeq/NovaSeq data is detected by the machine ID in the FASTQ records.  
 
 A minimum length can be set with `<poly_g_min_len>` for `fastp` to detect polyG. This value is 10 by default.
 
 # polyX tail trimming
-This feature is similar as polyG tail trimming, but is disabled by default. Use `-x` or `--trim_poly_x` to enable it. A minimum length can be set with `<poly_x_min_len>` for `fastp` to detect polyX. This value is 10 by default.   
+This feature is similar as polyG tail trimming, but is disabled by default. Use `-x` or `--trim_poly_x` to enable it. A minimum length can be set with `<poly_x_min_len>` for `fastp` to detect polyX. This value is 10 by default.
 
 When `polyG tail trimming` and `polyX tail trimming` are both enabled, fastp will perform `polyG trimming` first, then perform `polyX trimming`. This setting is useful for trimming the tails having `polyX (i.e. polyA) ` before `polyG`. `polyG` is usually caused by sequencing artifacts, while `polyA` can be commonly found from the tails of mRNA-Seq reads.
 
@@ -286,10 +289,10 @@ To enable UMI processing, you have to enable `-U` or `--umi` option in the comma
 * `index2` the second index is used as UMI. PE data only, this UMI will be used for both read1/read2.
 * `read1` the head of read1 is used as UMI. If the data is PE, this UMI will be used for both read1/read2.
 * `read2` the head of read2 is used as UMI. PE data only, this UMI will be used for both read1/read2.
-* `per_index` `index1_index2` is used as UMI for both read1/read2.  
-* `per_read` define `umi1` as the head of read1, and `umi2` as the head of read2. `umi1_umi2` is used as UMI for both read1/read2.  
+* `per_index` `index1_index2` is used as UMI for both read1/read2.
+* `per_read` define `umi1` as the head of read1, and `umi2` as the head of read2. `umi1_umi2` is used as UMI for both read1/read2.
 
-If `--umi_loc` is specified with `read1`, `read2` or `per_read`, the length of UMI should specified with `--umi_len`. 
+If `--umi_loc` is specified with `read1`, `read2` or `per_read`, the length of UMI should specified with `--umi_len`.
 
 `fastp` will extract the UMIs, and append them to the first part of read names, so the UMIs will also be presented in SAM/BAM records. If the UMI is in the reads, then it will be shifted from read so that the read will become shorter. If the UMI is in the index, it will be kept.
 
@@ -325,14 +328,14 @@ Use `-s` or `--split` to specify how many files you want to have. `fastp` evalua
 Use `-S` or `--split_by_lines` to limit the lines of each file. The last files may have smaller sizes since usually the input file cannot be perfectly divided. The actual file lines may be a little greater than the value specified by `--split_by_lines` since `fastp` reads and writes data by blocks (a block = 1000 reads).
 
 # overrepresented sequence analysis
-Overrepresented sequence analysis is disabled by default, you can specify `-p` or `--overrepresentation_analysis` to enable it. For consideration of speed and memory, `fastp` only counts sequences with length of 10bp, 20bp, 40bp, 100bp or (cycles - 2 ).  
+Overrepresented sequence analysis is disabled by default, you can specify `-p` or `--overrepresentation_analysis` to enable it. For consideration of speed and memory, `fastp` only counts sequences with length of 10bp, 20bp, 40bp, 100bp or (cycles - 2 ).
 
-By default, fastp uses 1/20 reads for sequence counting, and you can change this settings by specifying `-P` or `--overrepresentation_sampling` option. For example, if you set `-P 100`, only 1/100 reads will be used for counting, and if you set `-P 1`, all reads will be used but it will be extremely slow. The default value 20 is a balance of speed and accuracy.  
+By default, fastp uses 1/20 reads for sequence counting, and you can change this settings by specifying `-P` or `--overrepresentation_sampling` option. For example, if you set `-P 100`, only 1/100 reads will be used for counting, and if you set `-P 1`, all reads will be used but it will be extremely slow. The default value 20 is a balance of speed and accuracy.
 
 `fastp` not only gives the counts of overrepresented sequence, but also gives the information that how they distribute over cycles. A figure is provided for each detected overrepresented sequence, from which you can know where this sequence is mostly found.
 
 # merge paired-end reads
-For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode:   
+For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode:
 
 * `--merged_out` shouuld be given to specify the file to store merged reads, otherwise you should enable `--stdout` to stream the merged reads to STDOUT. The merged reads are also filtered.
 * `--out1` and `--out2` will be the reads that cannot be merged successfully, but both pass all the filters.
@@ -343,7 +346,7 @@ For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--
 `--failed_out` can still be given to store the reads (either merged or unmerged) failed to passing filters.
 
 In the output file, a tag like `merged_xxx_yyy`will be added to each read name to indicate that how many base pairs are from read1 and from read2, respectively. For example, `
-@NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15` 
+@NB551106:9:H5Y5GBGX2:1:22306:18653:13119 1:N:0:GATCAG merged_150_15`
 means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the bases in read1 since they usually have higher quality than read2.
 
 Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_percent_limit (default 20%)`. Please note that the reads should meet these three conditions simultaneously.
@@ -393,14 +396,14 @@ options:
       --reads_to_process             specify how many reads/pairs to be processed. Default 0 means process all reads. (int [=0])
       --dont_overwrite               don't overwrite existing files. Overwritting is allowed by default.
       --fix_mgi_id                     the MGI FASTQ ID format is not compatible with many BAM operation tools, enable this option to fix it.
-  
+
   # adapter trimming options
   -A, --disable_adapter_trimming     adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled
   -a, --adapter_sequence               the adapter for read1. For SE data, if not specified, the adapter will be auto-detected. For PE data, this is used if R1/R2 are found not overlapped. (string [=auto])
       --adapter_sequence_r2            the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence> (string [=])
       --adapter_fasta                  specify a FASTA file to trim both read1 and read2 (if PE) by all the sequences in this FASTA file (string [=])
       --detect_adapter_for_pe          by default, the adapter sequence auto-detection is enabled for SE data only, turn on this option to enable it for PE data.
-    
+
   # global trimming options
   -f, --trim_front1                    trimming how many bases in front for read1, default is 0 (int [=0])
   -t, --trim_tail1                     trimming how many bases in tail for read1, default is 0 (int [=0])
@@ -422,7 +425,7 @@ options:
   # polyX tail trimming
   -x, --trim_poly_x                    enable polyX trimming in 3' ends.
       --poly_x_min_len                 the minimum length to detect polyX in the read tail. 10 by default. (int [=10])
-  
+
   # per read cutting by quality options
   -5, --cut_front                      move a sliding window from front (5') to tail, drop the bases in the window if its mean quality < threshold, stop otherwise.
   -3, --cut_tail                       move a sliding window from tail (3') to front, drop the bases in the window if its mean quality < threshold, stop otherwise.
@@ -435,7 +438,7 @@ options:
       --cut_tail_mean_quality          the mean quality requirement option for cut_tail, default to cut_mean_quality if not specified (int [=20])
       --cut_right_window_size          the window size option of cut_right, default to cut_window_size if not specified (int [=4])
       --cut_right_mean_quality         the mean quality requirement option for cut_right, default to cut_mean_quality if not specified (int [=20])
-  
+
   # quality filtering options
   -Q, --disable_quality_filtering    quality filtering is enabled by default. If this option is specified, quality filtering is disabled
   -q, --qualified_quality_phred      the quality value that a base is qualified. Default 15 means phred quality >=Q15 is qualified. (int [=15])
@@ -443,7 +446,7 @@ options:
   -n, --n_base_limit                 if one read's number of N base is >n_base_limit, then this read/pair is discarded. Default is 5 (int [=5])
   -e, --average_qual                 if one read's average quality score <avg_qual, then this read/pair is discarded. Default 0 means no requirement (int [=0])
 
-  
+
   # length filtering options
   -L, --disable_length_filtering     length filtering is enabled by default. If this option is specified, length filtering is disabled
   -l, --length_required              reads shorter than length_required will be discarded, default is 15. (int [=15])
@@ -479,15 +482,15 @@ options:
   -j, --json                         the json format report file name (string [=fastp.json])
   -h, --html                         the html format report file name (string [=fastp.html])
   -R, --report_title                 should be quoted with ' or ", default is "fastp report" (string [=fastp report])
-  
+
   # threading options
   -w, --thread                       worker thread number, default is 3 (int [=3])
-  
+
   # output splitting options
   -s, --split                        split output by limiting total split file number with this option (2~999), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (int [=0])
   -S, --split_by_lines               split output by limiting lines of each file with this option(>=1000), a sequential number prefix will be added to output name ( 0001.out.fq, 0002.out.fq...), disabled by default (long [=0])
   -d, --split_prefix_digits          the digits for the sequential number padding (1~10), default is 4, so the filename will be padded as 0001.xxx, 0 to disable padding (int [=4])
-  
+
   # help
   -?, --help                         print this message
 ```
