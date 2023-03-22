@@ -4,7 +4,8 @@ https://anaconda.org/bioconda/fastp/badges/version.svg)](https://anaconda.org/bi
 https://anaconda.org/bioconda/fastp/badges/downloads.svg)](https://anaconda.org/bioconda/fastp)
 [![DebianBadge](
 https://badges.debian.net/badges/debian/unstable/fastp/version.svg)](https://packages.debian.org/unstable/fastp)
-[![Build Status](https://travis-ci.org/OpenGene/fastp.svg?branch=master)](https://travis-ci.org/OpenGene/fastp)
+![fastp ci](https://github.com/opengene/fastp/actions/workflows/ci.yml/badge.svg)
+
 # fastp
 A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance.
 - [fastp](#fastp)
