@@ -244,6 +244,7 @@ inline map<string, string> getKnownAdapter() {
     knownAdapters["TTTTTTTTTTCAAGCAGAAGACGGCATACGA"] = ">FlowCell2";
     knownAdapters["AAGTCGGAGGCCAAGCGGTCTTAGGAAGACAA"] = ">MGI/BGI adapter (forward)";
     knownAdapters["AAGTCGGATCGTAGCCATGTCGTTCTGTGAGCCAAGGAGTTG"] = ">MGI/BGI adapter (reverse)";
+    knownAdapters["AACTGTAGGCACCATCAAT"] = ">QIASeq miRNA adapter";
 	
     return knownAdapters;
 }
