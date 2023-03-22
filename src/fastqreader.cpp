@@ -130,6 +130,13 @@ void FastqReader::readToBufIgzip(){
 			}
 		}
 	}
+
+	if(eof() && mGzipState.avail_in == 0) {
+		// all data was processed - fail if not at logical end of zip file (truncated?)
+		if (mGzipState.block_state != ISAL_BLOCK_FINISH || !mGzipState.bfinal) {
+			error_exit("igzip: unexpected eof");
+		}
+	}
 }
 
 void FastqReader::readToBuf() {
@@ -300,16 +307,19 @@ Read* FastqReader::read(){
 
 	getLine(name);
 	// name should start with @
-	while((name->empty() && !(mBufUsedLen >= mBufDataLen && bufferFinished())) || (!name->empty() && (*name)[0]!='@')){
-		getLine(name);
+	if (name->empty() || (*name)[0]!='@') {
+		cerr << *name << endl;
+		error_exit("Read name line should start with '@'");
 	}
-
-	if(name->empty())
-		return NULL;
 
 	getLine(sequence);
 	getLine(strand);
 	getLine(quality);
+
+	if (strand->empty() || (*strand)[0]!='+') {
+		cerr << "Expected '+', got " << *strand << endl;
+		error_exit("'+' expected");
+	}
 
 	if(quality->length() != sequence->length()) {
 		cerr << "ERROR: sequence and quality have different length:" << endl;
@@ -317,6 +327,7 @@ Read* FastqReader::read(){
 		cerr << *sequence << endl;
 		cerr << *strand << endl;
 		cerr << *quality << endl;
+		error_exit("sequence and quality have different length");
 		return NULL;
 	}
 

@@ -362,6 +362,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         cerr << "Read1 pack size: " << leftPack->count << endl;
         cerr << "Read2 pack size: " << rightPack->count << endl;
         cerr << endl;
+	error_exit("input files don't contain identical amount of reads");
     }
     int tid = config->getThreadId();
 
