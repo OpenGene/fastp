@@ -40,7 +40,7 @@ jobs:
         run: |
           cd src/libs/deflate
           cmake -B build
-          cmake -j ${{ steps.cpu-cores.outputs.count }} --build build
+          cmake --build build -j ${{ steps.cpu-cores.outputs.count }}
           sudo cmake --install build
           cd -
 
