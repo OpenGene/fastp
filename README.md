@@ -119,7 +119,7 @@ git clone https://github.com/intel/isa-l.git
 cd isa-l
 ./autogen.sh
 ./configure --prefix=/usr --libdir=/usr/lib64
-make
+make -j $(nproc)
 sudo make install
 ```
 
@@ -129,7 +129,7 @@ See https://github.com/ebiggers/libdeflate
 git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
 cmake -B build
-cmake --build build
+cmake -j $(nproc) --build build
 cmake --install build
 ```
 
@@ -140,7 +140,7 @@ git clone https://github.com/OpenGene/fastp.git
 
 # build
 cd fastp
-make
+make -j $(nproc)
 
 # Install
 sudo make install
