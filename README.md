@@ -129,7 +129,7 @@ See https://github.com/ebiggers/libdeflate
 git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
 cmake -B build
-cmake -j $(nproc) --build build
+cmake --build build -j $(nproc)
 cmake --install build
 ```
 
