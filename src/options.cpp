@@ -160,7 +160,7 @@ bool Options::validate() {
             cerr << "interleaved";
         cerr << " reads to STDOUT..." << endl;
         if(isPaired() && !merge.enabled)
-            cerr << "Enable interleaved output mode for paired-end input." << endl;
+            cerr << "Enable merging output mode for paired-end input." << endl;
         cerr << endl;
     }
 
