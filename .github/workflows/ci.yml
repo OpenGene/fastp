@@ -18,6 +18,10 @@ jobs:
       - name: checkout scm
         uses: actions/checkout@v3
 
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
       - name: install build dependencies (Ubuntu)
         run: sudo apt update && sudo apt install -y build-essential nasm
         if: runner.os == 'Linux'
@@ -36,7 +40,7 @@ jobs:
         run: |
           cd src/libs/deflate
           cmake -B build
-          cmake --build build
+          cmake --build build -j ${{ steps.cpu-cores.outputs.count }}
           sudo cmake --install build
           cd -
 
@@ -51,7 +55,7 @@ jobs:
           cd src/libs/isa-l
           ./autogen.sh
           ./configure --prefix=/usr/local
-          bash -c 'make -j $(nproc)'
+          make -j ${{ steps.cpu-cores.outputs.count }}
           sudo make install
           cd -
 
