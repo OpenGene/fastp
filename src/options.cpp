@@ -185,7 +185,7 @@ bool Options::validate() {
     if(!out1.empty()) {
         //check_file_writable(out1);
         if(out1 == out2) {
-            error_exit("read1 output (--out1) and read1 output (--out2) should be different");
+            error_exit("read1 output (--out1) and read2 output (--out2) should be different");
         }
         if(dontOverwrite && file_exists(out1)) {
             error_exit(out1 + " already exists and you have set to not rewrite output files by --dont_overwrite");
