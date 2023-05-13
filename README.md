@@ -50,7 +50,7 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
   - [duplication rate evaluation](#duplication-rate-evaluation)
   - [deduplication](#deduplication)
 - [all options](#all-options)
-- [citation](#citation)
+- [citations](#citations)
 
 # features
 0. comprehensive quality profiling for both before and after filtering data (quality curves, base contents, KMER, Q20/Q30, GC Ratio, duplication, adapter contents...)
@@ -496,7 +496,8 @@ options:
   -?, --help                         print this message
 ```
 
-# citation
-Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu; fastp: an ultra-fast all-in-one FASTQ preprocessor, Bioinformatics, Volume 34, Issue 17, 1 September 2018, Pages i884–i890, https://doi.org/10.1093/bioinformatics/bty560
+# citations
+### Shifu Chen. 2023. Ultrafast one-pass FASTQ data preprocessing, quality control, and deduplication using fastp. iMeta 2: e107. https://doi.org/10.1002/imt2.107
+### Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu; fastp: an ultra-fast all-in-one FASTQ preprocessor, Bioinformatics, Volume 34, Issue 17, 1 September 2018, Pages i884–i890, https://doi.org/10.1093/bioinformatics/bty560
 
 
