@@ -119,7 +119,7 @@ git clone https://github.com/intel/isa-l.git
 cd isa-l
 ./autogen.sh
 ./configure --prefix=/usr --libdir=/usr/lib64
-make -j $(nproc)
+make
 sudo make install
 ```
 
@@ -129,7 +129,7 @@ See https://github.com/ebiggers/libdeflate
 git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
 cmake -B build
-cmake --build build -j $(nproc)
+cmake --build build
 cmake --install build
 ```
 
@@ -140,11 +140,12 @@ git clone https://github.com/OpenGene/fastp.git
 
 # build
 cd fastp
-make -j $(nproc)
+make
 
 # Install
 sudo make install
 ```
+You can add `-j8` option to `make/cmake` to use 8 threads for the compilation. 
 
 # input and output
 `fastp` supports both single-end (SE) and paired-end (PE) input/output.
