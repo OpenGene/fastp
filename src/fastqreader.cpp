@@ -307,10 +307,11 @@ Read* FastqReader::read(){
 
 	getLine(name);
 	// name should start with @
-	if (name->empty() || (*name)[0]!='@') {
-		cerr << *name << endl;
-		error_exit("Read name line should start with '@'");
+	while((name->empty() && !(mBufUsedLen >= mBufDataLen && bufferFinished())) || (!name->empty() && (*name)[0]!='@')){
+		getLine(name);
 	}
+	if(name->empty())
+		return NULL;
 
 	getLine(sequence);
 	getLine(strand);
