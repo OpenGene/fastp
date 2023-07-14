@@ -21,8 +21,13 @@ bool Evaluator::isTwoColorSystem() {
     if(!r)
         return false;
 
-    // NEXTSEQ500, NEXTSEQ 550/550DX, NOVASEQ
-    if(starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@NDX") || starts_with(r->mName, "@A0")) {
+    // Via https://knowledge.illumina.com/instrumentation/general/instrumentation-general-reference_material-list/000003880
+    // NEXTSEQ 500/550: @NS @NB
+    // ? NEXTSEQ 550DX: @NDX
+    // NEXTSEQ 1000/2000: @VL @VH
+    // NOVASEQ 6000: @A
+    // NOVASEQ X PLUS: @LH
+    if(starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@NDX") || starts_with(r->mName, "@VL") || starts_with(r->mName, "@VH") || starts_with(r->mName, "@A") || starts_with(r->mName, "@LH")) {
         delete r;
         return true;
     }
