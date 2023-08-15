@@ -681,8 +681,8 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
     if(overlappedOut)
         delete overlappedOut;
 
-    delete leftPack->data;
-    delete rightPack->data;
+    delete[] leftPack->data;
+    delete[] rightPack->data;
     delete leftPack;
     delete rightPack;
 
@@ -870,10 +870,11 @@ void PairEndProcessor::interleavedReaderTask()
     FastqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64,true);
     int count=0;
     bool needToBreak = false;
+    ReadPair* pair = new ReadPair();
     while(true){
-        ReadPair* pair = reader.read();
+        reader.read(pair);
         // TODO: put needToBreak here is just a WAR for resolve some unidentified dead lock issue 
-        if(!pair || needToBreak){
+        if(pair->eof() || needToBreak){
             // the last pack
             ReadPack* packLeft = new ReadPack;
             ReadPack* packRight = new ReadPack;
@@ -890,10 +891,6 @@ void PairEndProcessor::interleavedReaderTask()
 
             dataLeft = NULL;
             dataRight = NULL;
-            if(pair) {
-                delete pair;
-                pair = NULL;
-            }
             break;
         }
         dataLeft[count] = pair->mLeft;
@@ -961,6 +958,8 @@ void PairEndProcessor::interleavedReaderTask()
             }*/
         }
     }
+
+    delete pair;
 
     for(int t=0; t<mOptions->thread; t++) {
         mLeftInputLists[t]->setProducerFinished();
