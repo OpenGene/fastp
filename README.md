@@ -1,7 +1,7 @@
 [![install with conda](
-https://anaconda.org/bioconda/fastp/badges/version.svg)](https://anaconda.org/shinthor/fastp)
+https://anaconda.org/shinthor/fastp/badges/version.svg)](https://anaconda.org/shinthor/fastp)
 [![install with conda](
-https://anaconda.org/bioconda/fastp/badges/downloads.svg)](https://anaconda.org/shinthor/fastp)
+https://anaconda.org/shinthor/fastp/badges/downloads.svg)](https://anaconda.org/shinthor/fastp)
 [![DebianBadge](
 https://badges.debian.net/badges/debian/unstable/fastp/version.svg)](https://packages.debian.org/unstable/fastp)
 [![fastp ci](https://github.com/OpenGene/fastp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/OpenGene/fastp/actions/workflows/ci.yml)
