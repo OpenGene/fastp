@@ -110,7 +110,7 @@ chmod a+x ./fastp
 The image is built with Ubuntu 20.04 as base.  See Dockerfile.fastp in Dockerfiles folder
 ```shell
 git clone https://github.com/OpenGene/fastp.git
-export FP_VERSION="0.23.2"
+export FP_VERSION="0.23.4"
 docker build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg FP_VERSION=${FP_VERSION} --tag fastp:${FP_VERSION} --file ./Dockerfiles/Dockerfile.fastp  .
 ```
 
