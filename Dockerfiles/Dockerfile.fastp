@@ -5,11 +5,11 @@
 #      fastp -i raw.fq -o ./clean.fq  -h "<samplename>-fastp_report" -w12 -e 25 -l 40 -y -5 -3 -W4 -M20  \ 
 #                --overrepresentation_analysis -P 100 --dont_eval_duplication -x 
 # Build Image with (and specify tagged version):
-#    docker build --build-arg FP_VERSION=0.23.2  -t fastp:0.23.2  -f ./Dockerfile.fastp .
+#    docker build --build-arg FP_VERSION=0.23.4  -t fastp:0.23.4  -f ./Dockerfile.fastp .
 #
 # OR to change the build user id to run as yourself, do this:
-#    export UID=$(id -u) ; export GID=$(id -g)     # See below for details setting the user
-#    docker build --build-arg USER=$UID:$GID  FP_VERSION=0.23.2 -t fastp:0.23.2  -f ./Dockerfile.fastp .
+#    export myUID=$(id -u) ; export myGID=$(id -g)     # See below for details setting the user
+#    docker build --build-arg USER=$myUID:$myGID  FP_VERSION=0.23.4 -t fastp:0.23.4  -f ./Dockerfile.fastp .
 # Run in iteractive mode like:
 #    docker run -it --rm --network="host" --cpus=2 -m 64000m -v ${PWD}:${PWD} -w ${PWD}  --entrypoint /bin/bash   my_image  
 #    ... where "my_image" is the full length image name (i.e: fastp:latest) or the specific "IMAGE ID" in your docker setup (docker image ls)
@@ -35,22 +35,22 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean  && rm -rf /var/lib/apt/lists/*
 
 
-# Verified version of 'fastp' to use.   0.23.2 as of Nov 2022.  Provide as cmdline argument to override
-ARG FP_VERSION=0.23.2
+# Verified version of 'fastp' to use.   0.23.4 as of Q3 2023.  Provide as cmdline argument to override. Assumes a Linux 64bit ELF binary
+ARG FP_VERSION=0.23.4
 
 # Get the precompiled package version wanted
-#  fastp v0.23.1
+#  fastp v0.23.4
 WORKDIR /app
 RUN  wget http://opengene.org/fastp/fastp.${FP_VERSION} \
     && mv fastp.${FP_VERSION} fastp \
     && chmod a+x ./fastp  
 
-# Set run user/group as uid 2000 gid 3000 for use in KubeFarm
+# Set run user/group as myUID 2000 myGID 3000 for use in Kubernetes (and avoid running as root)
 ARG USER=appuser
 ARG USERGROUP=appgroup
-ARG UID=2000
-ARG GID=3000
-RUN groupadd -r -g ${GID} ${USERGROUP}  &&  useradd -g ${GID} --uid=${UID} ${USER}
+ARG myUID=2000
+ARG myGID=3000
+RUN groupadd -r -g ${myGID} ${USERGROUP}  &&  useradd -g ${myGID} --myUID=${myUID} ${USER}
 # USER appuser:appgroup
-USER ${UID}:${GID}
+USER ${myUID}:${myGID}
 ENTRYPOINT ["/app/fastp"]
