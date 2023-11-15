@@ -84,6 +84,7 @@ void FastqReader::readToBufIgzip(){
 		if (mGzipState.avail_in == 0) {
 			mGzipState.next_in = mGzipInputBuffer;
 			mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+			check_error();
 			mGzipInputUsedBytes += mGzipState.avail_in;
 		}
 		mGzipState.next_out = mGzipOutputBuffer;
@@ -105,6 +106,7 @@ void FastqReader::readToBufIgzip(){
 				isal_inflate_reset(&mGzipState);
 				mGzipState.next_in = mGzipInputBuffer;
 				mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+				check_error();
 				mGzipInputUsedBytes += mGzipState.avail_in;
 			} else if (mGzipState.avail_in >= GZIP_HEADER_BYTES_REQ){
 				unsigned char* old_next_in = mGzipState.next_in;
@@ -118,6 +120,7 @@ void FastqReader::readToBufIgzip(){
 				size_t added = 0;
 				if(!eof()) {
 					added = fread(mGzipInputBuffer + mGzipState.avail_in, 1, mGzipInputBufferSize - mGzipState.avail_in, mFile);
+					check_error();
 					mGzipInputUsedBytes += added;
 				}
 				isal_inflate_reset(&mGzipState);
@@ -146,6 +149,7 @@ void FastqReader::readToBuf() {
 	} else {
 		if(!eof())
 			mBufDataLen = fread(mFastqBuf, 1, FQ_BUF_SIZE, mFile);
+			check_error();
 	}
 	mBufUsedLen = 0;
 
@@ -166,6 +170,7 @@ void FastqReader::init(){
 		mGzipState.crc_flag = ISAL_GZIP_NO_HDR_VER;
 		mGzipState.next_in = mGzipInputBuffer;
 		mGzipState.avail_in = fread(mGzipState.next_in, 1, mGzipInputBufferSize, mFile);
+		check_error();
 		mGzipInputUsedBytes += mGzipState.avail_in;
 		int ret = isal_read_gzip_header(&mGzipState, &mGzipHeader);
 		if (ret != ISAL_DECOMP_OK) {
@@ -214,6 +219,13 @@ void FastqReader::clearLineBreaks(char* line) {
 
 bool FastqReader::eof() {
 	return feof(mFile);//mFile.eof();
+}
+
+void FastqReader::check_error() {
+	if(ferror(mFile)) {
+		std::perror("reading fastq failed");
+		error_exit("Failed reading: " + mFilename);
+	}
 }
 
 void FastqReader::getLine(string* line){

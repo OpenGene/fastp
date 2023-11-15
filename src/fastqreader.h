@@ -46,6 +46,7 @@ public:
 	//do not call read() of a same FastqReader object from different threads concurrently
 	Read* read();
 	bool eof();
+	void check_error();
 	bool hasNoLineBreakAtEnd();
 	void setReadPool(ReadPool* rp);
 
