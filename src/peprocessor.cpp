@@ -358,7 +358,7 @@ void PairEndProcessor::recycleToPool2(int tid, Read* r) {
 bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config){
     if(leftPack->count != rightPack->count) {
         cerr << endl;
-        cerr << "WARNNIG: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
+        cerr << "WARNING: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
         cerr << "Read1 pack size: " << leftPack->count << endl;
         cerr << "Read2 pack size: " << rightPack->count << endl;
         cerr << endl;
