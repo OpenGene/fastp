@@ -236,12 +236,7 @@ The sequence distribution of trimmed adapters can be found at the HTML/JSON repo
 * `-3, --cut_tail`              move a sliding window from tail (3') to front, drop the bases in the window if its mean quality is below cut_mean_quality, stop otherwise. Default is disabled. The trailing N bases are also trimmed. Use `cut_tail_window_size` to set the widnow size, and `cut_tail_mean_quality` to set the mean quality threshold. If the window size is 1, this is similar as the Trimmomatic `TRAILING` method.
 * `-r, --cut_right`             move a sliding window from front to tail, if meet one window with mean quality < threshold, drop the bases in the window and the right part, and then stop. Use `cut_right_window_size` to set the widnow size, and `cut_right_mean_quality` to set the mean quality threshold.  This is similar as the Trimmomatic `SLIDINGWINDOW` method.
 
-
-***WARNING: all these three operations will interfere deduplication for SE data, and `--cut_front` or `--cut_right` may also interfere deduplication for PE data. The deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.***
-
 If `--cut_right` is enabled, then there is no need to enable `--cut_tail`, since the former is more aggressive. If `--cut_right` is enabled together with `--cut_front`, `--cut_front` will be performed first before `--cut_right` to avoid dropping whole reads due to the low quality starting bases.
-
-Please be noted that `--cut_front` will interfere deduplication for both PE/SE data, and `--cut_tail` will interfere deduplication for SE data, since the deduplication algorithms rely on the exact matchment of coordination regions of the grouped reads/pairs.
 
 If you don't set window size and mean quality threshold for these function respectively, `fastp` will use the values from `-W, --cut_window_size` and `-M, --cut_mean_quality `
 
