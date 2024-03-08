@@ -18,12 +18,12 @@ void UmiProcessor::process(Read* r1, Read* r2) {
     else if(mOptions->umi.location == UMI_LOC_INDEX2 && r2)
         umi = r2->lastIndex();
     else if(mOptions->umi.location == UMI_LOC_READ1){
-        umi = r1->mSeq->substr(0, min(r1->length(), mOptions->umi.length));
-        r1->trimFront(umi.length() + mOptions->umi.skip);
+        umi = r1->mSeq->substr(mOptions->umi.skipb, min(r1->length(), mOptions->umi.length));
+        r1->trimFront(mOptions->umi.skipb + umi.length() + mOptions->umi.skip);
     }
     else if(mOptions->umi.location == UMI_LOC_READ2 && r2){
-        umi = r2->mSeq->substr(0, min(r2->length(), mOptions->umi.length));
-        r2->trimFront(umi.length() + mOptions->umi.skip);
+        umi = r2->mSeq->substr(mOptions->umi.skipb, min(r2->length(), mOptions->umi.length));
+        r2->trimFront(mOptions->umi.skipb + umi.length() + mOptions->umi.skip);
     }
     else if(mOptions->umi.location == UMI_LOC_PER_INDEX){
         string umiMerged = r1->firstIndex();
@@ -37,13 +37,13 @@ void UmiProcessor::process(Read* r1, Read* r2) {
         }
     }
     else if(mOptions->umi.location == UMI_LOC_PER_READ){
-        string umi1 = r1->mSeq->substr(0, min(r1->length(), mOptions->umi.length));
+        string umi1 = r1->mSeq->substr(mOptions->umi.skipb, min(r1->length(), mOptions->umi.length));
         string umiMerged = umi1;
-        r1->trimFront(umi1.length() + mOptions->umi.skip);
+        r1->trimFront(mOptions->umi.skipb + umi1.length() + mOptions->umi.skip);
         if(r2){
-            string umi2 = r2->mSeq->substr(0, min(r2->length(), mOptions->umi.length));
-            umiMerged = umiMerged + "_" + umi2;
-            r2->trimFront(umi2.length() + mOptions->umi.skip);
+            string umi2 = r2->mSeq->substr(mOptions->umi.skipb, min(r2->length(), mOptions->umi.length));
+            umiMerged = umiMerged + "+" + umi2;
+            r2->trimFront(mOptions->umi.skipb + umi2.length() + mOptions->umi.skip);
         }
 
         addUmiToName(r1, umiMerged);
