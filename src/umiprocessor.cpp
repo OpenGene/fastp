@@ -42,7 +42,7 @@ void UmiProcessor::process(Read* r1, Read* r2) {
         r1->trimFront(mOptions->umi.skipb + umi1.length() + mOptions->umi.skip);
         if(r2){
             string umi2 = r2->mSeq->substr(mOptions->umi.skipb, min(r2->length(), mOptions->umi.length));
-            umiMerged = umiMerged + "+" + umi2;
+            umiMerged = umiMerged + "_" + umi2;
             r2->trimFront(mOptions->umi.skipb + umi2.length() + mOptions->umi.skip);
         }
 
