@@ -8,6 +8,7 @@ https://badges.debian.net/badges/debian/unstable/fastp/version.svg)](https://pac
 
 # fastp
 A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance.
+Citation: Shifu Chen. 2023. Ultrafast one-pass FASTQ data preprocessing, quality control, and deduplication using fastp. iMeta 2: e107. https://doi.org/10.1002/imt2.107
 - [fastp](#fastp)
 - [features](#features)
 - [simple usage](#simple-usage)
