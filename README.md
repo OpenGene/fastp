@@ -115,8 +115,8 @@ chmod a+x ./fastp
 `fastp` depends on `libdeflate` and `libisal`, while `libisal` is not compatible with gcc 4.8. If you use gcc 4.8, your fastp will fail to run. Please upgrade your gcc before you build the libraries and fastp.
 
 ### Step 1: install isa-l
-It's recommended that to install it using your package manager, for example `apt install isa-l` on ubuntu, or `brew install isa-l` on Mac. Otherwise you can compile isa-l from source. Please be noted that `isa-l` is not compatible with gcc 4.8 or older versions. See https://github.com/intel/isa-l
-`autoconf`, `automake`, `libtools`, `nasm (>=v2.11.01)` and `yasm (>=1.2.0)` are required to build this isa-l
+It's recommended that to install it using your package manager, for example `apt install isa-l` on ubuntu, or `brew install isa-l` on Mac. Otherwise you can compile it from source. Please be noted that `isa-l` is not compatible with gcc 4.8 or older versions. See https://github.com/intel/isa-l
+`autoconf`, `automake`, `libtools`, `nasm (>=2.11.01)` and `yasm (>=1.2.0)` are required to build isa-l.
 ```shell
 git clone https://github.com/intel/isa-l.git
 cd isa-l
@@ -127,7 +127,7 @@ sudo make install
 ```
 
 ### step 2: install libdeflate
-It's recommended that to install it using your package manager, for example `apt install libdeflate` on ubuntu, or `brew install libdeflate` on Mac. Otherwise you can compile isa-l from source. See https://github.com/ebiggers/libdeflate
+It's recommended that to install it using your package manager, for example `apt install libdeflate` on ubuntu, or `brew install libdeflate` on Mac. Otherwise you can compile it from source. See https://github.com/ebiggers/libdeflate
 ```shell
 git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
