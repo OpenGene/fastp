@@ -148,7 +148,6 @@ make -j
 # Install
 sudo make install
 ```
-You can add `-j8` option to `make/cmake` to use 8 threads for the compilation. 
 
 # input and output
 `fastp` supports both single-end (SE) and paired-end (PE) input/output.
