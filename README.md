@@ -7,11 +7,12 @@ https://badges.debian.net/badges/debian/unstable/fastp/version.svg)](https://pac
 [![fastp ci](https://github.com/OpenGene/fastp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/OpenGene/fastp/actions/workflows/ci.yml)
 
 # fastp
-A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance.
+A tool designed to provide ultrafast all-in-one preprocessing and quality control for FastQ data.     
+
+This tool is designed for processing short reads (i.e. Illumina NovaSeq, MGI), if you are looking for tools to process long reads (i.e. Nanopore, PacBio, Cyclone), please use [fastplong](https://github.com/OpenGene/fastplong)  
 
 Citation: Shifu Chen. 2023. Ultrafast one-pass FASTQ data preprocessing, quality control, and deduplication using fastp. iMeta 2: e107. https://doi.org/10.1002/imt2.107
 
-- [fastp](#fastp)
 - [features](#features)
 - [simple usage](#simple-usage)
 - [examples of report](#examples-of-report)
