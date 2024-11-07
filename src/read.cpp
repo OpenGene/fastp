@@ -180,8 +180,9 @@ bool Read::fixMGI() {
 	int len = mName->length();
 	if((*mName)[len-1]=='1' || (*mName)[len-1]=='2') {
 		if((*mName)[len-2] == '/') {
+			string* newName = new string(mName->substr(0, len-2) + " " + mName->substr(len-2, 2));
 			delete mName;
-			mName = new string(mName->substr(0, len-2) + " " + mName->substr(len-2, 2));
+			mName = newName;
 			return true;
 		}
 	}
