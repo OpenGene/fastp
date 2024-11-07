@@ -56,7 +56,6 @@ Read* Read::reverseComplement(){
 	string seq = Sequence::reverseComplement(mSeq);
 	string qual;
 	qual.assign(mQuality->rbegin(), mQuality->rend());
-	string* strand=new string("+");
 	return new Read(mName->c_str(), seq.c_str(), "+", qual.c_str());
 }
 

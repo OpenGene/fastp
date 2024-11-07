@@ -55,6 +55,11 @@ void WriterThread::input(int tid, string* data) {
 
 void WriterThread::cleanup() {
     deleteWriter();
+    for(int t=0; t<mOptions->thread; t++) {
+        delete mBufferLists[t];
+    }
+    delete[] mBufferLists;
+    mBufferLists = NULL;
 }
 
 void WriterThread::deleteWriter() {

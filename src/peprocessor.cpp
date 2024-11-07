@@ -58,6 +58,12 @@ PairEndProcessor::~PairEndProcessor() {
         delete mRightReadPool;
         mRightReadPool = NULL;
     }
+    for(int t=0; t<mOptions->thread; t++){
+        delete mLeftInputLists[t];
+        delete mRightInputLists[t];
+    }
+    delete[] mLeftInputLists;
+    delete[] mRightInputLists;
 }
 
 void PairEndProcessor::initOutput() {
