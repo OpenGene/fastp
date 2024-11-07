@@ -41,9 +41,6 @@ SingleEndProcessor::~SingleEndProcessor() {
         delete mReadPool;
         mReadPool = NULL;
     }
-    for(int t=0; t<mOptions->thread; t++){
-        delete mInputLists[t];
-    }
     delete[] mInputLists;
 }
 
