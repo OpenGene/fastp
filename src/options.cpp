@@ -283,16 +283,16 @@ bool Options::validate() {
         thread = 16;
     }
 
-    if(trim.front1 < 0 || trim.front1 > 30)
+    if(trim.front1 < 0)
         error_exit("trim_front1 (--trim_front1) should be 0 ~ 30, suggest 0 ~ 4");
 
-    if(trim.tail1 < 0 || trim.tail1 > 100)
+    if(trim.tail1 < 0)
         error_exit("trim_tail1 (--trim_tail1) should be 0 ~ 100, suggest 0 ~ 4");
 
-    if(trim.front2 < 0 || trim.front2 > 30)
+    if(trim.front2 < 0)
         error_exit("trim_front2 (--trim_front2) should be 0 ~ 30, suggest 0 ~ 4");
 
-    if(trim.tail2 < 0 || trim.tail2 > 100)
+    if(trim.tail2 < 0)
         error_exit("trim_tail2 (--trim_tail2) should be 0 ~ 100, suggest 0 ~ 4");
 
     if(qualfilter.qualifiedQual - 33 < 0 || qualfilter.qualifiedQual - 33 > 93)
