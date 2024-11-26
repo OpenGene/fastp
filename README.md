@@ -357,7 +357,7 @@ means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the ba
 Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_percent_limit (default 20%)`. Please note that the reads should meet these three conditions simultaneously.
 
 # duplication rate and deduplication
-For both SE and PE data, fastp supports evaluating its duplication rate and removing duplicated reads/pairs. fastp considers one read as duplicated only if its all base pairs are identical as another one. This meas if there is a sequencing error or an N base, the read will not be treated as duplicated.
+For both SE and PE data, fastp supports evaluating its duplication rate and removing duplicated reads/pairs. fastp considers one read as duplicated only if its all base pairs are identical as another one. This means if there is a sequencing error or an N base, the read will not be treated as duplicated.
 
 ## duplication rate evaluation
 By default, fastp evaluates duplication rate, and this module may use 1G memory and take 10% ~ 20% more running time. If you don't need the duplication rate information, you can set `--dont_eval_duplication` to disable the duplication evaluation. But please be noted that, if deduplication (`--dedup`) option is enabled, then `--dont_eval_duplication` option is ignored.
