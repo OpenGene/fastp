@@ -28,7 +28,8 @@ ${BIN_TARGET}:${OBJ}
 static:${OBJ}
 	$(CXX) $(OBJ) -o ${BIN_TARGET} $(STATIC_LD_FLAGS)
 
-${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp make_obj_dir
+${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp
+	@mkdir -p $(@D)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 .PHONY:clean
@@ -41,12 +42,6 @@ clean:
 	@if test -e $(TARGET) ; \
 	then \
 		rm $(TARGET) ; \
-	fi
-
-make_obj_dir:
-	@if test ! -d $(DIR_OBJ) ; \
-	then \
-		mkdir $(DIR_OBJ) ; \
 	fi
 
 install:
