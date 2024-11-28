@@ -65,6 +65,7 @@ private:
 
 private:
 	string mFilename;
+	bool mSkipNewline;
 	struct isal_gzip_header mGzipHeader;
 	struct inflate_state mGzipState;
 	unsigned char *mGzipInputBuffer;

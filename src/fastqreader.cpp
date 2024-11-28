@@ -33,6 +33,7 @@ SOFTWARE.
 
 FastqReader::FastqReader(string filename, bool hasQuality, bool phred64){
 	mFilename = filename;
+	mSkipNewline = false;
 	mZipped = false;
 	mFile = NULL;
 	mStdinMode = false;
@@ -223,6 +224,15 @@ void FastqReader::getLine(string* line){
 	int end = start;
 
 	while(end < mBufDataLen) {
+		// May still need to skip \n from a \r\n pair
+		if (mSkipNewline) {
+			mSkipNewline = false;
+			if (mFastqBuf[end] == '\n') {
+				start++;
+				end++;
+				continue;
+		       }
+		}
 		if(mFastqBuf[end] != '\r' && mFastqBuf[end] != '\n')
 			end++;
 		else
@@ -236,9 +246,9 @@ void FastqReader::getLine(string* line){
 
 		// skip \n or \r
 		end++;
-		// handle \r\n
-		if(end < mBufDataLen-1 && mFastqBuf[end-1]=='\r' && mFastqBuf[end] == '\n')
-			end++;
+		// handle \r\n - not now because we may be at end of buffer
+		if(mFastqBuf[end-1]=='\r')
+			mSkipNewline = true;
 
 		mBufUsedLen = end;
 
@@ -252,7 +262,18 @@ void FastqReader::getLine(string* line){
 		readToBuf();
 		start = 0;
 		end = 0;
+
+
 		while(end < mBufDataLen) {
+			// May still need to skip \n from a \r\n pair
+			if (mSkipNewline) {
+				mSkipNewline = false;
+				if (mFastqBuf[end] == '\n') {
+					start++;
+					end++;
+					continue;
+				}
+			}
 			if(mFastqBuf[end] != '\r' && mFastqBuf[end] != '\n')
 				end++;
 			else
@@ -265,9 +286,9 @@ void FastqReader::getLine(string* line){
 
 			// skip \n or \r
 			end++;
-			// handle \r\n
-			if(end < mBufDataLen-1 && mFastqBuf[end] == '\n')
-				end++;
+			// handle \r\n - not now because we may be at end of buffer
+			if(mFastqBuf[end-1] == '\r')
+				mSkipNewline = true;
 
 			mBufUsedLen = end;
 			return;
@@ -280,10 +301,6 @@ void FastqReader::getLine(string* line){
 }
 
 Read* FastqReader::read(){
-	if(mBufUsedLen >= mBufDataLen && bufferFinished()) {
-		return NULL;
-	}
-
 	string* name;
 	string* sequence;
 	string* strand;
@@ -306,12 +323,16 @@ Read* FastqReader::read(){
 	}
 
 	getLine(name);
-	// name should start with @
-	while((name->empty() && !(mBufUsedLen >= mBufDataLen && bufferFinished())) || (!name->empty() && (*name)[0]!='@')){
-		getLine(name);
-	}
-	if(name->empty())
+	if(name->empty() && mBufUsedLen >= mBufDataLen && bufferFinished()) {
+		// EOF is triggered only after reading past end of file; that
+		// can happen at the start of a new read.
 		return NULL;
+	}
+	// name should start with @
+	if (name->empty() || (*name)[0]!='@') {
+		cerr << *name << endl;
+		error_exit("Read name line should start with '@'");
+	}
 
 	getLine(sequence);
 	getLine(strand);
