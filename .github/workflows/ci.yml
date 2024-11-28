@@ -1,18 +1,16 @@
 name: fastp ci
 on:
-  push:
-    branches:
-      - master
   pull_request:
     branches:
       - master
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
-          - macos-latest
+          - ubuntu-24.04
+          - macos-12
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout scm
@@ -35,6 +33,7 @@ jobs:
         with:
           repository: ebiggers/libdeflate
           path: src/libs/deflate
+          ref: v1.22
 
       - name: build deflate
         run: |
@@ -49,6 +48,7 @@ jobs:
         with:
           repository: intel/isa-l
           path: src/libs/isa-l
+          ref: v2.31.0
 
       - name: build isa-l
         run: |
