@@ -48,8 +48,10 @@ public:
 
 class ReadPair{
 public:
-    ReadPair(Read* left, Read* right);
+    ReadPair();
     ~ReadPair();
+    void setPair(Read* left, Read* right);
+    bool eof();
 
     // merge a pair, without consideration of seq error caused false INDEL
     Read* fastMerge();
