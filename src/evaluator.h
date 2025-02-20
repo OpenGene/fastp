@@ -18,7 +18,7 @@ public:
     void evaluateReadNum(long& readNum);
     string evalAdapterAndReadNumDepreciated(long& readNum);
     string evalAdapterAndReadNum(long& readNum, bool isR2);
-    bool isTwoColorSystem();
+    bool isOneOrTwoColorSystem();
     void evaluateSeqLen();
     void evaluateOverRepSeqs();
     void computeOverRepSeq(string filename, map<string, long>& hotseqs, int seqLen);

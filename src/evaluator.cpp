@@ -13,7 +13,7 @@ Evaluator::Evaluator(Options* opt){
 Evaluator::~Evaluator(){
 }
 
-bool Evaluator::isTwoColorSystem() {
+bool Evaluator::isOneOrTwoColorSystem() {
     FastqReader reader(mOptions->in1);
 
     Read* r = reader.read();
@@ -21,8 +21,9 @@ bool Evaluator::isTwoColorSystem() {
     if(!r)
         return false;
 
-    // NEXTSEQ500, NEXTSEQ 550/550DX, NOVASEQ
-    if(starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@NDX") || starts_with(r->mName, "@A0")) {
+    // NEXTSEQ500, NEXTSEQ 550/550DX, NOVASEQ [2-color-system]
+    // iSeq 100 [1-color-system]
+    if(starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@NDX") || starts_with(r->mName, "@A0") | starts_with(r->mName, "@FS100")) {
         delete r;
         return true;
     }

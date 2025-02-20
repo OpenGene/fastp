@@ -498,8 +498,8 @@ int main(int argc, char* argv[]){
 
     // using evaluator to check if it's two color system
     if(!cmd.exist("trim_poly_g") && !cmd.exist("disable_trim_poly_g") && supportEvaluation) {
-        bool twoColorSystem = eva.isTwoColorSystem();
-        if(twoColorSystem){
+        bool oneOrTwoColorSystem = eva.isOneOrTwoColorSystem();
+        if(oneOrTwoColorSystem){
             opt.polyGTrim.enabled = true;
         }
     }
