@@ -73,9 +73,9 @@ int main(int argc, char* argv[]){
     cmd.add("dont_eval_duplication", 0, "don't evaluate duplication rate to save time and use less memory.");
 
     // polyG tail trimming
-    cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
+    cmd.add("trim_poly_g", 'g', "force polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq/iSeq data");
     cmd.add<int>("poly_g_min_len", 0, "the minimum length to detect polyG in the read tail. 10 by default.", false, 10);
-    cmd.add("disable_trim_poly_g", 'G', "disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq data");
+    cmd.add("disable_trim_poly_g", 'G', "disable polyG tail trimming, by default trimming is automatically enabled for Illumina NextSeq/NovaSeq/iSeq data");
     
     // polyX tail trimming
     cmd.add("trim_poly_x", 'x', "enable polyX trimming in 3' ends.");
