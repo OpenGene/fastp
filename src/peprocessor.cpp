@@ -461,7 +461,10 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
             if(ov.overlapped) {
                 Read* overlappedRead = new Read(r1->mName, new string(r1->mSeq->substr(max(0,ov.offset)), ov.overlap_len), r1->mStrand, new string(r1->mQuality->substr(max(0,ov.offset)), ov.overlap_len));
                 overlappedRead->appendToString(overlappedOut);
+                overlappedRead->mName = nullptr;
+                overlappedRead->mStrand = nullptr;
                 recycleToPool1(tid, overlappedRead);
+                overlappedRead = nullptr;
             }
         }
 
