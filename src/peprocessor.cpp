@@ -463,7 +463,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 overlappedRead->appendToString(overlappedOut);
                 overlappedRead->mName = nullptr;
                 overlappedRead->mStrand = nullptr;
-		delete overlappedRead;
+                delete overlappedRead;
                 //recycleToPool1(tid, overlappedRead);
             }
         }
