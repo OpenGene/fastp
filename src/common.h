@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define FASTP_VER "0.23.4"
+#define FASTP_VER "0.24.0"
 
 #define _DEBUG false
 
@@ -29,20 +29,15 @@ const char ATCG_BASES[] = {'A', 'T', 'C', 'G'};
 
 #pragma pack() 
 
-// the limit of the queue to store the packs
-// error may happen if it generates more packs than this number
-static const int PACK_NUM_LIMIT  = 10000000;
 
 // how many reads one pack has
-static const int PACK_SIZE = 1000;
+static const int PACK_SIZE = 256;
 
 // if one pack is produced, but not consumed, it will be kept in the memory
 // this number limit the number of in memory packs
 // if the number of in memory packs is full, the producer thread should sleep
-static const int PACK_IN_MEM_LIMIT = 500;
+static const int PACK_IN_MEM_LIMIT = 128;
 
-// if read number is more than this, warn it
-static const int WARN_STANDALONE_READ_LIMIT = 10000;
 
 // different filtering results, bigger number means worse
 // if r1 and r2 are both failed, then the bigger one of the two results will be recorded

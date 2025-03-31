@@ -41,6 +41,26 @@ void ThreadConfig::cleanup() {
         delete mRightInputList;
         mRightInputList = NULL;
     }
+    if(mPreStats1) {
+        delete mPreStats1;
+        mPreStats1 = NULL;
+    }
+    if(mPostStats1) {
+        delete mPostStats1;
+        mPostStats1 = NULL;
+    }
+    if(mPreStats2) {
+        delete mPreStats2;
+        mPreStats2 = NULL;
+    }
+    if(mPostStats2) {
+        delete mPostStats2;
+        mPostStats2 = NULL;
+    }
+    if(mFilterResult) {
+        delete mFilterResult;
+        mFilterResult = NULL;
+    }
 }
 
 

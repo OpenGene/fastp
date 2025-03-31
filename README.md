@@ -7,8 +7,12 @@ https://badges.debian.net/badges/debian/unstable/fastp/version.svg)](https://pac
 [![fastp ci](https://github.com/OpenGene/fastp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/OpenGene/fastp/actions/workflows/ci.yml)
 
 # fastp
-A tool designed to provide fast all-in-one preprocessing for FastQ files. This tool is developed in C++ with multithreading supported to afford high performance.
-- [fastp](#fastp)
+A tool designed to provide ultrafast all-in-one preprocessing and quality control for FastQ data.     
+
+This tool is designed for processing short reads (i.e. Illumina NovaSeq, MGI), if you are looking for tools to process long reads (i.e. Nanopore, PacBio, Cyclone), please use [fastplong](https://github.com/OpenGene/fastplong)  
+
+Citation: Shifu Chen. 2023. Ultrafast one-pass FASTQ data preprocessing, quality control, and deduplication using fastp. iMeta 2: e107. https://doi.org/10.1002/imt2.107
+
 - [features](#features)
 - [simple usage](#simple-usage)
 - [examples of report](#examples-of-report)
@@ -16,8 +20,8 @@ A tool designed to provide fast all-in-one preprocessing for FastQ files. This t
   - [install with Bioconda](#install-with-bioconda)
   - [or download the latest prebuilt binary for Linux users](#or-download-the-latest-prebuilt-binary-for-linux-users)
   - [or compile from source](#or-compile-from-source)
-    - [Step 1: download and build libisal](#step-1-download-and-build-libisal)
-    - [step 2: download and build libdeflate](#step-2-download-and-build-libdeflate)
+    - [Step 1: install isa-l](#step-1-install-isa-l)
+    - [step 2: install libdeflate](#step-2-install-libdeflate)
     - [Step 3: download and build fastp](#step-3-download-and-build-fastp)
 - [input and output](#input-and-output)
   - [output to STDOUT](#output-to-stdout)
@@ -111,20 +115,20 @@ chmod a+x ./fastp
 ## or compile from source
 `fastp` depends on `libdeflate` and `libisal`, while `libisal` is not compatible with gcc 4.8. If you use gcc 4.8, your fastp will fail to run. Please upgrade your gcc before you build the libraries and fastp.
 
-### Step 1: download and build libisal
-See https://github.com/intel/isa-l
-`autoconf`, `automake`, `libtools`, `nasm (>=v2.11.01)` and `yasm (>=1.2.0)` are required to build this isal
+### Step 1: install isa-l
+It's recommended that to install it using your package manager, for example `apt install isa-l` on ubuntu, or `brew install isa-l` on Mac. Otherwise you can compile it from source. Please be noted that `isa-l` is not compatible with gcc 4.8 or older versions. See https://github.com/intel/isa-l
+`autoconf`, `automake`, `libtools`, `nasm (>=2.11.01)` and `yasm (>=1.2.0)` are required to build isa-l.
 ```shell
 git clone https://github.com/intel/isa-l.git
 cd isa-l
 ./autogen.sh
 ./configure --prefix=/usr --libdir=/usr/lib64
-make
+make -j
 sudo make install
 ```
 
-### step 2: download and build libdeflate
-See https://github.com/ebiggers/libdeflate
+### step 2: install libdeflate
+It's recommended that to install it using your package manager, for example `apt install libdeflate` on ubuntu, or `brew install libdeflate` on Mac. Otherwise you can compile it from source. See https://github.com/ebiggers/libdeflate
 ```shell
 git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
@@ -140,12 +144,11 @@ git clone https://github.com/OpenGene/fastp.git
 
 # build
 cd fastp
-make
+make -j
 
 # Install
 sudo make install
 ```
-You can add `-j8` option to `make/cmake` to use 8 threads for the compilation. 
 
 # input and output
 `fastp` supports both single-end (SE) and paired-end (PE) input/output.
@@ -354,7 +357,7 @@ means that 150bp are from read1, and 15bp are from read2. `fastp` prefers the ba
 Same as the [base correction feature](#base-correction-for-pe-data), this function is also based on overlapping detection, which has adjustable parameters `overlap_len_require (default 30)`, `overlap_diff_limit (default 5)` and `overlap_diff_percent_limit (default 20%)`. Please note that the reads should meet these three conditions simultaneously.
 
 # duplication rate and deduplication
-For both SE and PE data, fastp supports evaluating its duplication rate and removing duplicated reads/pairs. fastp considers one read as duplicated only if its all base pairs are identical as another one. This meas if there is a sequencing error or an N base, the read will not be treated as duplicated.
+For both SE and PE data, fastp supports evaluating its duplication rate and removing duplicated reads/pairs. fastp considers one read as duplicated only if its all base pairs are identical as another one. This means if there is a sequencing error or an N base, the read will not be treated as duplicated.
 
 ## duplication rate evaluation
 By default, fastp evaluates duplication rate, and this module may use 1G memory and take 10% ~ 20% more running time. If you don't need the duplication rate information, you can set `--dont_eval_duplication` to disable the duplication evaluation. But please be noted that, if deduplication (`--dedup`) option is enabled, then `--dont_eval_duplication` option is ignored.

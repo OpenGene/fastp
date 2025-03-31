@@ -319,7 +319,7 @@ int main(int argc, char* argv[]){
             || cmd.exist("cut_front_window_size") || cmd.exist("cut_front_mean_quality") 
             || cmd.exist("cut_tail_window_size") || cmd.exist("cut_tail_mean_quality") 
             || cmd.exist("cut_right_window_size") || cmd.exist("cut_right_mean_quality"))
-            cerr << "WARNING: you specified the options for cutting by quality, but forogt to enable any of cut_front/cut_tail/cut_right. This will have no effect." << endl;
+            cerr << "WARNING: you specified the options for cutting by quality, but forgot to enable any of cut_front/cut_tail/cut_right. This will have no effect." << endl;
     }
 
     // quality filtering

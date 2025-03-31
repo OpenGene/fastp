@@ -15,7 +15,7 @@ TARGET := fastp
 BIN_TARGET := ${TARGET}
 
 CXX ?= g++
-CXXFLAGS := -std=c++11 -pthread -g -O3 -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS}
+CXXFLAGS := -std=c++11 -pthread -g -O3 -MD -MP -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS}
 LIBS := -lisal -ldeflate -lpthread
 STATIC_FLAGS := -static -Wl,--no-as-needed -pthread
 LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_FLAGS)
@@ -28,27 +28,18 @@ ${BIN_TARGET}:${OBJ}
 static:${OBJ}
 	$(CXX) $(OBJ) -o ${BIN_TARGET} $(STATIC_LD_FLAGS)
 
-${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp make_obj_dir
+${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp
+	@mkdir -p $(@D)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
 
 .PHONY:clean
 .PHONY:static
 clean:
-	@if test -d $(DIR_OBJ) ; \
-	then \
-		find $(DIR_OBJ) -name *.o -delete; \
-	fi
-	@if test -e $(TARGET) ; \
-	then \
-		rm $(TARGET) ; \
-	fi
-
-make_obj_dir:
-	@if test ! -d $(DIR_OBJ) ; \
-	then \
-		mkdir $(DIR_OBJ) ; \
-	fi
+	@rm -rf $(DIR_OBJ)
+	@rm -f $(TARGET)
 
 install:
 	install $(TARGET) $(BINDIR)/$(TARGET)
 	@echo "Installed."
+
+-include $(OBJ:.o=.d)
