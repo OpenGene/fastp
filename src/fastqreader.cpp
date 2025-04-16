@@ -251,10 +251,13 @@ void FastqReader::getLine(string* line){
 	while(true) {
 		readToBuf();
 		start = 0;
+		end = 0;
 		// handle the case that \r or \n in the start of buf
-		while(start < mBufDataLen && (mFastqBuf[start] == '\r' || mFastqBuf[start] == '\n'))
-			start++;
-		end = start;
+		if(line->empty()) {
+			while(start < mBufDataLen && (mFastqBuf[start] == '\r' || mFastqBuf[start] == '\n'))
+				start++;
+			end = start;
+		}
 		while(end < mBufDataLen) {
 			if(mFastqBuf[end] != '\r' && mFastqBuf[end] != '\n')
 				end++;
