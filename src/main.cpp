@@ -26,7 +26,7 @@ int main(int argc, char* argv[]){
         return 0;
     }
     if (argc == 2 && (strcmp(argv[1], "-v")==0 || strcmp(argv[1], "--version")==0)){
-        cerr << "fastp " << FASTP_VER << endl;
+        cout << "fastp " << FASTP_VER << endl;
         return 0;
     }
     cmdline::parser cmd;
