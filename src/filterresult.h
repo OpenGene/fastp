@@ -58,6 +58,7 @@ public:
     long getCorrectionNum(char from, char to);
     void incCorrectedReads(int count);
     void addMergedPairs(int pairs);
+    bool isLowComplexity(string& adapter);
 
 
 public:

@@ -4,6 +4,9 @@
 #include "htmlreporter.h"
 #include <memory.h>
 
+#define MAX_ADAPTER_REC 20000
+#define LOW_COMPLEXITY_SKIP 5000
+
 FilterResult::FilterResult(Options* opt, bool paired){
     mOptions = opt;
     mPaired = paired;
@@ -109,6 +112,15 @@ long FilterResult::getCorrectionNum(char from, char to) {
     return mCorrectionMatrix[f*8 + t];
 }
 
+bool FilterResult::isLowComplexity(string& adapter) {
+    int diff = 0;
+    for(int i=0; i<adapter.length()-1; i++) {
+        if(adapter[i] != adapter[i+1])
+            diff++;
+    }
+    return diff < adapter.length()/2;
+}
+
 void FilterResult::addAdapterTrimmed(string adapter, bool isR2, bool incTrimmedCounter ) {
     if(adapter.empty())
         return;
@@ -118,13 +130,25 @@ void FilterResult::addAdapterTrimmed(string adapter, bool isR2, bool incTrimmedC
     if(!isR2) {
         if(mAdapter1.count(adapter) >0 )
             mAdapter1[adapter]++;
-        else
+        else {
+            // to prevent possible memory explosion
+            // we skip this adapter when there are too many adapters recorded
+            // or when this adapter is with low complexity
+            if(mAdapter1.size() > MAX_ADAPTER_REC || (mAdapter1.size()>LOW_COMPLEXITY_SKIP && isLowComplexity(adapter)))
+                return;
             mAdapter1[adapter] = 1;
+        }
     } else {
         if(mAdapter2.count(adapter) >0 )
             mAdapter2[adapter]++;
-        else
+        else {
+            // to prevent possible memory explosion
+            // we skip this adapter when there are too many adapters recorded
+            // or when this adapter is with low complexity
+            if(mAdapter2.size() > MAX_ADAPTER_REC || (mAdapter2.size()>LOW_COMPLEXITY_SKIP && isLowComplexity(adapter)))
+                return;
             mAdapter2[adapter] = 1;
+        }
     }
 }
 
@@ -135,14 +159,26 @@ void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
     if(!adapter1.empty()){
         if(mAdapter1.count(adapter1) >0 )
             mAdapter1[adapter1]++;
-        else
+        else {
+            // to prevent possible memory explosion
+            // we skip this adapter when there are too many adapters recorded
+            // or when this adapter is with low complexity
+            if(mAdapter1.size() > MAX_ADAPTER_REC || (mAdapter1.size()>LOW_COMPLEXITY_SKIP && isLowComplexity(adapter1)))
+                return;
             mAdapter1[adapter1] = 1;
+        }
     }
     if(!adapter2.empty()) {
         if(mAdapter2.count(adapter2) >0 )
             mAdapter2[adapter2]++;
-        else
+        else {
+            // to prevent possible memory explosion
+            // we skip this adapter when there are too many adapters recorded
+            // or when this adapter is with low complexity
+            if(mAdapter2.size() > MAX_ADAPTER_REC || (mAdapter2.size()>LOW_COMPLEXITY_SKIP && isLowComplexity(adapter2)))
+                return;
             mAdapter2[adapter2] = 1;
+        }
     }
 }
 
