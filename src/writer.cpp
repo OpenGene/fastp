@@ -26,7 +26,7 @@ SOFTWARE.
 #include "util.h"
 #include <string.h>
 
-Writer::Writer(Options* opt, string filename, int compression){
+Writer::Writer(Options* opt, string filename, int compression, bool isSTDOUT){
 	mCompression = compression;
 	mFilename = filename;
 	mCompressor = NULL;
@@ -36,6 +36,7 @@ Writer::Writer(Options* opt, string filename, int compression){
 	mBufDataLen = 0;
 	mOptions = opt;
 	mBufSize = mOptions->writerBufferSize;
+	mSTDOUT = isSTDOUT;
 	init();
 }
 
@@ -61,6 +62,10 @@ void Writer::init(){
 	mBuffer = (char*) malloc(mBufSize);
 	if(mBuffer == NULL) {
 		error_exit("Failed to allocate write buffer with size: " + to_string(mBufSize));
+	}
+	if(mSTDOUT) {
+		mFP = stdout;
+		return ;
 	}
 	if (ends_with(mFilename, ".gz")){
 		mCompressor = libdeflate_alloc_compressor(mCompression);
@@ -138,7 +143,7 @@ void Writer::close(){
 		free(mBuffer);
 		mBuffer = NULL;
 	}
-	if(mFP) {
+	if(mFP && !mSTDOUT) {
 		fclose(mFP);
 		mFP = NULL;
 	}

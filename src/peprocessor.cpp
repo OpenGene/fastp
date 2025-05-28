@@ -80,12 +80,12 @@ void PairEndProcessor::initOutput() {
     if(!mOptions->overlappedOut.empty())
         mOverlappedWriter = new WriterThread(mOptions, mOptions->overlappedOut);
 
-    if(mOptions->out1.empty())
+    if(mOptions->out1.empty() && !mOptions->outputToSTDOUT)
         return;
     
-    mLeftWriter = new WriterThread(mOptions, mOptions->out1);
-    if(!mOptions->out2.empty())
-        mRightWriter = new WriterThread(mOptions, mOptions->out2);
+    mLeftWriter = new WriterThread(mOptions, mOptions->out1, mOptions->outputToSTDOUT);
+    if(!mOptions->out2.empty() && !mOptions->outputToSTDOUT)
+        mRightWriter = new WriterThread(mOptions, mOptions->out2, mOptions->outputToSTDOUT);
 }
 
 void PairEndProcessor::closeOutput() {
@@ -600,15 +600,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         }
     }
 
-    if(mOptions->outputToSTDOUT) {
-        // STDOUT output
-        // if it's merging mode, write the merged reads to STDOUT
-        // otherwise write interleaved single output
-        if(mOptions->merge.enabled)
-            fwrite(mergedOutput->c_str(), 1, mergedOutput->length(), stdout);
-        else
-            fwrite(singleOutput->c_str(), 1, singleOutput->length(), stdout);
-    } else if(mOptions->split.enabled) {
+    if(mOptions->split.enabled) {
         // split output by each worker thread
         if(!mOptions->out1.empty()) 
             config->getWriter1()->writeString(outstr1);

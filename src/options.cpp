@@ -94,6 +94,17 @@ bool Options::validate() {
         check_file_valid(in2);
     }
 
+    if(outputToSTDOUT) {
+        if(!out1.empty()) {
+            cerr << "In STDOUT mode, ignore the out1 filename " << out1 << endl;
+            out1 = "";
+        }
+        if(!out2.empty()) {
+            cerr << "In STDOUT mode, ignore the out2 filename " << out2 << endl;
+            out2 = "";
+        }
+    }
+
     if(merge.enabled) {
         if(split.enabled) {
             error_exit("splitting mode cannot work with merging mode");
