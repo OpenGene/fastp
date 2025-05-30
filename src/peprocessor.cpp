@@ -80,12 +80,12 @@ void PairEndProcessor::initOutput() {
     if(!mOptions->overlappedOut.empty())
         mOverlappedWriter = new WriterThread(mOptions, mOptions->overlappedOut);
 
-    if(mOptions->out1.empty() && !mOptions->outputToSTDOUT)
+    if(mOptions->out1.empty())
         return;
     
-    mLeftWriter = new WriterThread(mOptions, mOptions->out1, mOptions->outputToSTDOUT);
-    if(!mOptions->out2.empty() && !mOptions->outputToSTDOUT)
-        mRightWriter = new WriterThread(mOptions, mOptions->out2, mOptions->outputToSTDOUT);
+    mLeftWriter = new WriterThread(mOptions, mOptions->out1);
+    if(!mOptions->out2.empty())
+        mRightWriter = new WriterThread(mOptions, mOptions->out2);
 }
 
 void PairEndProcessor::closeOutput() {
@@ -360,11 +360,10 @@ void PairEndProcessor::recycleToPool2(int tid, Read* r) {
 bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config){
     if(leftPack->count != rightPack->count) {
         cerr << endl;
-        cerr << "WARNING: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
+        cerr << "WARNNIG: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
         cerr << "Read1 pack size: " << leftPack->count << endl;
         cerr << "Read2 pack size: " << rightPack->count << endl;
-        cerr << endl;
-	error_exit("input files don't contain identical amount of reads");
+        cerr << "Ignore the unmatched reads" << endl << endl;
     }
     int tid = config->getThreadId();
 
@@ -461,10 +460,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
             if(ov.overlapped) {
                 Read* overlappedRead = new Read(r1->mName, new string(r1->mSeq->substr(max(0,ov.offset)), ov.overlap_len), r1->mStrand, new string(r1->mQuality->substr(max(0,ov.offset)), ov.overlap_len));
                 overlappedRead->appendToString(overlappedOut);
-                overlappedRead->mName = nullptr;
-                overlappedRead->mStrand = nullptr;
-                delete overlappedRead;
-                //recycleToPool1(tid, overlappedRead);
+                recycleToPool1(tid, overlappedRead);
             }
         }
 
@@ -600,7 +596,15 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         }
     }
 
-    if(mOptions->split.enabled) {
+    if(mOptions->outputToSTDOUT) {
+        // STDOUT output
+        // if it's merging mode, write the merged reads to STDOUT
+        // otherwise write interleaved single output
+        if(mOptions->merge.enabled)
+            fwrite(mergedOutput->c_str(), 1, mergedOutput->length(), stdout);
+        else
+            fwrite(singleOutput->c_str(), 1, singleOutput->length(), stdout);
+    } else if(mOptions->split.enabled) {
         // split output by each worker thread
         if(!mOptions->out1.empty()) 
             config->getWriter1()->writeString(outstr1);

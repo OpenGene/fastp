@@ -326,7 +326,8 @@ Read* FastqReader::read(){
 	if (strand->empty() || (*strand)[0]!='+') {
 		cerr << *name << endl;
 		cerr << "Expected '+', got " << *strand << endl;
-		error_exit("'+' expected");
+		cerr << "Your FASTQ may be invalid, please check the tail of your FASTQ file" << endl;
+		return NULL;
 	}
 
 	if(quality->length() != sequence->length()) {
@@ -335,7 +336,7 @@ Read* FastqReader::read(){
 		cerr << *sequence << endl;
 		cerr << *strand << endl;
 		cerr << *quality << endl;
-		error_exit("sequence and quality have different length");
+		cerr << "Your FASTQ may be invalid, please check the tail of your FASTQ file" << endl;
 		return NULL;
 	}
 
