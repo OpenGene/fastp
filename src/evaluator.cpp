@@ -577,13 +577,14 @@ string Evaluator::evalAdapterAndReadNum(long& readNum, bool isR2) {
 string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records, int keylen) {
     // we have to shift last cycle for evaluation since it is so noisy, especially for Illumina data
     const int shiftTail = max(1, mOptions->trim.tail1);
+    const int MAX_SEARCH_LENGTH = 500;
     NucleotideTree forwardTree(mOptions);
     // forward search
     for(int i=0; i<records; i++) {
         Read* r = loadedReads[i];
         const char* data = r->mSeq->c_str();
         int key = -1;
-        for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
+        for(int pos = 20; pos <= r->length()-keylen-shiftTail && pos <MAX_SEARCH_LENGTH; pos++) {
             key = seq2int(r->mSeq, pos, keylen, key);
             if(key == seed) {
                 forwardTree.addSeq(r->mSeq->substr(pos+keylen, r->length()-keylen-shiftTail-pos));
@@ -599,7 +600,7 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
         Read* r = loadedReads[i];
         const char* data = r->mSeq->c_str();
         int key = -1;
-        for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
+        for(int pos = 20; pos <= r->length()-keylen-shiftTail && pos <MAX_SEARCH_LENGTH; pos++) {
             key = seq2int(r->mSeq, pos, keylen, key);
             if(key == seed) {
                 string seq =  r->mSeq->substr(0, pos);
