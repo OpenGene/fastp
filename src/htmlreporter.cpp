@@ -334,7 +334,12 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     //ofs << "<div class='section_title' onclick=showOrHide('before_filtering')><a name='summary'>Before filtering</a></div>\n";
     //ofs << "<div id='before_filtering'>\n";
 
-    ofs << "<div class='section_title' onclick=showOrHide('quality_stat')><a name='summary'>Quality statistics</a></div>\n";
+    ofs << "<div class='section_title' onclick=showOrHide('quality_stat')><a name='summary'>Filtering statistics</a>";
+    if(mOptions->out1.empty() && ! mOptions->outputToSTDOUT) {
+        // no output, we give a hint here for clarification
+        ofs << "<font size=-2> (although no output file specified, the filtered statistics are still presented here) </font>" << endl;
+    }
+    ofs << "</div>\n";
     ofs << "<table id='quality_stat' class='section_table'>\n";
 
     string postRead1Name = "read1";
