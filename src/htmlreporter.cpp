@@ -331,36 +331,109 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     printSummary(ofs, result, preStats1, postStats1, preStats2, postStats2);
 
     ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title' onclick=showOrHide('before_filtering')><a name='summary'>Before filtering</a></div>\n";
-    ofs << "<div id='before_filtering'>\n";
+    //ofs << "<div class='section_title' onclick=showOrHide('before_filtering')><a name='summary'>Before filtering</a></div>\n";
+    //ofs << "<div id='before_filtering'>\n";
 
+    ofs << "<div class='section_title' onclick=showOrHide('quality_stat')><a name='summary'>Quality statistics</a></div>\n";
+    ofs << "<table id='quality_stat' class='section_table'>\n";
+
+    string postRead1Name = "read1";
+    if(mOptions->merge.enabled)
+        postRead1Name = "merged";
+
+    // base quality scores
+    ofs << "<tr><td>\n";
     if(preStats1) {
-        preStats1 -> reportHtml(ofs, "Before filtering", "read1");
+        preStats1 -> reportHtmlQuality(ofs, "Before filtering", "read1");
     }
-
-    if(preStats2) {
-        preStats2 -> reportHtml(ofs, "Before filtering", "read2");
-    }
-
-    ofs << "</div>\n";
-    ofs << "</div>\n";
-
-    ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title' onclick=showOrHide('after_filtering')><a name='summary'>After filtering</a></div>\n";
-    ofs << "<div id='after_filtering'>\n";
-
+    ofs << "</td><td>\n";
     if(postStats1) {
-        string name = "read1";
-        if(mOptions->merge.enabled)
-            name = "merged";
-        postStats1 -> reportHtml(ofs, "After filtering", name);
+        postStats1 -> reportHtmlQuality(ofs, "After filtering", postRead1Name);
     }
+    ofs << "</td></tr>\n";
 
+    ofs << "<tr><td>\n";
+    if(preStats2) {
+        preStats2 -> reportHtmlQuality(ofs, "Before filtering", "read2");
+    }
+    ofs << "</td><td>\n";
     if(postStats2 && !mOptions->merge.enabled) {
-        postStats2 -> reportHtml(ofs, "After filtering", "read2");
+        postStats2 -> reportHtmlQuality(ofs, "After filtering", "read2");
+    }
+    ofs << "</td></tr>\n";
+
+    // base contents
+    ofs << "<tr style='height:20px;background:#999999;'></tr>\n";
+    ofs << "<tr><td>\n";
+    if(preStats1) {
+        preStats1 -> reportHtmlContents(ofs, "Before filtering", "read1");
+    }
+    ofs << "</td><td>\n";
+    if(postStats1) {
+        postStats1 -> reportHtmlContents(ofs, "After filtering", postRead1Name);
+    }
+    ofs << "</td></tr>\n";
+
+    ofs << "<tr><td>\n";
+    if(preStats2) {
+        preStats2 -> reportHtmlContents(ofs, "Before filtering", "read2");
+    }
+    ofs << "</td><td>\n";
+    if(postStats2 && !mOptions->merge.enabled) {
+        postStats2 -> reportHtmlContents(ofs, "After filtering", "read2");
+    }
+    ofs << "</td></tr>\n";
+
+    // KMER
+    ofs << "<tr style='height:20px;background:#999999;'></tr>\n";
+    ofs << "<tr><td>\n";
+    if(preStats1) {
+        preStats1 -> reportHtmlKMER(ofs, "Before filtering", "read1");
+    }
+    ofs << "</td><td>\n";
+    if(postStats1) {
+        postStats1 -> reportHtmlKMER(ofs, "After filtering", postRead1Name);
+    }
+    ofs << "</td></tr>\n";
+
+    ofs << "<tr><td>\n";
+    if(preStats2) {
+        preStats2 -> reportHtmlKMER(ofs, "Before filtering", "read2");
+    }
+    ofs << "</td><td>\n";
+    if(postStats2 && !mOptions->merge.enabled) {
+        postStats2 -> reportHtmlKMER(ofs, "After filtering", "read2");
+    }
+    ofs << "</td></tr>\n";
+
+    // over represented seqs
+    if(mOptions->overRepAnalysis.enabled) {
+        ofs << "<tr style='height:20px;'></tr>\n";
+        ofs << "<tr style='vertical-align: top;'><td>\n";
+        if(preStats1) {
+            preStats1 -> reportHtmlORA(ofs, "Before filtering", "read1");
+        }
+        ofs << "</td><td>\n";
+        if(postStats1) {
+            postStats1 -> reportHtmlORA(ofs, "After filtering", postRead1Name);
+        }
+        ofs << "</td></tr>\n";
+
+        ofs << "<tr style='vertical-align: top;'><td>\n";
+        if(preStats2) {
+            preStats2 -> reportHtmlORA(ofs, "Before filtering", "read2");
+        }
+        ofs << "</td><td>\n";
+        if(postStats2 && !mOptions->merge.enabled) {
+            postStats2 -> reportHtmlORA(ofs, "After filtering", "read2");
+        }
+        ofs << "</td></tr>\n";
     }
 
-    ofs << "</div>\n";
+
+    ofs << "</table>\n";
+
+    //ofs << "</div>\n";
     ofs << "</div>\n";
 
     printFooter(ofs);
@@ -391,6 +464,7 @@ void HtmlReporter::printCSS(ofstream& ofs){
     ofs << ".figure {width:800px;height:600px;}" << endl;
     ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}" << endl;
     ofs << ".section_title {color:#ffffff;font-size:20px;padding:5px;text-align:left;background:#663355; margin-top:10px;}" << endl;
+    ofs << ".section_table {width:100%;}" << endl;
     ofs << ".subsection_title {font-size:16px;padding:5px;margin-top:10px;text-align:left;color:#663355}" << endl;
     ofs << "#container {text-align:center;padding:3px 3px 3px 10px;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << endl;
     ofs << ".menu_item {text-align:left;padding-top:5px;font-size:18px;}" << endl;
