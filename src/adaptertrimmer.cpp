@@ -89,6 +89,7 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
     else if(alen >= 8)
         start = -2;
     // we start from negative numbers since the Illumina adapter dimer usually have the first A skipped as A-tailing
+    // try exact match with hamming distance (no insertion of deletion)
     for(pos = start; pos<rlen-matchReq; pos++) {
         int cmplen = min(rlen - pos, alen);
         int allowedMismatch = cmplen/allowOneMismatchForEach;
@@ -110,6 +111,41 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
 
     }
 
+    // if failed to exact match, we try one gap
+    // to lower computational cost, we only allow one gap, and it's much enough for short reads
+    // we try insertion in the sequence
+    bool hasInsertion = false;
+    if(!found) {
+        for(pos = 0; pos<rlen-matchReq-1; pos++) {
+            int cmplen = min(rlen - pos - 1, alen);
+            int allowedMismatch = cmplen/allowOneMismatchForEach -1;
+            bool matched = matchWithOneInsertion(rdata, adata, cmplen, allowedMismatch);
+            if(matched) {
+                found = true;
+                hasInsertion = true;
+                //cerr << ".";
+                break;
+            }
+        }
+    }
+
+    // if failed to exact match, and failed to match with one insertion in sequence
+    // we then try deletion in the sequence
+    bool hasDeletion = false;
+    if(!found) {
+        for(pos = 0; pos<rlen-matchReq; pos++) {
+            int cmplen = min(rlen - pos, alen - 1);
+            int allowedMismatch = cmplen/allowOneMismatchForEach -1;
+            bool matched = matchWithOneInsertion(adata, rdata, cmplen, allowedMismatch);
+            if(matched) {
+                found = true;
+                hasDeletion = true;
+                //cerr << "|";
+                break;
+            }
+        }
+    }
+
     if(found) {
         if(pos < 0) {
             string adapter = adapterseq.substr(0, alen+pos);
@@ -127,6 +163,52 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
             }
         }
         return true;
+    }
+
+    return false;
+}
+
+bool AdapterTrimmer::matchWithOneInsertion(const char* insData, const char* normalData, int cmplen, int diffLimit) {
+    // accumlated mismatches from left/right
+    int accMismatchFromLeft[cmplen];
+    int accMismatchFromRight[cmplen];
+
+    // accMismatchFromLeft[0]: head vs. head
+    // accMismatchFromRight[cmplen-1]: tail vs. tail
+    accMismatchFromLeft[0] = insData[0] == normalData[0] ? 0 : 1;
+    accMismatchFromRight[cmplen-1] = insData[cmplen] == normalData[cmplen-1] ? 0 : 1;
+    for(int i=1; i<cmplen; i++) {
+        if(insData[i] != normalData[i])
+            accMismatchFromLeft[i] = accMismatchFromLeft[i-1]+1;
+        else
+            accMismatchFromLeft[i] = accMismatchFromLeft[i-1];
+        
+        if(accMismatchFromLeft[i] + accMismatchFromRight[cmplen-1] >diffLimit)
+            break;
+    }
+    for(int i=cmplen - 2; i>=0; i--) {
+        if(insData[i+1] != normalData[i])
+            accMismatchFromRight[i] = accMismatchFromRight[i+1]+1;
+        else
+            accMismatchFromRight[i] = accMismatchFromRight[i+1];
+        if(accMismatchFromRight[i] + accMismatchFromLeft[0]> diffLimit) {
+            for(int p=0; p<i; p++)
+                accMismatchFromRight[p] = diffLimit+1;
+            break;
+        }
+    }
+
+    //    insData:     XXXXXXXXXXXXXXXXXXXXXXX[i]XXXXXXXXXXXXXXXXXXXXXXXX
+    // normalData:     YYYYYYYYYYYYYYYYYYYYYYY   YYYYYYYYYYYYYYYYYYYYYYYY
+    //       diff:    accMismatchFromLeft[i-1] + accMismatchFromRight[i]
+
+    // insertion can be from pos = 1 to cmplen - 1
+    for(int i=1; i<cmplen; i++) {
+        if(accMismatchFromLeft[i-1] + accMismatchFromRight[cmplen-1]> diffLimit)
+            return false;
+        int diff = accMismatchFromLeft[i-1] + accMismatchFromRight[i];
+        if(diff <= diffLimit)
+            return true;
     }
 
     return false;
