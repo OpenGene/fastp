@@ -30,6 +30,7 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mMergedWriter = NULL;
     mFailedWriter = NULL;
     mOverlappedWriter = NULL;
+    shouldStopReading = false;
 
     mDuplicate = NULL;
     if(mOptions->duplicate.enabled) {
@@ -364,6 +365,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         cerr << "Read1 pack size: " << leftPack->count << endl;
         cerr << "Read2 pack size: " << rightPack->count << endl;
         cerr << "Ignore the unmatched reads" << endl << endl;
+        shouldStopReading = true;
     }
     int tid = config->getThreadId();
 
@@ -734,6 +736,8 @@ void PairEndProcessor::readerTask(bool isLeft)
     int count=0;
     bool needToBreak = false;
     while(true){
+        if(shouldStopReading)
+            break;
         Read* read = reader->read();
         if(!read || needToBreak){
             // the last pack
