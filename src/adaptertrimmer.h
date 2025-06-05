@@ -20,8 +20,6 @@ public:
     static bool trimBySequence(Read* r1, FilterResult* fr, string& adapter, bool isR2 = false, int matchReq = 4);
     static bool trimByMultiSequences(Read* r1, FilterResult* fr, vector<string>& adapterList, bool isR2 = false, bool incTrimmedCounter = true);
     static bool test();
-    static bool matchWithOneInsertion(const char* insData, const char* normalData, int cmplen, int diffLimit);
-
 
 };
 
