@@ -18,6 +18,7 @@ public:
     int offset;
     int overlap_len;
     int diff;
+    bool hasGap;
 };
 
 class OverlapAnalysis{

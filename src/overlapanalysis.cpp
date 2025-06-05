@@ -50,6 +50,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
             ov.offset = offset;
             ov.overlap_len = overlap_len;
             ov.diff = diff;
+            ov.hasGap = false;
             return ov;
         }
 
@@ -84,6 +85,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
             ov.offset = offset;
             ov.overlap_len = overlap_len;
             ov.diff = diff;
+            ov.hasGap = false;
             return ov;
         }
 
@@ -108,6 +110,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
                 ov.offset = offset;
                 ov.overlap_len = overlap_len;
                 ov.diff = diff;
+                ov.hasGap = true;
                 return ov;
             }
 
@@ -131,6 +134,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
                 ov.offset = offset;
                 ov.overlap_len = overlap_len;
                 ov.diff = diff;
+                ov.hasGap = true;
                 return ov;
             }
 
@@ -141,6 +145,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
     OverlapResult ov;
     ov.overlapped = false;
     ov.offset = ov.overlap_len = ov.diff = 0;
+    ov.hasGap = false;
     return ov;
 }
 
