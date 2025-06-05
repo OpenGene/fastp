@@ -17,7 +17,7 @@ public:
     // evaluate how many reads are stored in the input file
     void evaluateReadNum(long& readNum);
     string evalAdapterAndReadNum(long& readNum, bool isR2);
-    bool isTwoColorSystem();
+    bool isOneOrTwoColorSystem();
     void evaluateSeqLen();
     void evaluateOverRepSeqs();
     void computeOverRepSeq(string filename, map<string, long>& hotseqs, int seqLen);
