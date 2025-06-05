@@ -211,9 +211,10 @@ New filters are being implemented. If you have a new idea or new request, please
 # adapters
 Adapter trimming is enabled by default, but you can disable it by `-A` or `--disable_adapter_trimming`. Adapter sequences can be automatically detected for both PE/SE data.
 * For SE data, the adapter can be detected for most cases, but if `fastp` failed to find the adapter sequence, you can specify it by `-a` or `--adapter_sequence` option. If adapter sequence is specified, the auto detection is disabled.
-* For PE data, the adapters can be detected by per-read overlap analysis, which seeks for the overlap of each pair of reads. This method is robust and fast, so normally you don't have to input the adapter sequence. But you can still specify the adapter sequences for read1 by `--adapter_sequence`, and for read2 by `--adapter_sequence_r2`. In case `fastp` fails to find an overlap for one pair (i.e. due to low quality bases), it will use these sequences to trim adapters for read1 and read2 respectively.
+* For PE data, the adapters can be trimmed automatically by per-read overlap analysis, which seeks for the overlap of each pair of reads. This method is robust and fast, so normally you don't have to input the adapter sequence. But you can still specify the adapter sequences for read1 by `--adapter_sequence`, and for read2 by `--adapter_sequence_r2`. In case `fastp` fails to find an overlap for some pairs (i.e. due to low quality bases), it will use these sequences to trim adapters for read1 and read2 respectively.
 * For PE data, the auto adapter detection is disabled by default. You can enable it by specifing `--detect_adapter_for_pe`. If you want to obtain ultra-clean data, this option is strongly suggested.
-* For PE data, `fastp` will run a little slower if you specify the sequence adapters or enable the adapter auto-detection. But it may result in a slightly cleaner output (usually finds 0.1% to 0.5% more adapters), since the overlap analysis may fail due to sequencing errors or adapter dimers.
+* For PE data, `fastp` will run a little slower if you specify the sequence adapters or enable the adapter auto-detection. But it may result in a slightly cleaner output (usually finds 0.1% to 0.5% more adapters), since the overlap analysis may fail due to sequencing errors.
+* For PE data, you can specify `--allow_gap_overlap_trimming` to allow up to one gap when trim adapters by overlap analysis for PE data. By default no gap is allowed. This may take more time and usually have very limited effect (finds ~0.01% more adapters).
 * The most widely used adapters are Illumina TruSeq adapters. If your data is from the TruSeq library, `fastp` should be able to detect it successfully, otherwise you can add `--adapter_sequence=AGATCGGAAGAGCACACGTCTGAACTCCAGTCA --adapter_sequence_r2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT` to your command lines.
 * `fastp` contains some built-in known adapter sequences for better auto-detection. If you want to make some adapters to be a part of the built-in adapters, please file an issue or make a change in https://github.com/OpenGene/fastp/blob/master/src/knownadapters.h
 
@@ -408,6 +409,7 @@ options:
       --adapter_sequence_r2            the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence> (string [=])
       --adapter_fasta                  specify a FASTA file to trim both read1 and read2 (if PE) by all the sequences in this FASTA file (string [=])
       --detect_adapter_for_pe          enable adapter detection for PE data to get ultra-clean data. It takes more time to find just a little bit more adapters.
+      --allow_gap_overlap_trimming     allow up to one gap when trim adapters by overlap analysis for PE data. By default no gap is allowed.
 
   # global trimming options
   -f, --trim_front1                    trimming how many bases in front for read1, default is 0 (int [=0])

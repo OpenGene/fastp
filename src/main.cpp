@@ -58,7 +58,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("adapter_sequence_r2", 0, "the adapter for read2 (PE data only). This is used if R1/R2 are found not overlapped. If not specified, it will be the same as <adapter_sequence>", false, "auto");
     cmd.add<string>("adapter_fasta", 0, "specify a FASTA file to trim both read1 and read2 (if PE) by all the sequences in this FASTA file", false, "");
     cmd.add("detect_adapter_for_pe", 0, "enable adapter detection for PE data to get ultra-clean data. It takes more time to find just a little bit more adapters.");
-    cmd.add("allow_gap_overlap_trimming", 0, "allow up to one gap when trim adapters by overlap analysis.");
+    cmd.add("allow_gap_overlap_trimming", 0, "allow up to one gap when trim adapters by overlap analysis for PE data. By default no gap is allowed.");
 
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
