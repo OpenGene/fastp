@@ -212,6 +212,8 @@ string Evaluator::checkKnownAdapters(Read** reads, long num) {
     // for performance, up to 100k reads and 100M bases
     const int MAX_CHECK_READS = 100000;
     const int MAX_CHECK_BASES = MAX_CHECK_READS*1000;
+    // if we hit for 1000 times, then we exit
+    const int MAX_HIT = 1000;
 
     const int matchReq = 8;
     const int allowOneMismatchForEach = 16;
@@ -235,6 +237,8 @@ string Evaluator::checkKnownAdapters(Read** reads, long num) {
         checkedReads++;
         checkedBases+= rlen;
         if(checkedReads > MAX_CHECK_READS || checkedBases > MAX_CHECK_BASES)
+            break;
+        if(curMaxCount > MAX_HIT)
             break;
         for(iter = knownAdapters.begin(); iter!= knownAdapters.end(); iter++) {
             string adapter = iter->first;
