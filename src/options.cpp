@@ -289,9 +289,9 @@ bool Options::validate() {
 
     if(thread < 1) {
         thread = 1;
-    } else if(thread > 16) {
-        cerr << "WARNING: fastp uses up to 16 threads although you specified " << thread << endl;
-        thread = 16;
+    } else if(thread > 64) {
+        cerr << "WARNING: fastp uses up to 64 threads although you specified " << thread << endl;
+        thread = 64;
     }
 
     if(trim.front1 < 0 || trim.front1 > 30)
