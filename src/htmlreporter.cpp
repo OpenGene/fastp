@@ -457,7 +457,7 @@ void HtmlReporter::printHeader(ofstream& ofs){
 void HtmlReporter::printCSS(ofstream& ofs){
     ofs << "<style type=\"text/css\">" << endl;
     ofs << "td {border:1px solid #dddddd;padding:5px;font-size:12px;}" << endl;
-    ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}" << endl;
+    ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse;width:100%}" << endl;
     ofs << ".col1 {width:240px; font-weight:bold;}" << endl;
     ofs << ".adapter_col {width:500px; font-size:10px;}" << endl;
     ofs << "img {padding:30px;}" << endl;
@@ -466,7 +466,7 @@ void HtmlReporter::printCSS(ofstream& ofs){
     ofs << "a:visited {color: #999999}" << endl;
     ofs << ".alignleft {text-align:left;}" << endl;
     ofs << ".alignright {text-align:right;}" << endl;
-    ofs << ".figure {width:800px;height:600px;}" << endl;
+    ofs << ".figure {width:680px;height:600px;}" << endl;
     ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}" << endl;
     ofs << ".section_title {color:#ffffff;font-size:20px;padding:5px;text-align:left;background:#663355; margin-top:10px;}" << endl;
     ofs << ".section_table {width:100%;}" << endl;
