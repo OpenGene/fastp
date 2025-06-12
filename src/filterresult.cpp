@@ -370,19 +370,49 @@ void FilterResult::reportHtml(ofstream& ofs, long totalReads, long totalBases) {
 }
 
 void FilterResult::reportAdapterHtml(ofstream& ofs, long totalBases) {
-    ofs << "<div class='subsection_title' onclick=showOrHide('read1_adapters')>Adapter or bad ligation of read1</div>\n";
-    ofs << "<div id='read1_adapters'>\n";
-    outputAdaptersHtml(ofs, mAdapter1, totalBases);
-    ofs << "</div>\n";
-    if(mOptions->isPaired()) {
+    if(!mOptions->isPaired()) {
+        ofs << "<div class='subsection_title' onclick=showOrHide('read_adapters')>Adapter or bad ligation</div>\n";
+        ofs << "<div id='read_adapters'>\n";
+        outputAdaptersHtml(ofs, mAdapter1, totalBases);
+        ofs << "</div>\n";
+    } else {
+        int limitCount = min(getAdapterReportCount(mAdapter1), getAdapterReportCount(mAdapter2));
+        ofs << "<table> <tr> <td>\n";
+        ofs << "<div class='subsection_title' onclick=showOrHide('read1_adapters')>Adapter or bad ligation of read1</div>\n";
+        ofs << "<div id='read1_adapters'>\n";
+        outputAdaptersHtml(ofs, mAdapter1, totalBases, limitCount);
+        ofs << "</div>\n";
+        ofs << "</td><td>\n";
         ofs << "<div class='subsection_title' onclick=showOrHide('read2_adapters')>Adapter or bad ligation of read2</div>\n";
         ofs << "<div id='read2_adapters'>\n";
-        outputAdaptersHtml(ofs, mAdapter2, totalBases);
+        outputAdaptersHtml(ofs, mAdapter2, totalBases, limitCount);
         ofs << "</div>\n";
+        ofs << "</td></tr></table>\n";
     }
 }
 
-void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts, long totalBases) {
+int FilterResult::getAdapterReportCount(map<string, long, classcomp>& adapterCounts) {
+    map<string, long>::iterator iter;
+    long total = 0;
+    long totalAdapterBases = 0;
+    for(iter = adapterCounts.begin(); iter!=adapterCounts.end(); iter++) {
+        total += iter->second;
+        totalAdapterBases += iter->first.length() * iter->second;
+    }
+    if(total == 0)
+        return 0;
+    const double reportThreshold = 0.01;
+    const double dTotal = (double)total;
+    int count = 0;
+    for(iter = adapterCounts.begin(); iter!=adapterCounts.end(); iter++) {
+        if(iter->second /dTotal < reportThreshold )
+            continue;
+        count++;
+    }
+    return count;
+}
+
+int FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts, long totalBases, int limitCount) {
 
     map<string, long>::iterator iter;
 
@@ -402,7 +432,7 @@ void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp
     }
 
     if(total == 0)
-        return ;
+        return 0;
 
     ofs << "<table class='summary_table'>\n";
     ofs << "<tr><td class='adapter_col' style='font-size:14px;color:#ffffff;background:#556699'>" << "Sequence" << "</td><td class='col2' style='font-size:14px;color:#ffffff;background:#556699'>" << "Occurrences" << "</td></tr>\n";
@@ -410,6 +440,7 @@ void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp
     const double reportThreshold = 0.01;
     const double dTotal = (double)total;
     long reported = 0;
+    int count = 0;
     for(iter = adapterCounts.begin(); iter!=adapterCounts.end(); iter++) {
         if(iter->second /dTotal < reportThreshold )
             continue;
@@ -417,6 +448,9 @@ void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp
         ofs << "<tr><td class='adapter_col'>" << iter->first << "</td><td class='col2'>" << iter->second << "</td></tr>\n";
 
         reported += iter->second;
+        count++;
+        if(count >= limitCount && limitCount>0)
+            break;
     }
 
     long unreported = total - reported;
@@ -428,4 +462,5 @@ void FilterResult::outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp
         ofs << "<tr><td class='adapter_col'>" << tag << "</td><td class='col2'>" << unreported << "</td></tr>\n";
     }
     ofs << "</table>\n";
+    return count;
 }

@@ -1,6 +1,7 @@
 #include "htmlreporter.h"
 #include <chrono>
 #include <memory.h>
+#include "knownadapters.h"
 
 extern string command;
 
@@ -132,10 +133,18 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
         outputRow(ofs, "Insert size peak:", mInsertSizePeak);
     }
     if(mOptions->adapterCuttingEnabled()) {
-        if(!mOptions->adapter.detectedAdapter1.empty())
-            outputRow(ofs, "Detected read1 adapter:", mOptions->adapter.detectedAdapter1);
-        if(!mOptions->adapter.detectedAdapter2.empty())
-            outputRow(ofs, "Detected read2 adapter:", mOptions->adapter.detectedAdapter2);
+        map<string, string> knownAdapters = getKnownAdapter();
+        if(!mOptions->adapter.detectedAdapter1.empty()) {
+            string adapterinfo1 = mOptions->adapter.detectedAdapter1;
+            if(knownAdapters.count(adapterinfo1) > 0)
+                adapterinfo1 += " -" + knownAdapters[mOptions->adapter.detectedAdapter1];
+            outputRow(ofs, "Detected read1 adapter:", adapterinfo1);
+        } if(!mOptions->adapter.detectedAdapter2.empty()) {
+            string adapterinfo2 = mOptions->adapter.detectedAdapter2;
+            if(knownAdapters.count(adapterinfo2) > 0)
+                adapterinfo2 += " -" + knownAdapters[mOptions->adapter.detectedAdapter2];
+            outputRow(ofs, "Detected read2 adapter:", adapterinfo2);
+        }
     }
     ofs << "</table>\n";
     ofs << "</div>\n";
