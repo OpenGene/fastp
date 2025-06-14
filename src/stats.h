@@ -21,6 +21,7 @@ public:
     long getBases();
     long getQ20();
     long getQ30();
+    long getQ40();
     long getGCNumber();
     // by default the qualified qual score is Q20 ('5')
     void statRead(Read* r);
@@ -75,6 +76,7 @@ private:
     long *mCycleTotalBase;
     long *mCycleTotalQual;
     long *mKmer;
+    long mBaseQualHistogram[128];
 
     map<string, double*> mQualityCurves;
     map<string, double*> mContentCurves;
@@ -90,6 +92,7 @@ private:
     long mBaseContents[8];
     long mQ20Total;
     long mQ30Total;
+    long mQ40Total;
     bool summarized;
     long mKmerMax;
     long mKmerMin;

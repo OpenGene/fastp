@@ -70,6 +70,10 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     if(preStats2)
         pre_q30_bases += preStats2->getQ30();
 
+    long pre_q40_bases = preStats1->getQ40();
+    if(preStats2)
+        pre_q40_bases += preStats2->getQ40();
+
     long pre_total_gc = preStats1->getGCNumber();
     if(preStats2)
         pre_total_gc += preStats2->getGCNumber();
@@ -89,6 +93,10 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     long post_q30_bases = postStats1->getQ30();
     if(postStats2)
         post_q30_bases += postStats2->getQ30();
+
+    long post_q40_bases = postStats1->getQ40();
+    if(postStats2)
+        post_q40_bases += postStats2->getQ40();
 
     long post_total_gc = postStats1->getGCNumber();
     if(postStats2)
@@ -156,6 +164,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     outputRow(ofs, "total bases:", formatNumber(pre_total_bases));
     outputRow(ofs, "Q20 bases:", formatNumber(pre_q20_bases) + " (" + getPercents(pre_q20_bases,pre_total_bases) + "%)");
     outputRow(ofs, "Q30 bases:", formatNumber(pre_q30_bases) + " (" + getPercents(pre_q30_bases, pre_total_bases) + "%)");
+    outputRow(ofs, "Q40 bases:", formatNumber(pre_q40_bases) + " (" + getPercents(pre_q40_bases, pre_total_bases) + "%)");
     outputRow(ofs, "GC content:", getPercents(pre_total_gc,pre_total_bases) + "%");
     ofs << "</table>\n";
     ofs << "</div>\n";
@@ -167,6 +176,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     outputRow(ofs, "total bases:", formatNumber(post_total_bases));
     outputRow(ofs, "Q20 bases:", formatNumber(post_q20_bases) + " (" + getPercents(post_q20_bases, post_total_bases) + "%)");
     outputRow(ofs, "Q30 bases:", formatNumber(post_q30_bases) + " (" + getPercents(post_q30_bases, post_total_bases) + "%)");
+    outputRow(ofs, "Q40 bases:", formatNumber(post_q40_bases) + " (" + getPercents(post_q40_bases, post_total_bases) + "%)");
     outputRow(ofs, "GC content:", getPercents(post_total_gc,post_total_bases) + "%");
     ofs << "</table>\n";
     ofs << "</div>\n";
