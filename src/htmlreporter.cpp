@@ -459,15 +459,16 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     }
     ofs << "</td></tr>\n";
 
-    ofs << "<tr><td>\n";
+
     if(preStats2) {
+        ofs << "<tr><td>\n";
         preStats2 -> reportHtmlQuality(ofs, "Before filtering", "read2");
+        ofs << "</td><td>\n";
+        if(!mOptions->merge.enabled) {
+            postStats2 -> reportHtmlQuality(ofs, "After filtering", "read2");
+        }
+        ofs << "</td></tr>\n";
     }
-    ofs << "</td><td>\n";
-    if(postStats2 && !mOptions->merge.enabled) {
-        postStats2 -> reportHtmlQuality(ofs, "After filtering", "read2");
-    }
-    ofs << "</td></tr>\n";
 
     // quality histogram
     ofs << "<tr style='height:20px;background:#999999;'></tr>\n";
@@ -489,15 +490,15 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     }
     ofs << "</td></tr>\n";
 
-    ofs << "<tr><td>\n";
     if(preStats2) {
+        ofs << "<tr><td>\n";
         preStats2 -> reportHtmlContents(ofs, "Before filtering", "read2");
+        ofs << "</td><td>\n";
+        if(!mOptions->merge.enabled) {
+            postStats2 -> reportHtmlContents(ofs, "After filtering", "read2");
+        }
+        ofs << "</td></tr>\n";
     }
-    ofs << "</td><td>\n";
-    if(postStats2 && !mOptions->merge.enabled) {
-        postStats2 -> reportHtmlContents(ofs, "After filtering", "read2");
-    }
-    ofs << "</td></tr>\n";
 
     // KMER
     ofs << "<tr style='height:20px;background:#999999;'></tr>\n";
