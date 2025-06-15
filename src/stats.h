@@ -23,6 +23,7 @@ public:
     long getQ30();
     long getQ40();
     long getGCNumber();
+    long* getQualHist();
     // by default the qualified qual score is Q20 ('5')
     void statRead(Read* r);
 

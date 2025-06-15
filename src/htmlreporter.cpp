@@ -341,6 +341,89 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
     delete[] gc;
 }
 
+void HtmlReporter::reportQualHistogram(ofstream& ofs, string caption, Stats* stats1, Stats* stats2) {
+    long* hist1 = stats1->getQualHist();
+
+    string divName = replace(caption, " ", "_");
+    divName = replace(divName, ":", "_");
+
+    ofs << "<div class='figure' style='height:400' id='plot_" + divName + "'></div>\n";
+    ofs << "<script language='javascript'>" << endl;
+    ofs << " var hist1 = {" << endl;
+    ofs << " x: [";
+    bool first = true;
+    for(int q=33; q<128; q++) {
+        if(hist1[q]>0) {
+            if(!first) {
+                ofs << ",";
+            }
+            ofs << q-33;
+            first = false;
+        }
+    }
+    ofs << "]," << endl;
+    ofs << " y: [";
+    first = true;
+    for(int q=33; q<128; q++) {
+        if(hist1[q]>0) {
+            if(!first) {
+                ofs << ",";
+            }
+            ofs << hist1[q];
+            first = false;
+        }
+    }
+    ofs << "]," << endl;
+    ofs << "name: 'read1'," << endl;
+    ofs << "type: 'bar'," << endl;
+    ofs << "};" << endl;
+
+    if(stats2 != NULL) {
+        long* hist2 = stats2->getQualHist();
+        ofs << " var hist2 = {" << endl;
+        ofs << " x: [";
+        first = true;
+        for(int q=33; q<128; q++) {
+            if(hist2[q]>0) {
+                if(!first) {
+                    ofs << ",";
+                }
+                ofs << q-33;
+                first = false;
+            }
+        }
+        ofs << "]," << endl;
+        ofs << " y: [";
+        first = true;
+        for(int q=33; q<128; q++) {
+            if(hist2[q]>0) {
+                if(!first) {
+                    ofs << ",";
+                }
+                ofs << hist2[q];
+                first = false;
+            }
+        }
+        ofs << "]," << endl;
+        ofs << "name: 'read2'," << endl;
+        ofs << "type: 'bar'," << endl;
+        ofs << "};" << endl;
+    }
+
+    if(stats2 != NULL) {
+        ofs << "var data = [hist1, hist2];" << endl;
+    } else {
+        ofs << "var data = [hist1];" << endl;
+    }
+
+    ofs << "var layout = {barmode: 'group', ";
+    ofs << "title: '" << caption << "',";
+    ofs <<"xaxis:{title:'base quality score'}, yaxis:{title:'base count'}}; "<< endl;
+
+    ofs << "Plotly.newPlot('plot_" + divName + "', data, layout); " << endl;
+    ofs << "</script>" << endl;
+}
+
 void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
     ofstream ofs;
     ofs.open(mOptions->htmlFile, ifstream::out);
@@ -384,6 +467,14 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     if(postStats2 && !mOptions->merge.enabled) {
         postStats2 -> reportHtmlQuality(ofs, "After filtering", "read2");
     }
+    ofs << "</td></tr>\n";
+
+    // quality histogram
+    ofs << "<tr style='height:20px;background:#999999;'></tr>\n";
+    ofs << "<tr><td>\n";
+    reportQualHistogram(ofs, "Before filtering: quality score histogram", preStats1, preStats2);
+    ofs << "</td><td>\n";
+    reportQualHistogram(ofs, "After filtering: quality score histogram", postStats1, postStats2);
     ofs << "</td></tr>\n";
 
     // base contents

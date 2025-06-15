@@ -382,6 +382,10 @@ long Stats::getQ40() {
     return mQ40Total;
 }
 
+long* Stats::getQualHist() {
+    return mBaseQualHistogram;
+}
+
 long Stats::getGCNumber() {
     if(!summarized)
         summarize();

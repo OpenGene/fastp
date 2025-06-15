@@ -33,6 +33,7 @@ private:
     void printCSS(ofstream& ofs);
     void printJS(ofstream& ofs);
     void printFooter(ofstream& ofs);
+    void reportQualHistogram(ofstream& ofs, string caption, Stats* stats1, Stats* stats2 = NULL);
     void reportDuplication(ofstream& ofs);
     void reportInsertSize(ofstream& ofs, int isizeLimit);
     void printSummary(ofstream& ofs, FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2);
