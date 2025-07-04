@@ -161,14 +161,44 @@ def generate_summary_html(report_dir):
     # Collect all JSON report files
     json_files = [f for f in os.listdir(report_dir) if f.endswith('.json')]
     stats = []
+    mean_qual_curves = []
+    max_len_before = 0
+    max_len_after = 0
+    mean_qual_curves_r2 = []
+    max_len_before_r2 = 0
+    max_len_after_r2 = 0
     for jf in json_files:
         path = os.path.join(report_dir, jf)
         with open(path) as f:
             data = json.load(f)
             summary = data.get('summary', {})
-            # Extract before and after stats, fallback to 0 if missing
             before = summary.get('before_filtering', {})
             after = summary.get('after_filtering', {})
+            # Extract quality curves for read1
+            qual_curve_before = data.get('read1_before_filtering', {}).get('quality_curves', {}).get('mean', [])
+            qual_curve_after = data.get('read1_after_filtering', {}).get('quality_curves', {}).get('mean', [])
+            mean_qual_curves.append({
+                'file': jf.replace('.json', ''),
+                'curve_before': qual_curve_before,
+                'curve_after': qual_curve_after
+            })
+            if len(qual_curve_before) > max_len_before:
+                max_len_before = len(qual_curve_before)
+            if len(qual_curve_after) > max_len_after:
+                max_len_after = len(qual_curve_after)
+            # Extract quality curves for read2 if present
+            qual_curve_before_r2 = data.get('read2_before_filtering', {}).get('quality_curves', {}).get('mean', [])
+            qual_curve_after_r2 = data.get('read2_after_filtering', {}).get('quality_curves', {}).get('mean', [])
+            if qual_curve_before_r2 or qual_curve_after_r2:
+                mean_qual_curves_r2.append({
+                    'file': jf.replace('.json', ''),
+                    'curve_before': qual_curve_before_r2,
+                    'curve_after': qual_curve_after_r2
+                })
+                if len(qual_curve_before_r2) > max_len_before_r2:
+                    max_len_before_r2 = len(qual_curve_before_r2)
+                if len(qual_curve_after_r2) > max_len_after_r2:
+                    max_len_after_r2 = len(qual_curve_after_r2)
             stat = {
                 'file': jf.replace('.json', ''),
                 'total_reads_before': before.get('total_reads', 0),
@@ -202,26 +232,14 @@ def generate_summary_html(report_dir):
         a { color: #2980b9; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .chart-container { width: 100%; max-width: 900px; margin: 2em auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+        .row-charts-table { width: 100%; margin-bottom: 2em; background: none; border: none; }
+        .row-charts-table td { border: none; vertical-align: top; width: 50%; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <h1>FASTQ Aggregate Summary</h1>
-    <div class="chart-container">
-        <canvas id="readsChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="basesChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="q20Chart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="q30Chart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="gcChart"></canvas>
-    </div>
     <table>
         <thead>
             <tr>
@@ -259,6 +277,34 @@ def generate_summary_html(report_dir):
     html += '''
         </tbody>
     </table>
+    <table class="row-charts-table">
+        <tr>
+            <td><div id="meanQualPlotBefore" style="width:100%;height:400px;"></div></td>
+            <td><div id="meanQualPlotAfter" style="width:100%;height:400px;"></div></td>
+        </tr>
+'''
+    if mean_qual_curves_r2:
+        html += '        <tr>\n'
+        html += '            <td><div id="meanQualPlotBeforeR2" style="width:100%;height:400px;"></div></td>\n'
+        html += '            <td><div id="meanQualPlotAfterR2" style="width:100%;height:400px;"></div></td>\n'
+        html += '        </tr>\n'
+    html += '    </table>\n'
+    html += '''
+    <div class="chart-container">
+        <canvas id="readsChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="basesChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="q20Chart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="q30Chart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="gcChart"></canvas>
+    </div>
     <script>
         const files = ''' + json.dumps([s['file'] for s in stats]) + ''';
         const totalReadsBefore = ''' + json.dumps([s['total_reads_before'] for s in stats]) + ''';
@@ -271,6 +317,93 @@ def generate_summary_html(report_dir):
         const q30After = ''' + json.dumps([s['q30_rate_after'] for s in stats]) + ''';
         const gcBefore = ''' + json.dumps([s['gc_content_before'] for s in stats]) + ''';
         const gcAfter = ''' + json.dumps([s['gc_content_after'] for s in stats]) + ''';
+        // Plotly mean quality curves (before)
+        const meanQualCurves = ''' + json.dumps(mean_qual_curves) + ''';
+        const maxLenBefore = ''' + str(max_len_before) + ''';
+        const maxLenAfter = ''' + str(max_len_after) + ''';
+        const qualLabelsBefore = Array.from({length: maxLenBefore}, (_, i) => i + 1);
+        const qualLabelsAfter = Array.from({length: maxLenAfter}, (_, i) => i + 1);
+        const plotlyTracesBefore = meanQualCurves.map((item, idx) => {
+            const before = item.curve_before || [];
+            const beforePad = before.concat(Array(maxLenBefore - before.length).fill(null));
+            return {
+                x: qualLabelsBefore,
+                y: beforePad,
+                mode: 'lines',
+                name: item.file,
+                line: { width: 2 }
+            };
+        });
+        Plotly.newPlot('meanQualPlotBefore', plotlyTracesBefore, {
+            title: 'Mean Quality Curve (Read1, Before Filtering)',
+            xaxis: { title: '' },
+            yaxis: { title: 'Mean Quality', rangemode: 'tozero' },
+            legend: { orientation: 'h' },
+            margin: { t: 50, l: 60, r: 30, b: 60 }
+        }, {responsive: true});
+        // Plotly mean quality curves (after)
+        const plotlyTracesAfter = meanQualCurves.map((item, idx) => {
+            const after = item.curve_after || [];
+            const afterPad = after.concat(Array(maxLenAfter - after.length).fill(null));
+            return {
+                x: qualLabelsAfter,
+                y: afterPad,
+                mode: 'lines',
+                name: item.file,
+                line: { width: 2 }
+            };
+        });
+        Plotly.newPlot('meanQualPlotAfter', plotlyTracesAfter, {
+            title: 'Mean Quality Curve (Read1, After Filtering)',
+            xaxis: { title: '' },
+            yaxis: { title: 'Mean Quality', rangemode: 'tozero' },
+            legend: { orientation: 'h' },
+            margin: { t: 50, l: 60, r: 30, b: 60 }
+        }, {responsive: true});
+        // Plotly mean quality curves for read2 (if any)
+        const meanQualCurvesR2 = ''' + json.dumps(mean_qual_curves_r2) + ''';
+        const maxLenBeforeR2 = ''' + str(max_len_before_r2) + ''';
+        const maxLenAfterR2 = ''' + str(max_len_after_r2) + ''';
+        if (meanQualCurvesR2.length > 0) {
+            const qualLabelsBeforeR2 = Array.from({length: maxLenBeforeR2}, (_, i) => i + 1);
+            const qualLabelsAfterR2 = Array.from({length: maxLenAfterR2}, (_, i) => i + 1);
+            const plotlyTracesBeforeR2 = meanQualCurvesR2.map((item, idx) => {
+                const before = item.curve_before || [];
+                const beforePad = before.concat(Array(maxLenBeforeR2 - before.length).fill(null));
+                return {
+                    x: qualLabelsBeforeR2,
+                    y: beforePad,
+                    mode: 'lines',
+                    name: item.file,
+                    line: { width: 2 }
+                };
+            });
+            Plotly.newPlot('meanQualPlotBeforeR2', plotlyTracesBeforeR2, {
+                title: 'Mean Quality Curve (Read2, Before Filtering)',
+                xaxis: { title: '' },
+                yaxis: { title: 'Mean Quality', rangemode: 'tozero' },
+                legend: { orientation: 'h' },
+                margin: { t: 50, l: 60, r: 30, b: 60 }
+            }, {responsive: true});
+            const plotlyTracesAfterR2 = meanQualCurvesR2.map((item, idx) => {
+                const after = item.curve_after || [];
+                const afterPad = after.concat(Array(maxLenAfterR2 - after.length).fill(null));
+                return {
+                    x: qualLabelsAfterR2,
+                    y: afterPad,
+                    mode: 'lines',
+                    name: item.file,
+                    line: { width: 2 }
+                };
+            });
+            Plotly.newPlot('meanQualPlotAfterR2', plotlyTracesAfterR2, {
+                title: 'Mean Quality Curve (Read2, After Filtering)',
+                xaxis: { title: '' },
+                yaxis: { title: 'Mean Quality', rangemode: 'tozero' },
+                legend: { orientation: 'h' },
+                margin: { t: 50, l: 60, r: 30, b: 60 }
+            }, {responsive: true});
+        }
         // Reads chart (grouped bar)
         new Chart(document.getElementById('readsChart'), {
             type: 'bar',
