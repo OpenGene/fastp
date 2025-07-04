@@ -8,9 +8,10 @@ https://badges.debian.net/badges/debian/unstable/fastp/version.svg)](https://pac
 # fastp
 A tool designed to provide ultrafast all-in-one preprocessing and quality control for FastQ data.     
 
-This tool is designed for processing short reads (i.e. Illumina NovaSeq, MGI), if you are looking for tools to process long reads (i.e. Nanopore, PacBio, Cyclone), please use [fastplong](https://github.com/OpenGene/fastplong). To batch process multiple FASTQ files in a folder, use: https://github.com/OpenGene/parallel
+This tool is designed for processing short reads (i.e. Illumina NovaSeq, MGI), if you are looking for tools to process long reads (i.e. Nanopore, PacBio, Cyclone), please use [fastplong](https://github.com/OpenGene/fastplong).  
 
-Citation: Shifu Chen. 2023. Ultrafast one-pass FASTQ data preprocessing, quality control, and deduplication using fastp. iMeta 2: e107. https://doi.org/10.1002/imt2.107
+fastp supports batch processing of multiple FASTQ files in a folder, see - [batch processing](#batch-processing)
+
 
 - [features](#features)
 - [simple usage](#simple-usage)
@@ -52,6 +53,7 @@ Citation: Shifu Chen. 2023. Ultrafast one-pass FASTQ data preprocessing, quality
 - [duplication rate and deduplication](#duplication-rate-and-deduplication)
   - [duplication rate evaluation](#duplication-rate-evaluation)
   - [deduplication](#deduplication)
+- [batch processing](#batch-processing)
 - [all options](#all-options)
 - [citations](#citations)
 
@@ -376,6 +378,22 @@ fastp uses a hash algorithm to find the identical sequences. Due to the possible
 ## deduplication
 Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. When `--dedup` is enabled, the `dup_calc_accuracy` level is default to `3`, and it can be changed to any value of 1 ~ 6.
 
+# batch processing
+`parallel.py` is a python script to preprocess all FASTQ files within a folder in parallel. It will automatically couple the paired-end FASTQ files.  
+
+This script will generate an `overall.html` to present an aggregate summary for all processed FASTQ files.  
+
+## example
+```shell
+python parallel.py -i /path/to/input/folder -o /path/to/output/folder -a '-f 3 -t 2'
+```
+which means to
+. process all the FASTQ data in /path/to/input/folder
+. using fastp in PATH
+. with arguments -f 3 and -t 2, which means trimming 3bp in head and 2bp in tail
+. output all clean data and reports to another folder
+
+See `python parallel.py -h` for options.
 
 # all options
 ```shell
