@@ -164,9 +164,15 @@ def generate_summary_html(report_dir):
     mean_qual_curves = []
     max_len_before = 0
     max_len_after = 0
+    gc_curves = []
+    max_len_gc_before = 0
+    max_len_gc_after = 0
     mean_qual_curves_r2 = []
     max_len_before_r2 = 0
     max_len_after_r2 = 0
+    gc_curves_r2 = []
+    max_len_gc_before_r2 = 0
+    max_len_gc_after_r2 = 0
     for jf in json_files:
         path = os.path.join(report_dir, jf)
         with open(path) as f:
@@ -174,31 +180,53 @@ def generate_summary_html(report_dir):
             summary = data.get('summary', {})
             before = summary.get('before_filtering', {})
             after = summary.get('after_filtering', {})
-            # Extract quality curves for read1
+            # Extract quality and GC curves for read1
             qual_curve_before = data.get('read1_before_filtering', {}).get('quality_curves', {}).get('mean', [])
             qual_curve_after = data.get('read1_after_filtering', {}).get('quality_curves', {}).get('mean', [])
+            gc_curve_before = data.get('read1_before_filtering', {}).get('content_curves', {}).get('GC', [])
+            gc_curve_after = data.get('read1_after_filtering', {}).get('content_curves', {}).get('GC', [])
             mean_qual_curves.append({
                 'file': jf.replace('.json', ''),
                 'curve_before': qual_curve_before,
                 'curve_after': qual_curve_after
             })
+            gc_curves.append({
+                'file': jf.replace('.json', ''),
+                'curve_before': gc_curve_before,
+                'curve_after': gc_curve_after
+            })
             if len(qual_curve_before) > max_len_before:
                 max_len_before = len(qual_curve_before)
             if len(qual_curve_after) > max_len_after:
                 max_len_after = len(qual_curve_after)
-            # Extract quality curves for read2 if present
+            if len(gc_curve_before) > max_len_gc_before:
+                max_len_gc_before = len(gc_curve_before)
+            if len(gc_curve_after) > max_len_gc_after:
+                max_len_gc_after = len(gc_curve_after)
+            # Extract quality and GC curves for read2 if present
             qual_curve_before_r2 = data.get('read2_before_filtering', {}).get('quality_curves', {}).get('mean', [])
             qual_curve_after_r2 = data.get('read2_after_filtering', {}).get('quality_curves', {}).get('mean', [])
-            if qual_curve_before_r2 or qual_curve_after_r2:
+            gc_curve_before_r2 = data.get('read2_before_filtering', {}).get('content_curves', {}).get('GC', [])
+            gc_curve_after_r2 = data.get('read2_after_filtering', {}).get('content_curves', {}).get('GC', [])
+            if qual_curve_before_r2 or qual_curve_after_r2 or gc_curve_before_r2 or gc_curve_after_r2:
                 mean_qual_curves_r2.append({
                     'file': jf.replace('.json', ''),
                     'curve_before': qual_curve_before_r2,
                     'curve_after': qual_curve_after_r2
                 })
+                gc_curves_r2.append({
+                    'file': jf.replace('.json', ''),
+                    'curve_before': gc_curve_before_r2,
+                    'curve_after': gc_curve_after_r2
+                })
                 if len(qual_curve_before_r2) > max_len_before_r2:
                     max_len_before_r2 = len(qual_curve_before_r2)
                 if len(qual_curve_after_r2) > max_len_after_r2:
                     max_len_after_r2 = len(qual_curve_after_r2)
+                if len(gc_curve_before_r2) > max_len_gc_before_r2:
+                    max_len_gc_before_r2 = len(gc_curve_before_r2)
+                if len(gc_curve_after_r2) > max_len_gc_after_r2:
+                    max_len_gc_after_r2 = len(gc_curve_after_r2)
             stat = {
                 'file': jf.replace('.json', ''),
                 'total_reads_before': before.get('total_reads', 0),
@@ -288,6 +316,15 @@ def generate_summary_html(report_dir):
         html += '            <td><div id="meanQualPlotBeforeR2" style="width:100%;height:400px;"></div></td>\n'
         html += '            <td><div id="meanQualPlotAfterR2" style="width:100%;height:400px;"></div></td>\n'
         html += '        </tr>\n'
+    html += '        <tr>\n'
+    html += '            <td><div id="gcCurvePlotBefore" style="width:100%;height:400px;"></div></td>\n'
+    html += '            <td><div id="gcCurvePlotAfter" style="width:100%;height:400px;"></div></td>\n'
+    html += '        </tr>\n'
+    if gc_curves_r2:
+        html += '        <tr>\n'
+        html += '            <td><div id="gcCurvePlotBeforeR2" style="width:100%;height:400px;"></div></td>\n'
+        html += '            <td><div id="gcCurvePlotAfterR2" style="width:100%;height:400px;"></div></td>\n'
+        html += '        </tr>\n'
     html += '    </table>\n'
     html += '''
     <div class="chart-container">
@@ -360,13 +397,61 @@ def generate_summary_html(report_dir):
             legend: { orientation: 'h' },
             margin: { t: 50, l: 60, r: 30, b: 60 }
         }, {responsive: true});
-        // Plotly mean quality curves for read2 (if any)
+        // Plotly GC content curves (before)
+        const gcCurves = ''' + json.dumps(gc_curves) + ''';
+        const maxLenGCBefore = ''' + str(max_len_gc_before) + ''';
+        const maxLenGCAfter = ''' + str(max_len_gc_after) + ''';
+        const gcLabelsBefore = Array.from({length: maxLenGCBefore}, (_, i) => i + 1);
+        const gcLabelsAfter = Array.from({length: maxLenGCAfter}, (_, i) => i + 1);
+        const plotlyTracesGCBefore = gcCurves.map((item, idx) => {
+            const before = item.curve_before || [];
+            const beforePad = before.concat(Array(maxLenGCBefore - before.length).fill(null));
+            return {
+                x: gcLabelsBefore,
+                y: beforePad,
+                mode: 'lines',
+                name: item.file,
+                line: { width: 2, dash: 'dot' }
+            };
+        });
+        Plotly.newPlot('gcCurvePlotBefore', plotlyTracesGCBefore, {
+            title: 'GC Content Curve (Read1, Before Filtering)',
+            xaxis: { title: '' },
+            yaxis: { title: 'GC %', rangemode: 'tozero' },
+            legend: { orientation: 'h' },
+            margin: { t: 50, l: 60, r: 30, b: 60 }
+        }, {responsive: true});
+        // Plotly GC content curves (after)
+        const plotlyTracesGCAfter = gcCurves.map((item, idx) => {
+            const after = item.curve_after || [];
+            const afterPad = after.concat(Array(maxLenGCAfter - after.length).fill(null));
+            return {
+                x: gcLabelsAfter,
+                y: afterPad,
+                mode: 'lines',
+                name: item.file,
+                line: { width: 2, dash: 'dot' }
+            };
+        });
+        Plotly.newPlot('gcCurvePlotAfter', plotlyTracesGCAfter, {
+            title: 'GC Content Curve (Read1, After Filtering)',
+            xaxis: { title: '' },
+            yaxis: { title: 'GC %', rangemode: 'tozero' },
+            legend: { orientation: 'h' },
+            margin: { t: 50, l: 60, r: 30, b: 60 }
+        }, {responsive: true});
+        // Plotly mean quality and GC curves for read2 (if any)
         const meanQualCurvesR2 = ''' + json.dumps(mean_qual_curves_r2) + ''';
+        const gcCurvesR2 = ''' + json.dumps(gc_curves_r2) + ''';
         const maxLenBeforeR2 = ''' + str(max_len_before_r2) + ''';
         const maxLenAfterR2 = ''' + str(max_len_after_r2) + ''';
-        if (meanQualCurvesR2.length > 0) {
+        const maxLenGCBeforeR2 = ''' + str(max_len_gc_before_r2) + ''';
+        const maxLenGCAfterR2 = ''' + str(max_len_gc_after_r2) + ''';
+        if (meanQualCurvesR2.length > 0 || gcCurvesR2.length > 0) {
             const qualLabelsBeforeR2 = Array.from({length: maxLenBeforeR2}, (_, i) => i + 1);
             const qualLabelsAfterR2 = Array.from({length: maxLenAfterR2}, (_, i) => i + 1);
+            const gcLabelsBeforeR2 = Array.from({length: maxLenGCBeforeR2}, (_, i) => i + 1);
+            const gcLabelsAfterR2 = Array.from({length: maxLenGCAfterR2}, (_, i) => i + 1);
             const plotlyTracesBeforeR2 = meanQualCurvesR2.map((item, idx) => {
                 const before = item.curve_before || [];
                 const beforePad = before.concat(Array(maxLenBeforeR2 - before.length).fill(null));
@@ -400,6 +485,43 @@ def generate_summary_html(report_dir):
                 title: 'Mean Quality Curve (Read2, After Filtering)',
                 xaxis: { title: '' },
                 yaxis: { title: 'Mean Quality', rangemode: 'tozero' },
+                legend: { orientation: 'h' },
+                margin: { t: 50, l: 60, r: 30, b: 60 }
+            }, {responsive: true});
+            // GC content curves for read2
+            const plotlyTracesGCBeforeR2 = gcCurvesR2.map((item, idx) => {
+                const before = item.curve_before || [];
+                const beforePad = before.concat(Array(maxLenGCBeforeR2 - before.length).fill(null));
+                return {
+                    x: gcLabelsBeforeR2,
+                    y: beforePad,
+                    mode: 'lines',
+                    name: item.file,
+                    line: { width: 2, dash: 'dot' }
+                };
+            });
+            Plotly.newPlot('gcCurvePlotBeforeR2', plotlyTracesGCBeforeR2, {
+                title: 'GC Content Curve (Read2, Before Filtering)',
+                xaxis: { title: '' },
+                yaxis: { title: 'GC %', rangemode: 'tozero' },
+                legend: { orientation: 'h' },
+                margin: { t: 50, l: 60, r: 30, b: 60 }
+            }, {responsive: true});
+            const plotlyTracesGCAfterR2 = gcCurvesR2.map((item, idx) => {
+                const after = item.curve_after || [];
+                const afterPad = after.concat(Array(maxLenGCAfterR2 - after.length).fill(null));
+                return {
+                    x: gcLabelsAfterR2,
+                    y: afterPad,
+                    mode: 'lines',
+                    name: item.file,
+                    line: { width: 2, dash: 'dot' }
+                };
+            });
+            Plotly.newPlot('gcCurvePlotAfterR2', plotlyTracesGCAfterR2, {
+                title: 'GC Content Curve (Read2, After Filtering)',
+                xaxis: { title: '' },
+                yaxis: { title: 'GC %', rangemode: 'tozero' },
                 legend: { orientation: 'h' },
                 margin: { t: 50, l: 60, r: 30, b: 60 }
             }, {responsive: true});
