@@ -166,19 +166,24 @@ def generate_summary_html(report_dir):
         with open(path) as f:
             data = json.load(f)
             summary = data.get('summary', {})
-            # Extract stats, fallback to 0 if missing
-            total_reads = summary.get('before_filtering', {}).get('total_reads', 0)
-            q30_rate = summary.get('after_filtering', {}).get('q30_rate', 0)
-            gc_content = summary.get('after_filtering', {}).get('gc_content', 0)
-            file_name = jf.replace('.json', '')
-            html_report = file_name + '.html'
-            stats.append({
-                'file': file_name,
-                'total_reads': total_reads,
-                'q30_rate': q30_rate,
-                'gc_content': gc_content,
-                'html_report': html_report
-            })
+            # Extract before and after stats, fallback to 0 if missing
+            before = summary.get('before_filtering', {})
+            after = summary.get('after_filtering', {})
+            stat = {
+                'file': jf.replace('.json', ''),
+                'total_reads_before': before.get('total_reads', 0),
+                'total_reads_after': after.get('total_reads', 0),
+                'total_bases_before': before.get('total_bases', 0),
+                'total_bases_after': after.get('total_bases', 0),
+                'q20_rate_before': before.get('q20_rate', 0) * 100,
+                'q20_rate_after': after.get('q20_rate', 0) * 100,
+                'q30_rate_before': before.get('q30_rate', 0) * 100,
+                'q30_rate_after': after.get('q30_rate', 0) * 100,
+                'gc_content_before': before.get('gc_content', 0) * 100,
+                'gc_content_after': after.get('gc_content', 0) * 100,
+                'html_report': jf.replace('.json', '.html')
+            }
+            stats.append(stat)
     # Generate HTML
     html = '''
 <!DOCTYPE html>
@@ -206,6 +211,12 @@ def generate_summary_html(report_dir):
         <canvas id="readsChart"></canvas>
     </div>
     <div class="chart-container">
+        <canvas id="basesChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="q20Chart"></canvas>
+    </div>
+    <div class="chart-container">
         <canvas id="q30Chart"></canvas>
     </div>
     <div class="chart-container">
@@ -215,9 +226,16 @@ def generate_summary_html(report_dir):
         <thead>
             <tr>
                 <th>File</th>
-                <th>Total Reads</th>
-                <th>Q30 Rate (%)</th>
-                <th>GC Content (%)</th>
+                <th>Total Reads (Before)</th>
+                <th>Total Reads (After)</th>
+                <th>Total Bases (Before)</th>
+                <th>Total Bases (After)</th>
+                <th>Q20 Rate (Before)</th>
+                <th>Q20 Rate (After)</th>
+                <th>Q30 Rate (Before)</th>
+                <th>Q30 Rate (After)</th>
+                <th>GC Content (Before)</th>
+                <th>GC Content (After)</th>
                 <th>HTML Report</th>
             </tr>
         </thead>
@@ -226,9 +244,16 @@ def generate_summary_html(report_dir):
     for s in stats:
         html += f'<tr>'
         html += f'<td>{s["file"]}</td>'
-        html += f'<td>{s["total_reads"]:,}</td>'
-        html += f'<td>{s["q30_rate"]:.2f}</td>'
-        html += f'<td>{s["gc_content"]:.2f}</td>'
+        html += f'<td>{s["total_reads_before"]:,}</td>'
+        html += f'<td>{s["total_reads_after"]:,}</td>'
+        html += f'<td>{s["total_bases_before"]:,}</td>'
+        html += f'<td>{s["total_bases_after"]:,}</td>'
+        html += f'<td>{s["q20_rate_before"]:.2f}</td>'
+        html += f'<td>{s["q20_rate_after"]:.2f}</td>'
+        html += f'<td>{s["q30_rate_before"]:.2f}</td>'
+        html += f'<td>{s["q30_rate_after"]:.2f}</td>'
+        html += f'<td>{s["gc_content_before"]:.2f}</td>'
+        html += f'<td>{s["gc_content_after"]:.2f}</td>'
         html += f'<td><a href="{s["html_report"]}">View</a></td>'
         html += '</tr>'
     html += '''
@@ -236,57 +261,93 @@ def generate_summary_html(report_dir):
     </table>
     <script>
         const files = ''' + json.dumps([s['file'] for s in stats]) + ''';
-        const totalReads = ''' + json.dumps([s['total_reads'] for s in stats]) + ''';
-        const q30Rates = ''' + json.dumps([s['q30_rate'] for s in stats]) + ''';
-        const gcContents = ''' + json.dumps([s['gc_content'] for s in stats]) + ''';
-        // Reads chart
+        const totalReadsBefore = ''' + json.dumps([s['total_reads_before'] for s in stats]) + ''';
+        const totalReadsAfter = ''' + json.dumps([s['total_reads_after'] for s in stats]) + ''';
+        const totalBasesBefore = ''' + json.dumps([s['total_bases_before'] for s in stats]) + ''';
+        const totalBasesAfter = ''' + json.dumps([s['total_bases_after'] for s in stats]) + ''';
+        const q20Before = ''' + json.dumps([s['q20_rate_before'] for s in stats]) + ''';
+        const q20After = ''' + json.dumps([s['q20_rate_after'] for s in stats]) + ''';
+        const q30Before = ''' + json.dumps([s['q30_rate_before'] for s in stats]) + ''';
+        const q30After = ''' + json.dumps([s['q30_rate_after'] for s in stats]) + ''';
+        const gcBefore = ''' + json.dumps([s['gc_content_before'] for s in stats]) + ''';
+        const gcAfter = ''' + json.dumps([s['gc_content_after'] for s in stats]) + ''';
+        // Reads chart (grouped bar)
         new Chart(document.getElementById('readsChart'), {
             type: 'bar',
             data: {
                 labels: files,
-                datasets: [{
-                    label: 'Total Reads',
-                    data: totalReads,
-                    backgroundColor: '#3498db',
-                }]
+                datasets: [
+                    { label: 'Total Reads (Before)', data: totalReadsBefore, backgroundColor: '#95a5a6' },
+                    { label: 'Total Reads (After)', data: totalReadsAfter, backgroundColor: '#3498db' }
+                ]
             },
             options: {
-                plugins: { legend: { display: false } },
                 responsive: true,
+                plugins: { legend: { position: 'top' } },
                 scales: { y: { beginAtZero: true } }
             }
         });
-        // Q30 chart
+        // Bases chart (grouped bar)
+        new Chart(document.getElementById('basesChart'), {
+            type: 'bar',
+            data: {
+                labels: files,
+                datasets: [
+                    { label: 'Total Bases (Before)', data: totalBasesBefore, backgroundColor: '#dfe6e9' },
+                    { label: 'Total Bases (After)', data: totalBasesAfter, backgroundColor: '#636e72' }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+        // Q20 chart (grouped bar)
+        new Chart(document.getElementById('q20Chart'), {
+            type: 'bar',
+            data: {
+                labels: files,
+                datasets: [
+                    { label: 'Q20 Rate (Before)', data: q20Before, backgroundColor: '#fab1a0' },
+                    { label: 'Q20 Rate (After)', data: q20After, backgroundColor: '#e17055' }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true, max: 100 } }
+            }
+        });
+        // Q30 chart (grouped bar)
         new Chart(document.getElementById('q30Chart'), {
             type: 'bar',
             data: {
                 labels: files,
-                datasets: [{
-                    label: 'Q30 Rate (%)',
-                    data: q30Rates,
-                    backgroundColor: '#2ecc71',
-                }]
+                datasets: [
+                    { label: 'Q30 Rate (Before)', data: q30Before, backgroundColor: '#b2bec3' },
+                    { label: 'Q30 Rate (After)', data: q30After, backgroundColor: '#2ecc71' }
+                ]
             },
             options: {
-                plugins: { legend: { display: false } },
                 responsive: true,
+                plugins: { legend: { position: 'top' } },
                 scales: { y: { beginAtZero: true, max: 100 } }
             }
         });
-        // GC chart
+        // GC chart (grouped bar)
         new Chart(document.getElementById('gcChart'), {
             type: 'bar',
             data: {
                 labels: files,
-                datasets: [{
-                    label: 'GC Content (%)',
-                    data: gcContents,
-                    backgroundColor: '#e67e22',
-                }]
+                datasets: [
+                    { label: 'GC Content (Before)', data: gcBefore, backgroundColor: '#ffeaa7' },
+                    { label: 'GC Content (After)', data: gcAfter, backgroundColor: '#e67e22' }
+                ]
             },
             options: {
-                plugins: { legend: { display: false } },
                 responsive: true,
+                plugins: { legend: { position: 'top' } },
                 scales: { y: { beginAtZero: true, max: 100 } }
             }
         });
