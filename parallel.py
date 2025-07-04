@@ -133,7 +133,7 @@ def processDir(folder, options):
             if not os.path.exists(opt.report_dir):
                 os.makedirs(opt.report_dir)
         
-        report_file = os.path.join(opt.report_dir, os.path.basename(opt.read1_file).replace(opt.read1_flag, "report"))
+        report_file = os.path.join(opt.report_dir, os.path.basename(opt.read1_file).replace(opt.read1_flag, "pe"))
         cmd += " --html=" + report_file + ".html --json=" + report_file + ".json"
         
         commands.append(cmd)
@@ -287,19 +287,28 @@ def generate_summary_html(report_dir):
         </thead>
         <tbody>
 '''
+    def human_format(num):
+        if num >= 1e9:
+            return f"{num/1e9:.2f}G"
+        elif num >= 1e6:
+            return f"{num/1e6:.2f}M"
+        elif num >= 1e3:
+            return f"{num/1e3:.2f}K"
+        else:
+            return str(num)
     for s in stats:
         html += f'<tr>'
         html += f'<td>{s["file"]}</td>'
-        html += f'<td>{s["total_reads_before"]:,}</td>'
-        html += f'<td>{s["total_reads_after"]:,}</td>'
-        html += f'<td>{s["total_bases_before"]:,}</td>'
-        html += f'<td>{s["total_bases_after"]:,}</td>'
-        html += f'<td>{s["q20_rate_before"]:.2f}</td>'
-        html += f'<td>{s["q20_rate_after"]:.2f}</td>'
-        html += f'<td>{s["q30_rate_before"]:.2f}</td>'
-        html += f'<td>{s["q30_rate_after"]:.2f}</td>'
-        html += f'<td>{s["gc_content_before"]:.2f}</td>'
-        html += f'<td>{s["gc_content_after"]:.2f}</td>'
+        html += f'<td>{human_format(s["total_reads_before"])}</td>'
+        html += f'<td>{human_format(s["total_reads_after"])}</td>'
+        html += f'<td>{human_format(s["total_bases_before"])}</td>'
+        html += f'<td>{human_format(s["total_bases_after"])}</td>'
+        html += f'<td>{s["q20_rate_before"]:.2f}%</td>'
+        html += f'<td>{s["q20_rate_after"]:.2f}%</td>'
+        html += f'<td>{s["q30_rate_before"]:.2f}%</td>'
+        html += f'<td>{s["q30_rate_after"]:.2f}%</td>'
+        html += f'<td>{s["gc_content_before"]:.2f}%</td>'
+        html += f'<td>{s["gc_content_after"]:.2f}%</td>'
         html += f'<td><a href="{s["html_report"]}">View</a></td>'
         html += '</tr>'
     html += '''
@@ -328,9 +337,6 @@ def generate_summary_html(report_dir):
     html += '    </table>\n'
     html += '''
     <div class="chart-container">
-        <canvas id="readsChart"></canvas>
-    </div>
-    <div class="chart-container">
         <canvas id="basesChart"></canvas>
     </div>
     <div class="chart-container">
@@ -338,9 +344,6 @@ def generate_summary_html(report_dir):
     </div>
     <div class="chart-container">
         <canvas id="q30Chart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="gcChart"></canvas>
     </div>
     <script>
         const files = ''' + json.dumps([s['file'] for s in stats]) + ''';
@@ -411,7 +414,7 @@ def generate_summary_html(report_dir):
                 y: beforePad,
                 mode: 'lines',
                 name: item.file,
-                line: { width: 2, dash: 'dot' }
+                line: { width: 2 }
             };
         });
         Plotly.newPlot('gcCurvePlotBefore', plotlyTracesGCBefore, {
@@ -430,7 +433,7 @@ def generate_summary_html(report_dir):
                 y: afterPad,
                 mode: 'lines',
                 name: item.file,
-                line: { width: 2, dash: 'dot' }
+                line: { width: 2 }
             };
         });
         Plotly.newPlot('gcCurvePlotAfter', plotlyTracesGCAfter, {
@@ -497,7 +500,7 @@ def generate_summary_html(report_dir):
                     y: beforePad,
                     mode: 'lines',
                     name: item.file,
-                    line: { width: 2, dash: 'dot' }
+                    line: { width: 2 }
                 };
             });
             Plotly.newPlot('gcCurvePlotBeforeR2', plotlyTracesGCBeforeR2, {
@@ -515,7 +518,7 @@ def generate_summary_html(report_dir):
                     y: afterPad,
                     mode: 'lines',
                     name: item.file,
-                    line: { width: 2, dash: 'dot' }
+                    line: { width: 2 }
                 };
             });
             Plotly.newPlot('gcCurvePlotAfterR2', plotlyTracesGCAfterR2, {
@@ -526,22 +529,6 @@ def generate_summary_html(report_dir):
                 margin: { t: 50, l: 60, r: 30, b: 60 }
             }, {responsive: true});
         }
-        // Reads chart (grouped bar)
-        new Chart(document.getElementById('readsChart'), {
-            type: 'bar',
-            data: {
-                labels: files,
-                datasets: [
-                    { label: 'Total Reads (Before)', data: totalReadsBefore, backgroundColor: '#95a5a6' },
-                    { label: 'Total Reads (After)', data: totalReadsAfter, backgroundColor: '#3498db' }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true } }
-            }
-        });
         // Bases chart (grouped bar)
         new Chart(document.getElementById('basesChart'), {
             type: 'bar',
@@ -582,22 +569,6 @@ def generate_summary_html(report_dir):
                 datasets: [
                     { label: 'Q30 Rate (Before)', data: q30Before, backgroundColor: '#b2bec3' },
                     { label: 'Q30 Rate (After)', data: q30After, backgroundColor: '#2ecc71' }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true, max: 100 } }
-            }
-        });
-        // GC chart (grouped bar)
-        new Chart(document.getElementById('gcChart'), {
-            type: 'bar',
-            data: {
-                labels: files,
-                datasets: [
-                    { label: 'GC Content (Before)', data: gcBefore, backgroundColor: '#ffeaa7' },
-                    { label: 'GC Content (After)', data: gcAfter, backgroundColor: '#e67e22' }
                 ]
             },
             options: {
