@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This script is used to process FASTQ files in a folder in parallel.
-# It uses the fastp/fastplong command to preprocess the FASTQ files.
+# It uses the fastp command to preprocess the FASTQ files.
 # It can also generate a summary HTML report of the QC metrics.
 
 import os,sys
@@ -16,7 +16,7 @@ import json
 FASTP_PY_VERSION = "0.0.1"
 
 def parseCommand():
-    usage = "A python script to use fastp/fastplong to preprocess all FASTQ files within a folder"
+    usage = "A python script to use fastp to preprocess all FASTQ files within a folder"
     parser = OptionParser(usage = usage, version = FASTP_PY_VERSION)
     parser.add_option("-i", "--input_dir", dest = "input_dir", default = ".",
         help = "the folder contains the FASTQ files to be preprocessed, by default is current dir (.)")
@@ -25,7 +25,7 @@ def parseCommand():
     parser.add_option("-r", "--report_dir", dest = "report_dir", default = None,
         help = "the folder to store QC reports. If not specified, use out_dir if out_dir is specified, otherwise use input_dir.")
     parser.add_option("-c", "--command", dest = "command", default = None,
-        help = "the path to fastp/fastplong command, if not specified, then it will use 'fastp' in PATH")
+        help = "the path to fastp command, if not specified, then it will use 'fastp' in PATH")
     parser.add_option("-a", "--args", dest = "args", default = None,
         help = "the arguments that will be passed to fastp. Enclose in quotation marks. Like --args='-f 3 -t 3' ")
     parser.add_option("-p", "--parallel", dest = "parallel", default = None, type = "int",
@@ -109,7 +109,7 @@ def processDir(folder, options):
         if opt.command:
             cmd = opt.command
             if not os.path.exists(cmd):
-                print(f"Error: {cmd} not found, please specify the correct path to fastp/fastplong with -c option")
+                print(f"Error: {cmd} not found, please specify the correct path to fastp with -c option")
                 sys.exit(1)
         else:
             cmd = "fastp"
