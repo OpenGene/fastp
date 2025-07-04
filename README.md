@@ -379,21 +379,24 @@ fastp uses a hash algorithm to find the identical sequences. Due to the possible
 Since `v0.22.0`, fastp supports deduplication for FASTQ data. Specify `-D` or `--dedup` to enable this option. When `--dedup` is enabled, the `dup_calc_accuracy` level is default to `3`, and it can be changed to any value of 1 ~ 6.
 
 # batch processing
-`parallel.py` is a python script to preprocess all FASTQ files within a folder in parallel. It will automatically couple the paired-end FASTQ files.  
+[parallel.py](https://github.com/OpenGene/fastp/blob/master/parallel.py) is a script to preprocess all FASTQ files within a folder in parallel. It will automatically couple the paired-end FASTQ files.  
 
 This script will generate an `overall.html` to present an aggregate summary for all processed FASTQ files.  
 
 ## example
 ```shell
-python parallel.py -i /path/to/input/folder -o /path/to/output/folder -a '-f 3 -t 2'
+python parallel.py -i /path/to/input/folder -o /path/to/output/folder -r /path/to/reports/folder -a '-f 3 -t 2'
 ```
-which means to
+which means to  
+```
 . process all the FASTQ data in /path/to/input/folder
 . using fastp in PATH
 . with arguments -f 3 and -t 2, which means trimming 3bp in head and 2bp in tail
-. output all clean data and reports to another folder
+. output all clean data to /path/to/output/folder
+. output all HTML and JSON reports to /path/to/reports/folder
+```
 
-See `python parallel.py -h` for options.
+See `python parallel.py -h` for details.
 
 # all options
 ```shell
