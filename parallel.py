@@ -336,14 +336,8 @@ def generate_summary_html(report_dir):
         html += '        </tr>\n'
     html += '    </table>\n'
     html += '''
-    <div class="chart-container">
-        <canvas id="basesChart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="q20Chart"></canvas>
-    </div>
-    <div class="chart-container">
-        <canvas id="q30Chart"></canvas>
+    <div class="chart-container" style="width:100%; max-width:none;">
+        <canvas id="qRateChart" style="height:200px;"></canvas>
     </div>
     <script>
         const files = ''' + json.dumps([s['file'] for s in stats]) + ''';
@@ -355,8 +349,6 @@ def generate_summary_html(report_dir):
         const q20After = ''' + json.dumps([s['q20_rate_after'] for s in stats]) + ''';
         const q30Before = ''' + json.dumps([s['q30_rate_before'] for s in stats]) + ''';
         const q30After = ''' + json.dumps([s['q30_rate_after'] for s in stats]) + ''';
-        const gcBefore = ''' + json.dumps([s['gc_content_before'] for s in stats]) + ''';
-        const gcAfter = ''' + json.dumps([s['gc_content_after'] for s in stats]) + ''';
         // Plotly mean quality curves (before)
         const meanQualCurves = ''' + json.dumps(mean_qual_curves) + ''';
         const maxLenBefore = ''' + str(max_len_before) + ''';
@@ -371,7 +363,7 @@ def generate_summary_html(report_dir):
                 y: beforePad,
                 mode: 'lines',
                 name: item.file,
-                line: { width: 2 }
+                line: { width: 1 }
             };
         });
         Plotly.newPlot('meanQualPlotBefore', plotlyTracesBefore, {
@@ -390,7 +382,7 @@ def generate_summary_html(report_dir):
                 y: afterPad,
                 mode: 'lines',
                 name: item.file,
-                line: { width: 2 }
+                line: { width: 1 }
             };
         });
         Plotly.newPlot('meanQualPlotAfter', plotlyTracesAfter, {
@@ -414,7 +406,7 @@ def generate_summary_html(report_dir):
                 y: beforePad,
                 mode: 'lines',
                 name: item.file,
-                line: { width: 2 }
+                line: { width: 1 }
             };
         });
         Plotly.newPlot('gcCurvePlotBefore', plotlyTracesGCBefore, {
@@ -433,7 +425,7 @@ def generate_summary_html(report_dir):
                 y: afterPad,
                 mode: 'lines',
                 name: item.file,
-                line: { width: 2 }
+                line: { width: 1 }
             };
         });
         Plotly.newPlot('gcCurvePlotAfter', plotlyTracesGCAfter, {
@@ -463,7 +455,7 @@ def generate_summary_html(report_dir):
                     y: beforePad,
                     mode: 'lines',
                     name: item.file,
-                    line: { width: 2 }
+                    line: { width: 1 }
                 };
             });
             Plotly.newPlot('meanQualPlotBeforeR2', plotlyTracesBeforeR2, {
@@ -481,7 +473,7 @@ def generate_summary_html(report_dir):
                     y: afterPad,
                     mode: 'lines',
                     name: item.file,
-                    line: { width: 2 }
+                    line: { width: 1 }
                 };
             });
             Plotly.newPlot('meanQualPlotAfterR2', plotlyTracesAfterR2, {
@@ -500,7 +492,7 @@ def generate_summary_html(report_dir):
                     y: beforePad,
                     mode: 'lines',
                     name: item.file,
-                    line: { width: 2 }
+                    line: { width: 1 }
                 };
             });
             Plotly.newPlot('gcCurvePlotBeforeR2', plotlyTracesGCBeforeR2, {
@@ -518,7 +510,7 @@ def generate_summary_html(report_dir):
                     y: afterPad,
                     mode: 'lines',
                     name: item.file,
-                    line: { width: 2 }
+                    line: { width: 1 }
                 };
             });
             Plotly.newPlot('gcCurvePlotAfterR2', plotlyTracesGCAfterR2, {
@@ -529,44 +521,14 @@ def generate_summary_html(report_dir):
                 margin: { t: 50, l: 60, r: 30, b: 60 }
             }, {responsive: true});
         }
-        // Bases chart (grouped bar)
-        new Chart(document.getElementById('basesChart'), {
-            type: 'bar',
-            data: {
-                labels: files,
-                datasets: [
-                    { label: 'Total Bases (Before)', data: totalBasesBefore, backgroundColor: '#dfe6e9' },
-                    { label: 'Total Bases (After)', data: totalBasesAfter, backgroundColor: '#636e72' }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true } }
-            }
-        });
-        // Q20 chart (grouped bar)
-        new Chart(document.getElementById('q20Chart'), {
+        // Q20/Q30/Q40 chart (grouped bar)
+        new Chart(document.getElementById('qRateChart'), {
             type: 'bar',
             data: {
                 labels: files,
                 datasets: [
                     { label: 'Q20 Rate (Before)', data: q20Before, backgroundColor: '#fab1a0' },
-                    { label: 'Q20 Rate (After)', data: q20After, backgroundColor: '#e17055' }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true, max: 100 } }
-            }
-        });
-        // Q30 chart (grouped bar)
-        new Chart(document.getElementById('q30Chart'), {
-            type: 'bar',
-            data: {
-                labels: files,
-                datasets: [
+                    { label: 'Q20 Rate (After)', data: q20After, backgroundColor: '#e17055' },
                     { label: 'Q30 Rate (Before)', data: q30Before, backgroundColor: '#b2bec3' },
                     { label: 'Q30 Rate (After)', data: q30After, backgroundColor: '#2ecc71' }
                 ]
