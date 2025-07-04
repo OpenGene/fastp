@@ -259,7 +259,7 @@ def generate_summary_html(report_dir):
         tr:nth-child(even) { background: #f9fafb; }
         a { color: #2980b9; text-decoration: none; }
         a:hover { text-decoration: underline; }
-        .chart-container { width: 100%; max-width: 900px; margin: 2em auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+        .chart-container { width: 100%; max-width: none; aspect-ratio: 4/1; }
         .row-charts-table { width: 100%; margin-bottom: 2em; background: none; border: none; }
         .row-charts-table td { border: none; vertical-align: top; width: 50%; }
     </style>
@@ -336,7 +336,7 @@ def generate_summary_html(report_dir):
         html += '        </tr>\n'
     html += '    </table>\n'
     html += '''
-    <div class="chart-container" style="width:100%; max-width:none;">
+    <div class="chart-container" style="width:100%; max-width:none; aspect-ratio: 4/1;">
         <canvas id="qRateChart" style="height:200px;"></canvas>
     </div>
     <script>
@@ -535,8 +535,10 @@ def generate_summary_html(report_dir):
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true, max: 100 } }
+                scales: { y: { beginAtZero: true, max: 100 } },
+                animation: false
             }
         });
     </script>
