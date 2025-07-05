@@ -157,7 +157,23 @@ def run_command(command):
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
     return result.stdout
     
-def generate_summary_html(report_dir):
+def generate_summary_html(report_dir, fastp_cmd=None):
+    # Get fastp version from JSON files
+    fastp_version = "fastp"
+    if fastp_cmd:
+        fastp_version = fastp_cmd
+
+    json_files = [f for f in os.listdir(report_dir) if f.endswith('.json')]
+    if json_files:
+        try:
+            # Use the first JSON file to get the fastp version
+            first_json = os.path.join(report_dir, json_files[0])
+            with open(first_json) as f:
+                data = json.load(f)
+                fastp_version = fastp_version + " "+ data.get('summary', {}).get('fastp_version', 'unknown')
+        except:
+            pass
+    
     # Collect all JSON report files
     json_files = [f for f in os.listdir(report_dir) if f.endswith('.json')]
     stats = []
@@ -267,7 +283,7 @@ def generate_summary_html(report_dir):
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-    <h1>FASTQ Aggregate Summary</h1>
+    <h2>FASTQ Aggregate Summary (''' + fastp_version + ''')</h2>
     <table>
         <thead>
             <tr>
@@ -567,7 +583,7 @@ def main():
     processDir(options.input_dir, options)
     # After processing, generate summary
     if options.report_dir:
-        generate_summary_html(options.report_dir)
+        generate_summary_html(options.report_dir, options.command)
     time2 = time.time()
     print('Time used: ' + str(time2-time1))
     
