@@ -23,6 +23,7 @@ Stats::Stats(Options* opt, bool isRead2, int guessedCycles, int bufferMargin){
     mBases = 0;
     mQ20Total = 0;
     mQ30Total = 0;
+    mQ40Total = 0;
     summarized = false;
     mKmerMin = 0;
     mKmerMax = 0;
@@ -56,6 +57,8 @@ Stats::Stats(Options* opt, bool isRead2, int guessedCycles, int bufferMargin){
     mKmerBufLen = 2<<(KMER_LEN * 2);
     mKmer = new long[mKmerBufLen];
     memset(mKmer, 0, sizeof(long)*mKmerBufLen);
+
+    memset(mBaseQualHistogram, 0, sizeof(long)*128);
 
     initOverRepSeq();
 }
@@ -163,6 +166,10 @@ void Stats::summarize(bool forced) {
         mQ30Total += mQ30Bases[i];
     }
 
+    for(char c=40; c<127-33; c++) {
+        mQ40Total += mBaseQualHistogram[c+33];
+    }
+
 
     // quality curve for mean qual
     double* meanQualCurve = new double[mCycles];
@@ -243,6 +250,8 @@ void Stats::statRead(Read* r) {
 
         const char q20 = '5';
         const char q30 = '?';
+
+        mBaseQualHistogram[qual]++;
 
         if(qual >= q30) {
             mCycleQ30Bases[b][i]++;
@@ -367,6 +376,16 @@ long Stats::getQ30() {
     return mQ30Total;
 }
 
+long Stats::getQ40() {
+    if(!summarized)
+        summarize();
+    return mQ40Total;
+}
+
+long* Stats::getQualHist() {
+    return mBaseQualHistogram;
+}
+
 long Stats::getGCNumber() {
     if(!summarized)
         summarize();
@@ -381,6 +400,7 @@ void Stats::print() {
     cerr << "total bases: " << mBases << endl;
     cerr << "Q20 bases: " << mQ20Total << "(" << (mQ20Total*100.0)/mBases << "%)" << endl;
     cerr << "Q30 bases: " << mQ30Total << "(" << (mQ30Total*100.0)/mBases << "%)" << endl;
+    cerr << "Q40 bases: " << mQ40Total << "(" << (mQ40Total*100.0)/mBases << "%)" << endl;
 }
 
 void Stats::reportJson(ofstream& ofs, string padding) {
@@ -390,6 +410,7 @@ void Stats::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "\"total_bases\": " << mBases << "," << endl;
     ofs << padding << "\t" << "\"q20_bases\": " << mQ20Total << "," << endl;
     ofs << padding << "\t" << "\"q30_bases\": " << mQ30Total << "," << endl;
+    ofs << padding << "\t" << "\"q40_bases\": " << mQ40Total << "," << endl;
     ofs << padding << "\t" << "\"total_cycles\": " << mCycles << "," << endl;
 
     // quality curves
@@ -919,6 +940,11 @@ Stats* Stats::merge(vector<Stats*>& list) {
         // merge kMer
         for(int i=0; i<s->mKmerBufLen; i++) {
             s->mKmer[i] += list[t]->mKmer[i];
+        }
+
+        // merge base/read qual histogram
+        for(int i=0; i<128; i++) {
+            s->mBaseQualHistogram[i] += list[t]->mBaseQualHistogram[i];
         }
 
         // merge over rep seq

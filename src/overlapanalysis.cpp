@@ -1,3 +1,4 @@
+#include "matcher.h"
 #include "overlapanalysis.h"
 
 OverlapAnalysis::OverlapAnalysis(){
@@ -7,12 +8,12 @@ OverlapAnalysis::OverlapAnalysis(){
 OverlapAnalysis::~OverlapAnalysis(){
 }
 
-OverlapResult OverlapAnalysis::analyze(Read* r1, Read* r2, int overlapDiffLimit, int overlapRequire, double diffPercentLimit) {
-    return analyze(r1->mSeq, r2->mSeq, overlapDiffLimit, overlapRequire, diffPercentLimit);
+OverlapResult OverlapAnalysis::analyze(Read* r1, Read* r2, int overlapDiffLimit, int overlapRequire, double diffPercentLimit, bool allowGap) {
+    return analyze(r1->mSeq, r2->mSeq, overlapDiffLimit, overlapRequire, diffPercentLimit, allowGap);
 }
 
 // ported from the python code of AfterQC
-OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, int overlapRequire, double diffPercentLimit) {
+OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, int overlapRequire, double diffPercentLimit, bool allowGap) {
     string rcr2 = Sequence::reverseComplement(r2);
     int len1 = r1->length();
     int len2 = rcr2.length();
@@ -26,7 +27,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
     int offset = 0;
     int diff = 0;
 
-    // forward
+    // forward with no gap
     // a match of less than overlapRequire is considered as unconfident
     while (offset < len1-overlapRequire) {
         // the overlap length of r1 & r2 when r2 is move right for offset
@@ -49,6 +50,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
             ov.offset = offset;
             ov.overlap_len = overlap_len;
             ov.diff = diff;
+            ov.hasGap = false;
             return ov;
         }
 
@@ -56,7 +58,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
     }
 
 
-    // reverse
+    // reverse with no gap
     // in this case, the adapter is sequenced since TEMPLATE_LEN < SEQ_LEN
     // check if distance can get smaller if offset goes negative
     // this only happens when insert DNA is shorter than sequencing read length, and some adapter/primer is sequenced but not trimmed cleanly
@@ -83,15 +85,67 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
             ov.offset = offset;
             ov.overlap_len = overlap_len;
             ov.diff = diff;
+            ov.hasGap = false;
             return ov;
         }
 
         offset -= 1;
     }
 
+    if(allowGap) {
+        // forward with one gap
+        offset = 0;
+        while (offset < len1-overlapRequire) {
+            // the overlap length of r1 & r2 when r2 is move right for offset
+            overlap_len = min(len1 - offset, len2);
+            int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
+
+            int diff = Matcher::diffWithOneInsertion(str1 + offset, str2, overlap_len-1, overlapDiffLimit);
+            if(diff <0 || diff > overlapDiffLimit)
+                diff = Matcher::diffWithOneInsertion(str2, str1 + offset, overlap_len-1, overlapDiffLimit);
+            
+            if (diff <= overlapDiffLimit && diff >=0){
+                OverlapResult ov;
+                ov.overlapped = true;
+                ov.offset = offset;
+                ov.overlap_len = overlap_len;
+                ov.diff = diff;
+                ov.hasGap = true;
+                return ov;
+            }
+
+            offset += 1;
+        }
+
+        // reverse with one gap
+        offset = 0;
+        while (offset > -(len2-overlapRequire)){
+            // the overlap length of r1 & r2 when r2 is move right for offset
+            overlap_len = min(len1,  len2- abs(offset));
+            int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
+
+            int diff = Matcher::diffWithOneInsertion(str1, str2-offset, overlap_len-1, overlapDiffLimit);
+            if(diff <0 || diff > overlapDiffLimit)
+                diff = Matcher::diffWithOneInsertion(str2-offset, str1, overlap_len-1, overlapDiffLimit);
+            
+            if (diff <= overlapDiffLimit && diff >=0){
+                OverlapResult ov;
+                ov.overlapped = true;
+                ov.offset = offset;
+                ov.overlap_len = overlap_len;
+                ov.diff = diff;
+                ov.hasGap = true;
+                return ov;
+            }
+
+            offset -= 1;
+        }
+    }
+
     OverlapResult ov;
     ov.overlapped = false;
     ov.offset = ov.overlap_len = ov.diff = 0;
+    ov.hasGap = false;
     return ov;
 }
 

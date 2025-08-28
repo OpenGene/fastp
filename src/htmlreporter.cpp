@@ -1,6 +1,7 @@
 #include "htmlreporter.h"
 #include <chrono>
 #include <memory.h>
+#include "knownadapters.h"
 
 extern string command;
 
@@ -69,6 +70,10 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     if(preStats2)
         pre_q30_bases += preStats2->getQ30();
 
+    long pre_q40_bases = preStats1->getQ40();
+    if(preStats2)
+        pre_q40_bases += preStats2->getQ40();
+
     long pre_total_gc = preStats1->getGCNumber();
     if(preStats2)
         pre_total_gc += preStats2->getGCNumber();
@@ -88,6 +93,10 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     long post_q30_bases = postStats1->getQ30();
     if(postStats2)
         post_q30_bases += postStats2->getQ30();
+
+    long post_q40_bases = postStats1->getQ40();
+    if(postStats2)
+        post_q40_bases += postStats2->getQ40();
 
     long post_total_gc = postStats1->getGCNumber();
     if(postStats2)
@@ -132,10 +141,18 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
         outputRow(ofs, "Insert size peak:", mInsertSizePeak);
     }
     if(mOptions->adapterCuttingEnabled()) {
-        if(!mOptions->adapter.detectedAdapter1.empty())
-            outputRow(ofs, "Detected read1 adapter:", mOptions->adapter.detectedAdapter1);
-        if(!mOptions->adapter.detectedAdapter2.empty())
-            outputRow(ofs, "Detected read2 adapter:", mOptions->adapter.detectedAdapter2);
+        map<string, string> knownAdapters = getKnownAdapter();
+        if(!mOptions->adapter.detectedAdapter1.empty()) {
+            string adapterinfo1 = mOptions->adapter.detectedAdapter1;
+            if(knownAdapters.count(adapterinfo1) > 0)
+                adapterinfo1 += " -" + knownAdapters[mOptions->adapter.detectedAdapter1];
+            outputRow(ofs, "Detected read1 adapter:", adapterinfo1);
+        } if(!mOptions->adapter.detectedAdapter2.empty()) {
+            string adapterinfo2 = mOptions->adapter.detectedAdapter2;
+            if(knownAdapters.count(adapterinfo2) > 0)
+                adapterinfo2 += " -" + knownAdapters[mOptions->adapter.detectedAdapter2];
+            outputRow(ofs, "Detected read2 adapter:", adapterinfo2);
+        }
     }
     ofs << "</table>\n";
     ofs << "</div>\n";
@@ -147,6 +164,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     outputRow(ofs, "total bases:", formatNumber(pre_total_bases));
     outputRow(ofs, "Q20 bases:", formatNumber(pre_q20_bases) + " (" + getPercents(pre_q20_bases,pre_total_bases) + "%)");
     outputRow(ofs, "Q30 bases:", formatNumber(pre_q30_bases) + " (" + getPercents(pre_q30_bases, pre_total_bases) + "%)");
+    outputRow(ofs, "Q40 bases:", formatNumber(pre_q40_bases) + " (" + getPercents(pre_q40_bases, pre_total_bases) + "%)");
     outputRow(ofs, "GC content:", getPercents(pre_total_gc,pre_total_bases) + "%");
     ofs << "</table>\n";
     ofs << "</div>\n";
@@ -158,6 +176,7 @@ void HtmlReporter::printSummary(ofstream& ofs, FilterResult* result, Stats* preS
     outputRow(ofs, "total bases:", formatNumber(post_total_bases));
     outputRow(ofs, "Q20 bases:", formatNumber(post_q20_bases) + " (" + getPercents(post_q20_bases, post_total_bases) + "%)");
     outputRow(ofs, "Q30 bases:", formatNumber(post_q30_bases) + " (" + getPercents(post_q30_bases, post_total_bases) + "%)");
+    outputRow(ofs, "Q40 bases:", formatNumber(post_q40_bases) + " (" + getPercents(post_q40_bases, post_total_bases) + "%)");
     outputRow(ofs, "GC content:", getPercents(post_total_gc,post_total_bases) + "%");
     ofs << "</table>\n";
     ofs << "</div>\n";
@@ -322,6 +341,89 @@ void HtmlReporter::reportDuplication(ofstream& ofs) {
     delete[] gc;
 }
 
+void HtmlReporter::reportQualHistogram(ofstream& ofs, string caption, Stats* stats1, Stats* stats2) {
+    long* hist1 = stats1->getQualHist();
+
+    string divName = replace(caption, " ", "_");
+    divName = replace(divName, ":", "_");
+
+    ofs << "<div class='figure' style='height:400' id='plot_" + divName + "'></div>\n";
+    ofs << "<script language='javascript'>" << endl;
+    ofs << " var hist1 = {" << endl;
+    ofs << " x: [";
+    bool first = true;
+    for(int q=33; q<128; q++) {
+        if(hist1[q]>0) {
+            if(!first) {
+                ofs << ",";
+            }
+            ofs << q-33;
+            first = false;
+        }
+    }
+    ofs << "]," << endl;
+    ofs << " y: [";
+    first = true;
+    for(int q=33; q<128; q++) {
+        if(hist1[q]>0) {
+            if(!first) {
+                ofs << ",";
+            }
+            ofs << hist1[q];
+            first = false;
+        }
+    }
+    ofs << "]," << endl;
+    ofs << "name: 'read1'," << endl;
+    ofs << "type: 'bar'," << endl;
+    ofs << "};" << endl;
+
+    if(stats2 != NULL) {
+        long* hist2 = stats2->getQualHist();
+        ofs << " var hist2 = {" << endl;
+        ofs << " x: [";
+        first = true;
+        for(int q=33; q<128; q++) {
+            if(hist2[q]>0) {
+                if(!first) {
+                    ofs << ",";
+                }
+                ofs << q-33;
+                first = false;
+            }
+        }
+        ofs << "]," << endl;
+        ofs << " y: [";
+        first = true;
+        for(int q=33; q<128; q++) {
+            if(hist2[q]>0) {
+                if(!first) {
+                    ofs << ",";
+                }
+                ofs << hist2[q];
+                first = false;
+            }
+        }
+        ofs << "]," << endl;
+        ofs << "name: 'read2'," << endl;
+        ofs << "type: 'bar'," << endl;
+        ofs << "};" << endl;
+    }
+
+    if(stats2 != NULL) {
+        ofs << "var data = [hist1, hist2];" << endl;
+    } else {
+        ofs << "var data = [hist1];" << endl;
+    }
+
+    ofs << "var layout = {barmode: 'group', ";
+    ofs << "title: '" << caption << "',";
+    ofs <<"xaxis:{title:'base quality score'}, yaxis:{title:'base count'}}; "<< endl;
+
+    ofs << "Plotly.newPlot('plot_" + divName + "', data, layout); " << endl;
+    ofs << "</script>" << endl;
+}
+
 void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
     ofstream ofs;
     ofs.open(mOptions->htmlFile, ifstream::out);
@@ -331,36 +433,123 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     printSummary(ofs, result, preStats1, postStats1, preStats2, postStats2);
 
     ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title' onclick=showOrHide('before_filtering')><a name='summary'>Before filtering</a></div>\n";
-    ofs << "<div id='before_filtering'>\n";
+    //ofs << "<div class='section_title' onclick=showOrHide('before_filtering')><a name='summary'>Before filtering</a></div>\n";
+    //ofs << "<div id='before_filtering'>\n";
 
-    if(preStats1) {
-        preStats1 -> reportHtml(ofs, "Before filtering", "read1");
+    ofs << "<div class='section_title' onclick=showOrHide('quality_stat')><a name='summary'>Filtering statistics</a>";
+    if(mOptions->out1.empty() && ! mOptions->outputToSTDOUT) {
+        // no output, we give a hint here for clarification
+        ofs << "<font size=-2> (although no output file specified, the filtered statistics are still presented here) </font>" << endl;
     }
+    ofs << "</div>\n";
+    ofs << "<table id='quality_stat' class='section_table'>\n";
+
+    string postRead1Name = "read1";
+    if(mOptions->merge.enabled)
+        postRead1Name = "merged";
+
+    // base quality scores
+    ofs << "<tr><td>\n";
+    if(preStats1) {
+        preStats1 -> reportHtmlQuality(ofs, "Before filtering", "read1");
+    }
+    ofs << "</td><td>\n";
+    if(postStats1) {
+        postStats1 -> reportHtmlQuality(ofs, "After filtering", postRead1Name);
+    }
+    ofs << "</td></tr>\n";
+
 
     if(preStats2) {
-        preStats2 -> reportHtml(ofs, "Before filtering", "read2");
+        ofs << "<tr><td>\n";
+        preStats2 -> reportHtmlQuality(ofs, "Before filtering", "read2");
+        ofs << "</td><td>\n";
+        if(!mOptions->merge.enabled) {
+            postStats2 -> reportHtmlQuality(ofs, "After filtering", "read2");
+        }
+        ofs << "</td></tr>\n";
     }
 
-    ofs << "</div>\n";
-    ofs << "</div>\n";
+    // quality histogram
+    ofs << "<tr style='height:20px;background:#999999;'></tr>\n";
+    ofs << "<tr><td>\n";
+    reportQualHistogram(ofs, "Before filtering: quality score histogram", preStats1, preStats2);
+    ofs << "</td><td>\n";
+    reportQualHistogram(ofs, "After filtering: quality score histogram", postStats1, postStats2);
+    ofs << "</td></tr>\n";
 
-    ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title' onclick=showOrHide('after_filtering')><a name='summary'>After filtering</a></div>\n";
-    ofs << "<div id='after_filtering'>\n";
-
+    // base contents
+    ofs << "<tr style='height:20px;background:#999999;'></tr>\n";
+    ofs << "<tr><td>\n";
+    if(preStats1) {
+        preStats1 -> reportHtmlContents(ofs, "Before filtering", "read1");
+    }
+    ofs << "</td><td>\n";
     if(postStats1) {
-        string name = "read1";
-        if(mOptions->merge.enabled)
-            name = "merged";
-        postStats1 -> reportHtml(ofs, "After filtering", name);
+        postStats1 -> reportHtmlContents(ofs, "After filtering", postRead1Name);
+    }
+    ofs << "</td></tr>\n";
+
+    if(preStats2) {
+        ofs << "<tr><td>\n";
+        preStats2 -> reportHtmlContents(ofs, "Before filtering", "read2");
+        ofs << "</td><td>\n";
+        if(!mOptions->merge.enabled) {
+            postStats2 -> reportHtmlContents(ofs, "After filtering", "read2");
+        }
+        ofs << "</td></tr>\n";
     }
 
+    // KMER
+    ofs << "<tr style='height:20px;background:#999999;'></tr>\n";
+    ofs << "<tr><td>\n";
+    if(preStats1) {
+        preStats1 -> reportHtmlKMER(ofs, "Before filtering", "read1");
+    }
+    ofs << "</td><td>\n";
+    if(postStats1) {
+        postStats1 -> reportHtmlKMER(ofs, "After filtering", postRead1Name);
+    }
+    ofs << "</td></tr>\n";
+
+    ofs << "<tr><td>\n";
+    if(preStats2) {
+        preStats2 -> reportHtmlKMER(ofs, "Before filtering", "read2");
+    }
+    ofs << "</td><td>\n";
     if(postStats2 && !mOptions->merge.enabled) {
-        postStats2 -> reportHtml(ofs, "After filtering", "read2");
+        postStats2 -> reportHtmlKMER(ofs, "After filtering", "read2");
+    }
+    ofs << "</td></tr>\n";
+
+    // over represented seqs
+    if(mOptions->overRepAnalysis.enabled) {
+        ofs << "<tr style='height:20px;'></tr>\n";
+        ofs << "<tr style='vertical-align: top;'><td>\n";
+        if(preStats1) {
+            preStats1 -> reportHtmlORA(ofs, "Before filtering", "read1");
+        }
+        ofs << "</td><td>\n";
+        if(postStats1) {
+            postStats1 -> reportHtmlORA(ofs, "After filtering", postRead1Name);
+        }
+        ofs << "</td></tr>\n";
+
+        ofs << "<tr style='vertical-align: top;'><td>\n";
+        if(preStats2) {
+            preStats2 -> reportHtmlORA(ofs, "Before filtering", "read2");
+        }
+        ofs << "</td><td>\n";
+        if(postStats2 && !mOptions->merge.enabled) {
+            postStats2 -> reportHtmlORA(ofs, "After filtering", "read2");
+        }
+        ofs << "</td></tr>\n";
     }
 
-    ofs << "</div>\n";
+
+    ofs << "</table>\n";
+
+    //ofs << "</div>\n";
     ofs << "</div>\n";
 
     printFooter(ofs);
@@ -379,7 +568,7 @@ void HtmlReporter::printHeader(ofstream& ofs){
 void HtmlReporter::printCSS(ofstream& ofs){
     ofs << "<style type=\"text/css\">" << endl;
     ofs << "td {border:1px solid #dddddd;padding:5px;font-size:12px;}" << endl;
-    ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}" << endl;
+    ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse;width:100%}" << endl;
     ofs << ".col1 {width:240px; font-weight:bold;}" << endl;
     ofs << ".adapter_col {width:500px; font-size:10px;}" << endl;
     ofs << "img {padding:30px;}" << endl;
@@ -388,9 +577,10 @@ void HtmlReporter::printCSS(ofstream& ofs){
     ofs << "a:visited {color: #999999}" << endl;
     ofs << ".alignleft {text-align:left;}" << endl;
     ofs << ".alignright {text-align:right;}" << endl;
-    ofs << ".figure {width:800px;height:600px;}" << endl;
+    ofs << ".figure {width:680px;height:600px;}" << endl;
     ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}" << endl;
     ofs << ".section_title {color:#ffffff;font-size:20px;padding:5px;text-align:left;background:#663355; margin-top:10px;}" << endl;
+    ofs << ".section_table {width:100%;}" << endl;
     ofs << ".subsection_title {font-size:16px;padding:5px;margin-top:10px;text-align:left;color:#663355}" << endl;
     ofs << "#container {text-align:center;padding:3px 3px 3px 10px;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << endl;
     ofs << ".menu_item {text-align:left;padding-top:5px;font-size:18px;}" << endl;
