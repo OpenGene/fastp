@@ -28,7 +28,7 @@ void UmiProcessor::process(Read* r1, Read* r2) {
     else if(mOptions->umi.location == UMI_LOC_PER_INDEX){
         string umiMerged = r1->firstIndex();
         if(r2) {
-            umiMerged = umiMerged + "_" + r2->lastIndex();
+            umiMerged = umiMerged + "+" + r2->lastIndex();
         }
 
         addUmiToName(r1, umiMerged);
@@ -42,7 +42,7 @@ void UmiProcessor::process(Read* r1, Read* r2) {
         r1->trimFront(umi1.length() + mOptions->umi.skip);
         if(r2){
             string umi2 = r2->mSeq->substr(0, min(r2->length(), mOptions->umi.length));
-            umiMerged = umiMerged + "_" + umi2;
+            umiMerged = umiMerged + "+" + umi2;
             r2->trimFront(umi2.length() + mOptions->umi.skip);
         }
 
@@ -66,7 +66,7 @@ void UmiProcessor::addUmiToName(Read* r, string umi){
     if(mOptions->umi.prefix.empty())
         tag = delimiter + umi;
     else
-        tag = delimiter + mOptions->umi.prefix + "_" + umi;
+        tag = delimiter + mOptions->umi.prefix + "+" + umi;
     int spacePos = -1;
     for(int i=0; i<r->mName->length(); i++) {
         if(r->mName->at(i) == ' ') {
