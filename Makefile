@@ -4,8 +4,8 @@ DIR_OBJ := ./obj
 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
-INCLUDE_DIRS ?= /home/zhangkaiLab/hanlitian/micromamba/envs/py311/include
-LIBRARY_DIRS ?= /home/zhangkaiLab/hanlitian/micromamba/envs/py311/lib
+INCLUDE_DIRS ?= 
+LIBRARY_DIRS ?= 
 
 SRC := $(wildcard ${DIR_SRC}/*.cpp)
 OBJ := $(patsubst %.cpp,${DIR_OBJ}/%.o,$(notdir ${SRC}))
