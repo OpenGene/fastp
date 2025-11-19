@@ -4,8 +4,8 @@ DIR_OBJ := ./obj
 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
-INCLUDE_DIRS ?=
-LIBRARY_DIRS ?=
+INCLUDE_DIRS ?= /home/zhangkaiLab/hanlitian/micromamba/envs/py311/include
+LIBRARY_DIRS ?= /home/zhangkaiLab/hanlitian/micromamba/envs/py311/lib
 
 SRC := $(wildcard ${DIR_SRC}/*.cpp)
 OBJ := $(patsubst %.cpp,${DIR_OBJ}/%.o,$(notdir ${SRC}))
@@ -16,7 +16,7 @@ BIN_TARGET := ${TARGET}
 
 CXX ?= g++
 CXXFLAGS := -std=c++11 -pthread -g -O3 -MD -MP -I. -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS}
-LIBS := -lisal -ldeflate -lhwy -lpthread
+LIBS := -lisal -ldeflate -lzstd -lhwy -lpthread
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -27,10 +27,7 @@ else
   FIND_STATIC = $(firstword $(foreach d,$(LIBRARY_DIRS),$(wildcard $(d)/lib$(1).a)) $(wildcard /usr/local/lib/lib$(1).a /opt/homebrew/lib/lib$(1).a))
   STATIC_LIBS :=
   DYNAMIC_LIBS :=
-  $(foreach lib,isal deflate hwy,\
-    $(if $(call FIND_STATIC,$(lib)),\
-      $(eval STATIC_LIBS += $(call FIND_STATIC,$(lib))),\
-      $(eval DYNAMIC_LIBS += -l$(lib))))
+  $(foreach lib,isal deflate zstd hwy,    $(if $(call FIND_STATIC,$(lib)),      $(eval STATIC_LIBS += $(call FIND_STATIC,$(lib))),      $(eval DYNAMIC_LIBS += -l$(lib))))
   LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(STATIC_LIBS) $(DYNAMIC_LIBS) -lpthread $(LD_FLAGS)
 endif
 

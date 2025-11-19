@@ -50,6 +50,13 @@ FastqReader::FastqReader(string filename, bool hasQuality, bool phred64){
 	mHasNoLineBreakAtEnd = false;
 	mGzipInputUsedBytes = 0;
 	mReadPool = NULL;
+	mUseZstd = false;
+	mZstdFinished = false;
+	mZstdStream = NULL;
+	mZstdInput.src = NULL;
+	mZstdInput.size = 0;
+	mZstdInput.pos = 0;
+	mZstdInputUsedBytes = 0;
 	init();
 }
 
@@ -57,6 +64,10 @@ FastqReader::~FastqReader(){
 	close();
 	delete[] mFastqBuf;
 	delete[] mGzipInputBuffer;
+	if(mZstdStream){
+		ZSTD_freeDStream(mZstdStream);
+		mZstdStream = NULL;
+	}
 }
 
 bool FastqReader::hasNoLineBreakAtEnd() {
@@ -69,11 +80,13 @@ void FastqReader::setReadPool(ReadPool* rp) {
 
 
 bool FastqReader::bufferFinished() {
-	if(mZipped) {
-		return eof() && mGzipState.avail_in == 0;
-	} else {
+	if(!mZipped)
 		return eof();
-	}
+
+	if(mUseZstd)
+		return mZstdFinished && mZstdInput.pos == mZstdInput.size;
+
+	return eof() && mGzipState.avail_in == 0;
 }
 
 void FastqReader::readToBufIgzip(){
@@ -139,10 +152,67 @@ void FastqReader::readToBufIgzip(){
 	}
 }
 
+void FastqReader::readToBufZstd(){
+	mBufDataLen = 0;
+	if(mZstdFinished)
+		return;
+
+	ZSTD_outBuffer outBuf;
+	outBuf.dst = mFastqBuf;
+	outBuf.size = mGzipOutputBufferSize;
+	outBuf.pos = 0;
+
+	while(outBuf.pos == 0){
+		if(mZstdInput.pos == mZstdInput.size){
+			size_t readBytes = fread(mGzipInputBuffer, 1, mGzipInputBufferSize, mFile);
+			if(readBytes == 0){
+				if(eof()){
+					mZstdFinished = true;
+					break;
+				} else {
+					error_exit("zstd: read error on file: " + mFilename);
+				}
+			}
+			mZstdInput.src = mGzipInputBuffer;
+			mZstdInput.size = readBytes;
+			mZstdInput.pos = 0;
+			mZstdInputUsedBytes += readBytes;
+		}
+
+		size_t ret = ZSTD_decompressStream(mZstdStream, &outBuf, &mZstdInput);
+		if(ZSTD_isError(ret)){
+			error_exit("zstd: decompression error for file: " + mFilename + ", error: " + string(ZSTD_getErrorName(ret)));
+		}
+
+		if(ret == 0){
+			if(mZstdInput.pos < mZstdInput.size || !eof()){
+				size_t resetRet = ZSTD_initDStream(mZstdStream);
+				if(ZSTD_isError(resetRet)){
+					error_exit("zstd: failed to reset stream for file: " + mFilename + ", error: " + string(ZSTD_getErrorName(resetRet)));
+				}
+			} else {
+				mZstdFinished = true;
+			}
+		}
+
+		if(eof() && mZstdInput.pos == mZstdInput.size && ret != 0){
+			error_exit("zstd: unexpected eof found in file: " + mFilename);
+		}
+
+		if(mZstdFinished || outBuf.pos > 0)
+			break;
+	}
+
+	mBufDataLen = outBuf.pos;
+}
+
 void FastqReader::readToBuf() {
 	mBufDataLen = 0;
 	if(mZipped) {
-		readToBufIgzip();
+		if(mUseZstd)
+			readToBufZstd();
+		else
+			readToBufIgzip();
 	} else {
 		if(!eof())
 			mBufDataLen = fread(mFastqBuf, 1, FQ_BUF_SIZE, mFile);
@@ -173,6 +243,26 @@ void FastqReader::init(){
 		}
 		mZipped = true;
 	}
+	else if (ends_with(mFilename, ".zst") || ends_with(mFilename, ".zstd")){
+		mFile = fopen(mFilename.c_str(), "rb");
+		if(mFile == NULL) {
+			error_exit("Failed to open file: " + mFilename);
+		}
+		mZstdStream = ZSTD_createDStream();
+		if(mZstdStream == NULL) {
+			error_exit("zstd: failed to allocate decompressor for file: " + mFilename);
+		}
+		size_t ret = ZSTD_initDStream(mZstdStream);
+		if(ZSTD_isError(ret)){
+			error_exit("zstd: failed to init decompressor for file: " + mFilename + ", error: " + string(ZSTD_getErrorName(ret)));
+		}
+		mZipped = true;
+		mUseZstd = true;
+		mZstdFinished = false;
+		mZstdInput.src = mGzipInputBuffer;
+		mZstdInput.size = 0;
+		mZstdInput.pos = 0;
+	}
 	else {
 		if(mFilename == "/dev/stdin") {
 			mFile = stdin;
@@ -189,7 +279,10 @@ void FastqReader::init(){
 
 void FastqReader::getBytes(size_t& bytesRead, size_t& bytesTotal) {
 	if(mZipped) {
-		bytesRead = mGzipInputUsedBytes - mGzipState.avail_in;
+		if(mUseZstd)
+			bytesRead = mZstdInputUsedBytes - (mZstdInput.size - mZstdInput.pos);
+		else
+			bytesRead = mGzipInputUsedBytes - mGzipState.avail_in;
 	} else {
 		bytesRead = ftell(mFile);//mFile.tellg();
 	}
@@ -361,6 +454,22 @@ bool FastqReader::isZipFastq(string filename) {
 	else if (ends_with(filename, ".fasta.gz"))
 		return true;
 	else if (ends_with(filename, ".fa.gz"))
+		return true;
+	else if (ends_with(filename, ".fastq.zst"))
+		return true;
+	else if (ends_with(filename, ".fq.zst"))
+		return true;
+	else if (ends_with(filename, ".fastq.zstd"))
+		return true;
+	else if (ends_with(filename, ".fq.zstd"))
+		return true;
+	else if (ends_with(filename, ".fasta.zst"))
+		return true;
+	else if (ends_with(filename, ".fa.zst"))
+		return true;
+	else if (ends_with(filename, ".fasta.zstd"))
+		return true;
+	else if (ends_with(filename, ".fa.zstd"))
 		return true;
 	else
 		return false;
