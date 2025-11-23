@@ -11,7 +11,9 @@ A tool designed to provide ultrafast all-in-one preprocessing and quality contro
 
 This tool is designed for processing short reads (i.e. Illumina NovaSeq, MGI), if you are looking for tools to process long reads (i.e. Nanopore, PacBio, Cyclone), please use [fastplong](https://github.com/OpenGene/fastplong).  
 
-fastp supports batch processing of multiple FASTQ files in a folder, see - [batch processing](#batch-processing)
+fastp supports batch processing of multiple FASTQ files in a folder, see - [batch processing](#batch-processing)  
+
+If you use fastp in your work, you can cite fastp as:  *Shifu Chen. fastp 1.0: An ultra-fast all-round tool for FASTQ data quality control and preprocessing. iMeta 4.5 (2025): e70078*
 
 
 - [features](#features)
