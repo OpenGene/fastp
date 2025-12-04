@@ -13,6 +13,7 @@ FilterResult::FilterResult(Options* opt, bool paired){
     mTrimmedAdapterRead = 0;
     mTrimmedAdapterBases = 0;
     mMergedPairs = 0;
+    mAdapterDimerReads = 0;
     for(int i=0; i<FILTER_RESULT_TYPES; i++) {
         mFilterReadStats[i] = 0;
     }
@@ -50,6 +51,7 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
         result->mTrimmedAdapterRead += list[i]->mTrimmedAdapterRead;
         result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
         result->mMergedPairs += list[i]->mMergedPairs;
+        result->mAdapterDimerReads += list[i]->mAdapterDimerReads;
 
         for(int b=0; b<4; b++) {
           result->mTrimmedPolyXReads[b] += list[i]->mTrimmedPolyXReads[b];
@@ -201,6 +203,11 @@ long FilterResult::getTotalPolyXTrimmedBases() {
   return sum_bases;
 }
 
+void FilterResult::addAdapterDimer(int readNum) {
+    mAdapterDimerReads += readNum;
+    addFilterResult(FAIL_ADAPTER_DIMER, readNum);
+}
+
 
 void FilterResult::print() {
     cerr <<  "reads passed filter: " << mFilterReadStats[PASS_FILTER] << endl;
@@ -215,6 +222,7 @@ void FilterResult::print() {
         cerr <<  "reads failed due to low complexity: " << mFilterReadStats[FAIL_COMPLEXITY] << endl;
     }
     if(mOptions->adapter.enabled) {
+        cerr <<  "reads failed due to adapter dimer: " << mFilterReadStats[FAIL_ADAPTER_DIMER] << endl;
         cerr <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
         cerr <<  "bases trimmed due to adapters: " << mTrimmedAdapterBases << endl;
     }
@@ -240,6 +248,8 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << "," << endl;
     if(mOptions->complexityFilter.enabled)
         ofs << padding << "\t" << "\"low_complexity_reads\": " << mFilterReadStats[FAIL_COMPLEXITY] << "," << endl;
+    if(mOptions->adapter.enabled)
+        ofs << padding << "\t" << "\"adapter_dimer_reads\": " << mFilterReadStats[FAIL_ADAPTER_DIMER] << "," << endl;
     ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << "," << endl;
     ofs << padding << "\t" << "\"too_long_reads\": " << mFilterReadStats[FAIL_TOO_LONG] << endl;
 
@@ -366,6 +376,8 @@ void FilterResult::reportHtml(ofstream& ofs, long totalReads, long totalBases) {
     }
     if(mOptions->complexityFilter.enabled)
         HtmlReporter::outputRow(ofs, "reads with low complexity:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_COMPLEXITY]) + " (" + to_string(mFilterReadStats[FAIL_COMPLEXITY] * 100.0 / total) + "%)");
+    if(mOptions->adapter.enabled)
+        HtmlReporter::outputRow(ofs, "reads with adapter dimer:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_ADAPTER_DIMER]) + " (" + to_string(mFilterReadStats[FAIL_ADAPTER_DIMER] * 100.0 / total) + "%)");
     ofs << "</table>\n";
 }
 
