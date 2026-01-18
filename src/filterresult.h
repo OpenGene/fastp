@@ -39,7 +39,6 @@ public:
     void addPolyXTrimmed(int base, int length);
     long getTotalPolyXTrimmedReads();
     long getTotalPolyXTrimmedBases();
-    void addAdapterDimer(int readNum=1);
     // a part of JSON report
     void reportJson(ofstream& ofs, string padding);
     // a part of JSON report for adapters
@@ -68,7 +67,6 @@ public:
     bool mPaired;
     long mCorrectedReads;
     long mMergedPairs;
-    long mAdapterDimerReads;
 private:
     long mFilterReadStats[FILTER_RESULT_TYPES];
     long mTrimmedAdapterRead;

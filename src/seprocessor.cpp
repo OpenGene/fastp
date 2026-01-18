@@ -253,7 +253,6 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             // AND adapter was detected (requires evidence)
             if(r1 != NULL && trimmed && r1->length() <= mOptions->adapter.dimerMaxLen) {
                 isAdapterDimer = true;
-                config->getFilterResult()->addAdapterDimer(1);
             }
         }
 

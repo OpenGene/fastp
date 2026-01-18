@@ -13,7 +13,6 @@ FilterResult::FilterResult(Options* opt, bool paired){
     mTrimmedAdapterRead = 0;
     mTrimmedAdapterBases = 0;
     mMergedPairs = 0;
-    mAdapterDimerReads = 0;
     for(int i=0; i<FILTER_RESULT_TYPES; i++) {
         mFilterReadStats[i] = 0;
     }
@@ -51,7 +50,6 @@ FilterResult* FilterResult::merge(vector<FilterResult*>& list) {
         result->mTrimmedAdapterRead += list[i]->mTrimmedAdapterRead;
         result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
         result->mMergedPairs += list[i]->mMergedPairs;
-        result->mAdapterDimerReads += list[i]->mAdapterDimerReads;
 
         for(int b=0; b<4; b++) {
           result->mTrimmedPolyXReads[b] += list[i]->mTrimmedPolyXReads[b];
@@ -203,10 +201,7 @@ long FilterResult::getTotalPolyXTrimmedBases() {
   return sum_bases;
 }
 
-void FilterResult::addAdapterDimer(int readNum) {
-    mAdapterDimerReads += readNum;
-    addFilterResult(FAIL_ADAPTER_DIMER, readNum);
-}
+
 
 
 void FilterResult::print() {

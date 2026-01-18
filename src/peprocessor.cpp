@@ -463,7 +463,6 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                    r1->length() <= mOptions->adapter.dimerMaxLen &&
                    r2->length() <= mOptions->adapter.dimerMaxLen) {
                     isAdapterDimer = true;
-                    config->getFilterResult()->addAdapterDimer(2);
                 }
             }
         }
