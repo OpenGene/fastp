@@ -275,7 +275,7 @@ Please note that the trimming for `--max_len` limitation will be applied at the 
 4, quality pruning at 5' (--cut_front)
 5, quality pruning by sliding window (--cut_right)
 6, quality pruning at 3' (--cut_tail)
-7, trim polyG (--trim_poly_g, enabled by default for NovaSeq/NextSeq data)
+7, trim polyG (--trim_poly_g, enabled by default for NovaSeq/NextSeq/iSeq data)
 8, trim adapter by overlap analysis (enabled by default for PE data)
 9, trim adapter by adapter sequence (--adapter_sequence, --adapter_sequence_r2. For PE data, this step is skipped if last step succeeded)
 10, trim polyX (--trim_poly_x)
@@ -283,7 +283,7 @@ Please note that the trimming for `--max_len` limitation will be applied at the 
 ```
 
 # polyG tail trimming
-For Illumina NextSeq/NovaSeq data, `polyG` can happen in read tails since `G` means no signal in the Illumina two-color systems. `fastp` can detect the polyG in read tails and trim them. This feature is enabled for NextSeq/NovaSeq data by default, and you can specify `-g` or `--trim_poly_g` to enable it for any data, or specify `-G` or `--disable_trim_poly_g` to disable it. NextSeq/NovaSeq data is detected by the machine ID in the FASTQ records.  
+For Illumina NextSeq/NovaSeq data, `polyG` can happen in read tails since `G` means no signal in the Illumina two-color systems. `fastp` can detect the polyG in read tails and trim them. This feature is enabled for NextSeq/NovaSeq data by default, and you can specify `-g` or `--trim_poly_g` to enable it for any data, or specify `-G` or `--disable_trim_poly_g` to disable it. NextSeq/NovaSeq/iSeq data is detected by the machine ID in the FASTQ records.  
 
 A minimum length can be set with `<poly_g_min_len>` for `fastp` to detect polyG. This value is 10 by default.
 
