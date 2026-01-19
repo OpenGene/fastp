@@ -39,6 +39,3 @@ fastp
 
 # Test Output
 *.json
-*.html
-
-out/
