@@ -3,7 +3,7 @@
 #include <memory.h>
 #include <unistd.h>
 
-WriterThread::WriterThread(Options* opt, string filename){
+WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mOptions = opt;
 
     mWriter1 = NULL;
@@ -11,7 +11,7 @@ WriterThread::WriterThread(Options* opt, string filename){
     mInputCompleted = false;
     mFilename = filename;
 
-    initWriter(filename);
+    initWriter(filename, isSTDOUT);
     initBufferLists();
     mWorkingBufferList = 0; // 0 ~ mOptions->thread-1
     mBufferLength = 0;
@@ -55,6 +55,11 @@ void WriterThread::input(int tid, string* data) {
 
 void WriterThread::cleanup() {
     deleteWriter();
+    for(int t=0; t<mOptions->thread; t++) {
+        delete mBufferLists[t];
+    }
+    delete[] mBufferLists;
+    mBufferLists = NULL;
 }
 
 void WriterThread::deleteWriter() {
@@ -64,9 +69,9 @@ void WriterThread::deleteWriter() {
     }
 }
 
-void WriterThread::initWriter(string filename1) {
+void WriterThread::initWriter(string filename1, bool isSTDOUT) {
     deleteWriter();
-    mWriter1 = new Writer(mOptions, filename1, mOptions->compression);
+    mWriter1 = new Writer(mOptions, filename1, mOptions->compression, isSTDOUT);
 }
 
 void WriterThread::initBufferLists() {

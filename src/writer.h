@@ -38,7 +38,7 @@ using namespace std;
 
 class Writer{
 public:
-	Writer(Options* opt, string filename, int compression);
+	Writer(Options* opt, string filename, int compression, bool isSTDOUT = false);
 	~Writer();
 	bool isZipped();
 	bool writeString(const string& str);
@@ -67,6 +67,7 @@ private:
 	size_t mBufDataLen;
 	size_t mBufSize;
 	Options* mOptions;
+	bool mSTDOUT;
 };
 
 #endif

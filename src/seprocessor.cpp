@@ -41,14 +41,15 @@ SingleEndProcessor::~SingleEndProcessor() {
         delete mReadPool;
         mReadPool = NULL;
     }
+    delete[] mInputLists;
 }
 
 void SingleEndProcessor::initOutput() {
     if(!mOptions->failedOut.empty())
         mFailedWriter = new WriterThread(mOptions, mOptions->failedOut);
-    if(mOptions->out1.empty())
+    if(mOptions->out1.empty() && !mOptions->outputToSTDOUT)
         return;
-    mLeftWriter = new WriterThread(mOptions, mOptions->out1);
+    mLeftWriter = new WriterThread(mOptions, mOptions->out1, mOptions->outputToSTDOUT);
 }
 
 void SingleEndProcessor::closeOutput() {
@@ -280,9 +281,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             recycleToPool(tid, r1);
     }
 
-    if(mOptions->outputToSTDOUT) {
-        fwrite(outstr->c_str(), 1, outstr->length(), stdout);
-    } else if(mOptions->split.enabled) {
+    if(mOptions->split.enabled) {
         // split output by each worker thread
         if(!mOptions->out1.empty())
             config->getWriter1()->writeString(outstr);

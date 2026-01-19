@@ -201,6 +201,7 @@ public:
         hasSeqR1 = false;
         hasSeqR2 = false;
         detectAdapterForPE = false;
+        allowGapOverlapTrimming = false;
     }
 public:
     bool enabled;
@@ -214,6 +215,7 @@ public:
     bool hasSeqR2;
     bool hasFasta;
     bool detectAdapterForPE;
+    bool allowGapOverlapTrimming;
 };
 
 class TrimmingOptions {

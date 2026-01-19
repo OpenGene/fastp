@@ -83,6 +83,8 @@ public:
             blocks[recycled & blocksRingBufferSizeMask] = NULL;
             recycled++;
         }
+        delete[] blocks;
+        blocks = NULL;
     }
     inline size_t size() {
         return produced -  consumed;

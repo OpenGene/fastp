@@ -30,6 +30,7 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mMergedWriter = NULL;
     mFailedWriter = NULL;
     mOverlappedWriter = NULL;
+    shouldStopReading = false;
 
     mDuplicate = NULL;
     if(mOptions->duplicate.enabled) {
@@ -58,6 +59,8 @@ PairEndProcessor::~PairEndProcessor() {
         delete mRightReadPool;
         mRightReadPool = NULL;
     }
+    delete[] mLeftInputLists;
+    delete[] mRightInputLists;
 }
 
 void PairEndProcessor::initOutput() {
@@ -361,8 +364,8 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         cerr << "WARNNIG: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
         cerr << "Read1 pack size: " << leftPack->count << endl;
         cerr << "Read2 pack size: " << rightPack->count << endl;
-        cerr << endl;
-	error_exit("input files don't contain identical amount of reads");
+        cerr << "Ignore the unmatched reads" << endl << endl;
+        shouldStopReading = true;
     }
     int tid = config->getThreadId();
 
@@ -428,13 +431,14 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         }
         bool isizeEvaluated = false;
         if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)){
-            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, mOptions->overlapDiffPercentLimit/100.0);
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, mOptions->overlapDiffPercentLimit/100.0, mOptions->adapter.allowGapOverlapTrimming);
             // we only use thread 0 to evaluae ISIZE
             if(config->getThreadId() == 0) {
                 statInsertSize(r1, r2, ov, frontTrimmed1, frontTrimmed2);
                 isizeEvaluated = true;
             }
-            if(mOptions->correction.enabled) {
+            if(mOptions->correction.enabled && !ov.hasGap) {
+                // no gap allowed for overlap correction
                 BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
             }
             if(mOptions->adapter.enabled) {
@@ -457,7 +461,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         if(r1 != NULL && r2!=NULL && mOverlappedWriter) {
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, 0);
             if(ov.overlapped) {
-                Read* overlappedRead = new Read(r1->mName, new string(r1->mSeq->substr(max(0,ov.offset)), ov.overlap_len), r1->mStrand, new string(r1->mQuality->substr(max(0,ov.offset)), ov.overlap_len));
+                Read* overlappedRead = new Read(new string(*r1->mName), new string(r1->mSeq->substr(max(0,ov.offset)), ov.overlap_len), new string(*r1->mStrand), new string(r1->mQuality->substr(max(0,ov.offset)), ov.overlap_len));
                 overlappedRead->appendToString(overlappedOut);
                 recycleToPool1(tid, overlappedRead);
             }
@@ -733,6 +737,8 @@ void PairEndProcessor::readerTask(bool isLeft)
     int count=0;
     bool needToBreak = false;
     while(true){
+        if(shouldStopReading)
+            break;
         Read* read = reader->read();
         if(!read || needToBreak){
             // the last pack
