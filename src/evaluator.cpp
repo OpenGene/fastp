@@ -21,15 +21,23 @@ bool Evaluator::isTwoColorSystem() {
     if(!r)
         return false;
 
-    // Via https://knowledge.illumina.com/instrumentation/general/instrumentation-general-reference_material-list/000003880
-    // NEXTSEQ 500/550: @NS @NB
-    // ? NEXTSEQ 550DX: @NDX
-    // NEXTSEQ 1000/2000: @VL @VH
-    // NOVASEQ 6000: @A
-    // NOVASEQ X PLUS: @LH
-    if(starts_with(r->mName, "@NS") || starts_with(r->mName, "@NB") || starts_with(r->mName, "@NDX") || starts_with(r->mName, "@VL") || starts_with(r->mName, "@VH") || starts_with(r->mName, "@A") || starts_with(r->mName, "@LH")) {
-        delete r;
-        return true;
+    // Two-color system instrument prefixes
+    // See https://github.com/OpenGene/fastp/pull/508 for a detailed discussion
+    const vector<string> twoColorPrefixes = {
+        "@FS",  // iSeq 100
+        "@MN", "@SH",  // MiniSeq
+        "@NS", "@NB",  // NextSeq 500/550
+        "@NDX",  // NextSeq 550DX
+        "@VL", "@VH",  // NextSeq 1000/2000
+        "@A", "@NA",  // NovaSeq 6000
+        "@LH"  // NovaSeq X
+    };
+
+    for (const string& prefix : twoColorPrefixes) {
+        if (starts_with(r->mName, prefix)) {
+            delete r;
+            return true;
+        }
     }
 
     delete r;
