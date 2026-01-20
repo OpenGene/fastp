@@ -50,7 +50,8 @@ public:
     // a part of HTML report for adapters
     void reportAdapterHtml(ofstream& ofs, long totalBases);
     void outputAdaptersJson(ofstream& ofs, map<string, long, classcomp>& adapterCounts);
-    void outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts, long totalBases);
+    int outputAdaptersHtml(ofstream& ofs, map<string, long, classcomp>& adapterCounts, long totalBases, int limitCount = 0);
+    int getAdapterReportCount(map<string, long, classcomp>& adapterCounts);
     // deal with base correction results
     long* getCorrectionMatrix() {return mCorrectionMatrix;}
     long getTotalCorrectedBases();
@@ -58,6 +59,7 @@ public:
     long getCorrectionNum(char from, char to);
     void incCorrectedReads(int count);
     void addMergedPairs(int pairs);
+    bool isLowComplexity(string& adapter);
 
 
 public:

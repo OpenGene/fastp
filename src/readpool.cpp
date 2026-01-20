@@ -31,8 +31,15 @@ bool ReadPool::input(int tid, Read* data) {
 }
 
 void ReadPool::cleanup() {
-    //TODO: delete unused pooled Reads.
-    //But since this is only called when the program exits, the one-by-one deletion can be skipped to save time
+    for(int t=0; t<mOptions->thread; t++) {
+        while(mBufferLists[t]->canBeConsumed()) {
+            Read* r = mBufferLists[t]->consume();
+            mConsumed++;
+            delete r;
+        }
+        delete mBufferLists[t];
+    }
+    delete[] mBufferLists;
 }
 
 void ReadPool::initBufferLists() {

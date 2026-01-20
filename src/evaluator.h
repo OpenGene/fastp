@@ -16,7 +16,6 @@ public:
     ~Evaluator();
     // evaluate how many reads are stored in the input file
     void evaluateReadNum(long& readNum);
-    string evalAdapterAndReadNumDepreciated(long& readNum);
     string evalAdapterAndReadNum(long& readNum, bool isR2);
     bool isTwoColorSystem();
     void evaluateSeqLen();
@@ -32,6 +31,7 @@ private:
     int seq2int(string* seq, int pos, int seqlen, int lastVal = -1);
     int seq2int(string& seq, int pos, int seqlen, int lastVal = -1);
     string getAdapterWithSeed(int seed, Read** loadedReads, long records, int keylen);
+    string checkKnownAdapters(Read** reads, long num);
 };
 
 

@@ -15,10 +15,10 @@ using namespace std;
 
 class WriterThread{
 public:
-    WriterThread(Options* opt, string filename);
+    WriterThread(Options* opt, string filename, bool isSTDOUT = false);
     ~WriterThread();
 
-    void initWriter(string filename1);
+    void initWriter(string filename1, bool isSTDOUT = false);
     void initBufferLists();
 
     void cleanup();

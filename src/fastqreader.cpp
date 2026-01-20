@@ -252,6 +252,12 @@ void FastqReader::getLine(string* line){
 		readToBuf();
 		start = 0;
 		end = 0;
+		// handle the case that \r or \n in the start of buf
+		if(line->empty()) {
+			while(start < mBufDataLen && (mFastqBuf[start] == '\r' || mFastqBuf[start] == '\n'))
+				start++;
+			end = start;
+		}
 		while(end < mBufDataLen) {
 			if(mFastqBuf[end] != '\r' && mFastqBuf[end] != '\n')
 				end++;
@@ -318,8 +324,10 @@ Read* FastqReader::read(){
 	getLine(quality);
 
 	if (strand->empty() || (*strand)[0]!='+') {
+		cerr << *name << endl;
 		cerr << "Expected '+', got " << *strand << endl;
-		error_exit("'+' expected");
+		cerr << "Your FASTQ may be invalid, please check the tail of your FASTQ file" << endl;
+		return NULL;
 	}
 
 	if(quality->length() != sequence->length()) {
@@ -328,7 +336,7 @@ Read* FastqReader::read(){
 		cerr << *sequence << endl;
 		cerr << *strand << endl;
 		cerr << *quality << endl;
-		error_exit("sequence and quality have different length");
+		cerr << "Your FASTQ may be invalid, please check the tail of your FASTQ file" << endl;
 		return NULL;
 	}
 

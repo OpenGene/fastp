@@ -94,6 +94,17 @@ bool Options::validate() {
         check_file_valid(in2);
     }
 
+    if(outputToSTDOUT) {
+        if(!out1.empty()) {
+            cerr << "In STDOUT mode, ignore the out1 filename " << out1 << endl;
+            out1 = "";
+        }
+        if(!out2.empty()) {
+            cerr << "In STDOUT mode, ignore the out2 filename " << out2 << endl;
+            out2 = "";
+        }
+    }
+
     if(merge.enabled) {
         if(split.enabled) {
             error_exit("splitting mode cannot work with merging mode");
@@ -278,9 +289,9 @@ bool Options::validate() {
 
     if(thread < 1) {
         thread = 1;
-    } else if(thread > 16) {
-        cerr << "WARNING: fastp uses up to 16 threads although you specified " << thread << endl;
-        thread = 16;
+    } else if(thread > 64) {
+        cerr << "WARNING: fastp uses up to 64 threads although you specified " << thread << endl;
+        thread = 64;
     }
 
     if(trim.front1 < 0 || trim.front1 > 30)

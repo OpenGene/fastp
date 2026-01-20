@@ -56,7 +56,6 @@ Read* Read::reverseComplement(){
 	string seq = Sequence::reverseComplement(mSeq);
 	string qual;
 	qual.assign(mQuality->rbegin(), mQuality->rend());
-	string* strand=new string("+");
 	return new Read(mName->c_str(), seq.c_str(), "+", qual.c_str());
 }
 
@@ -181,7 +180,9 @@ bool Read::fixMGI() {
 	int len = mName->length();
 	if((*mName)[len-1]=='1' || (*mName)[len-1]=='2') {
 		if((*mName)[len-2] == '/') {
-			mName = new string(mName->substr(0, len-2) + " " + mName->substr(len-2, 2));
+			string* newName = new string(mName->substr(0, len-2) + " " + mName->substr(len-2, 2));
+			delete mName;
+			mName = newName;
 			return true;
 		}
 	}

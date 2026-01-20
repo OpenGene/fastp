@@ -204,207 +204,92 @@ void Evaluator::evaluateReadNum(long& readNum) {
     }
 }
 
-// Depreciated
-string Evaluator::evalAdapterAndReadNumDepreciated(long& readNum) {
-    FastqReader reader(mOptions->in1);
-    // stat up to 1M reads
-    const long READ_LIMIT = 1024*1024;
-    const long BASE_LIMIT = 151 * READ_LIMIT;
-    long records = 0;
-    long bases = 0;
-    size_t firstReadPos = 0;
+string Evaluator::checkKnownAdapters(Read** reads, long num) {
+    map<string, string> knownAdapters = getKnownAdapter();
+    map<string, int> possibleCounts;
+    map<string, int> mismatches;
 
-    size_t bytesRead;
-    size_t bytesTotal;
+    // for performance, up to 100k reads and 100M bases
+    const int MAX_CHECK_READS = 100000;
+    const int MAX_CHECK_BASES = MAX_CHECK_READS*1000;
+    // if we hit for 1000 times, then we exit
+    const int MAX_HIT = 1000;
 
-    // we have to shift last cycle for evaluation since it is so noisy, especially for Illumina data
-    const int shiftTail = max(1, mOptions->trim.tail1);
+    const int matchReq = 8;
+    const int allowOneMismatchForEach = 16;
 
-    // we count the last [2, 9] bp of each read
-    // why we add trim_tail here? since the last cycle are usually with low quality and should be trimmed
-    const int keylen = 10;
-    int size = 1 << (keylen*2 );
-    unsigned int* counts = new unsigned int[size];
-    memset(counts, 0, sizeof(unsigned int)*size);
-    bool reachedEOF = false;
-    bool first = true;
-    while(records < READ_LIMIT && bases < BASE_LIMIT) {
-        Read* r = reader.read();
-        if(!r) {
-            reachedEOF = true;
-            break;
-        }
-        if(first) {
-            reader.getBytes(bytesRead, bytesTotal);
-            firstReadPos = bytesRead;
-            first = false;
-        }
+    map<string, string>::iterator iter;
+
+    for(iter = knownAdapters.begin(); iter!= knownAdapters.end(); iter++) {
+        string adapter = iter->first;
+        possibleCounts[adapter] = 0;
+        mismatches[adapter] = 0;
+    }
+
+    long checkedReads = 0;
+    long checkedBases = 0;
+    int curMaxCount = 0;
+    for (long i=0; i<num; i++) {
+        Read* r = reads[i];
+        const char* rdata = r->mSeq->c_str();
         int rlen = r->length();
-        bases += rlen;
-        if(rlen < keylen + 1 + shiftTail)
-            continue;
 
-        const char* data = r->mSeq->c_str();
-        bool valid = true;
-        unsigned int key = 0;
-        for(int i=0; i<keylen; i++) {
-            key = (key << 2);
-            char base = data[rlen - keylen - shiftTail + i];
-            switch (base) {
-                case 'A':
-                    key += 0;
-                    break;
-                case 'T':
-                    key += 1;
-                    break;
-                case 'C':
-                    key += 2;
-                    break;
-                case 'G':
-                    key += 3;
-                    break;
-                default:
-                    // N or anything else
-                    valid = false;
-                    break;
-            }
-            if(!valid)
-                break;
-        }
-        if(valid) {
-            counts[key]++;
-            records++;
-        }
-        delete r;
-    }
-
-    readNum = 0;
-    if(reachedEOF){
-        readNum = records;
-    } else if(records>0) {
-        // by the way, update readNum so we don't need to evaluate it if splitting output is enabled
-        reader.getBytes(bytesRead, bytesTotal);
-        double bytesPerRead = (double)(bytesRead - firstReadPos) / (double) records;
-        // increase it by 1% since the evaluation is usually a bit lower due to bad quality causes lower compression rate
-        readNum = (long) (bytesTotal*1.01 / bytesPerRead);
-    }
-
-    // we need at least 10000 valid records to evaluate
-    if(records < 10000) {
-        delete[] counts;
-        return "";
-    }
-
-    int repeatReq = 0.0001 * records;
-
-    // initialize candidates
-    map<string, unsigned int> candidates;
-    for(int i=0; i<size; i++) {
-        if(counts[i] >= repeatReq) {
-            string seq = int2seq(i, keylen);
-            // remove low complexity seq
-            int diff = 0;
-            for(int s=0; s<seq.length() - 1; s++) {
-                if(seq[s] != seq[s+1])
-                    diff++;
-            }
-            if(diff >=2){
-                candidates[seq] = counts[i];
-                //cerr << seq << ": " << candidates[seq] << endl;
-            }
-        }
-    }
-
-    map<string, unsigned int>::iterator iter;
-
-    // remove the fake ones have only first base different
-    vector<string> needToDelete;
-    for(iter = candidates.begin(); iter!=candidates.end(); iter++) {
-        string seq = iter->first;
-        char bases[4] = {'A', 'T', 'C', 'G'};
-        int num = 0;
-        for(int b=0; b<4; b++) {
-            seq[0] = bases[b];
-            if(candidates.count(seq) > 0)
-                num++;
-        }
-        if(num >=2 ) {
-            needToDelete.push_back(iter->first);
-        }
-    }
-    for(int i=0; i<needToDelete.size(); i++) {
-        candidates.erase(needToDelete[i]);
-    }
-
-    map<string, unsigned int>::iterator iter1;
-    map<string, unsigned int>::iterator iter2;
-
-    while(true) {
-        bool changed = false;
-        for(iter1 = candidates.begin(); iter1!=candidates.end(); iter1++) {
-            bool aligned = false;
-            for(iter2 = candidates.begin(); iter2!=candidates.end(); iter2++) {
-                if(iter1 == iter2)
-                    continue;
-
-                string a1 = iter1->first;
-                string a2 = iter2->first;
-                int len1 = a1.length();
-                int len2 = a2.length();
-                int overlap = keylen - 1;
-                //cerr << a1 << ":" << a2 << endl;
-
-                // check identidal
-                bool identical = true;
-                for(int o=0; o<overlap; o++) {
-                    identical &= (a1[len1 - overlap + o] == a2[o]);
-                }
-
-                if(identical) {
-                    // merge them
-                    string mergedAdapter = a1 + a2.substr(overlap, len2-overlap);
-                    int mergedCount = iter1->second + iter2->second;
-                    candidates.erase(a1);
-                    candidates.erase(a2);
-                    candidates[mergedAdapter] = mergedCount;
-                    aligned = true;
-                    break;
-                }
-
-            }
-            if(aligned) {
-                changed = true;
-                break;
-            }
-        }
-        if(changed == false)
+        checkedReads++;
+        checkedBases+= rlen;
+        if(checkedReads > MAX_CHECK_READS || checkedBases > MAX_CHECK_BASES)
             break;
-    }
-
-    // find the longest adapter
-    int largest = 0;
-    string finalAdapter = "";
-    for(iter = candidates.begin(); iter!=candidates.end(); iter++) {
-        if(iter->second > largest) {
-            largest = iter->second;
-            finalAdapter = iter->first;
+        if(curMaxCount > MAX_HIT)
+            break;
+        for(iter = knownAdapters.begin(); iter!= knownAdapters.end(); iter++) {
+            string adapter = iter->first;
+            const char* adata = adapter.c_str();
+            int alen = adapter.length();
+            if(alen >= rlen)
+                continue;
+            // this one is not the candidate, skip it for speedup
+            if(curMaxCount > 20 && possibleCounts[adapter] <curMaxCount/10) {
+                continue; 
+            }
+            for(int pos = 0; pos<rlen-matchReq; pos++) {
+                int cmplen = min(rlen - pos, alen);
+                int allowedMismatch = cmplen/allowOneMismatchForEach;
+                int mismatch = 0;
+                bool matched = true;
+                for(int i=0; i<cmplen; i++) {
+                    if( adata[i] != rdata[i+pos] ){
+                        mismatch++;
+                        if(mismatch > allowedMismatch) {
+                            matched = false;
+                            break;
+                        }
+                    }
+                }
+                if(matched) {
+                    possibleCounts[adapter]++;
+                    if(curMaxCount < possibleCounts[adapter])
+                        curMaxCount = possibleCounts[adapter];
+                    mismatches[adapter] += mismatch;
+                    break;
+                }
+            }
         }
     }
 
-    delete[] counts;
-
-    if(finalAdapter.length() > 60)
-        finalAdapter.resize(60);
-    string matchedAdapter = matchKnownAdapter(finalAdapter);
-    if(!matchedAdapter.empty()) {
-        map<string, string> knownAdapters = getKnownAdapter();
-        cerr << knownAdapters[matchedAdapter] << ": " << matchedAdapter << endl;
-        return matchedAdapter;
-    } else {
-        cerr << finalAdapter << endl;
-        return finalAdapter;
+    string adapter = "";
+    int maxCount = 0;
+    map<string, int>::iterator iter2;
+    for(iter2 = possibleCounts.begin(); iter2 != possibleCounts.end(); iter2++) {
+        if(iter2->second > maxCount) {
+            adapter = iter2->first;
+            maxCount = iter2->second;
+        }
     }
-
+    if(maxCount > checkedReads/50 || (maxCount > checkedReads/200 && mismatches[adapter] < checkedReads)) {
+        cerr << knownAdapters[adapter] << endl;
+        cerr << adapter << endl;
+        return adapter;
+    }
+    return "";
 }
 
 string Evaluator::evalAdapterAndReadNum(long& readNum, bool isR2) {
@@ -463,6 +348,16 @@ string Evaluator::evalAdapterAndReadNum(long& readNum, bool isR2) {
         }
         delete[] loadedReads;
         return "";
+    }
+
+    string knownAdapter = checkKnownAdapters(loadedReads, records);
+     if(knownAdapter.size() > 8) {
+        for(int r=0; r<records; r++) {
+            delete loadedReads[r];
+            loadedReads[r] = NULL;
+        }
+        delete[] loadedReads;
+        return knownAdapter;
     }
 
     // we have to shift last cycle for evaluation since it is so noisy, especially for Illumina data
@@ -577,13 +472,14 @@ string Evaluator::evalAdapterAndReadNum(long& readNum, bool isR2) {
 string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records, int keylen) {
     // we have to shift last cycle for evaluation since it is so noisy, especially for Illumina data
     const int shiftTail = max(1, mOptions->trim.tail1);
+    const int MAX_SEARCH_LENGTH = 500;
     NucleotideTree forwardTree(mOptions);
     // forward search
     for(int i=0; i<records; i++) {
         Read* r = loadedReads[i];
         const char* data = r->mSeq->c_str();
         int key = -1;
-        for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
+        for(int pos = 20; pos <= r->length()-keylen-shiftTail && pos <MAX_SEARCH_LENGTH; pos++) {
             key = seq2int(r->mSeq, pos, keylen, key);
             if(key == seed) {
                 forwardTree.addSeq(r->mSeq->substr(pos+keylen, r->length()-keylen-shiftTail-pos));
@@ -599,7 +495,7 @@ string Evaluator::getAdapterWithSeed(int seed, Read** loadedReads, long records,
         Read* r = loadedReads[i];
         const char* data = r->mSeq->c_str();
         int key = -1;
-        for(int pos = 20; pos <= r->length()-keylen-shiftTail; pos++) {
+        for(int pos = 20; pos <= r->length()-keylen-shiftTail && pos <MAX_SEARCH_LENGTH; pos++) {
             key = seq2int(r->mSeq, pos, keylen, key);
             if(key == seed) {
                 string seq =  r->mSeq->substr(0, pos);
