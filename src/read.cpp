@@ -198,9 +198,9 @@ bool Read::test(){
 	return idx == "GGTCCCGA";
 }
 
-ReadPair::ReadPair(Read* left, Read* right){
-	mLeft = left;
-	mRight = right;
+ReadPair::ReadPair(){
+	mLeft = NULL;
+	mRight = NULL;
 }
 
 ReadPair::~ReadPair(){
@@ -212,6 +212,15 @@ ReadPair::~ReadPair(){
 		delete mRight;
 		mRight = NULL;
 	}
+}
+
+void ReadPair::setPair(Read* left, Read* right){
+	mLeft = left;
+	mRight = right;
+}
+
+bool ReadPair::eof(){
+	return mLeft == NULL || mRight == NULL;
 }
 
 Read* ReadPair::fastMerge(){
@@ -298,7 +307,8 @@ bool ReadPair::test(){
 		new string("+"),
 		new string("AAAAA6EEEEE/EEEEEEEEEEE#EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEAEEEAEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"));
 
-	ReadPair pair(left, right);
+	ReadPair pair;
+	pair.setPair(left, right);
 	Read* merged = pair.fastMerge();
 	if(merged == NULL)
 		return false;

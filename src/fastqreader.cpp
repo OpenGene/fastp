@@ -428,16 +428,12 @@ FastqReaderPair::~FastqReaderPair(){
 	}
 }
 
-ReadPair* FastqReaderPair::read(){
+void FastqReaderPair::read(ReadPair* pair){
 	Read* l = mLeft->read();
 	Read* r = NULL;
 	if(mInterleaved)
 		r = mLeft->read();
 	else
 		r = mRight->read();
-	if(!l || !r){
-		return NULL;
-	} else {
-		return new ReadPair(l, r);
-	}
+	pair->setPair(l, r);
 }

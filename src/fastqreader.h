@@ -91,7 +91,8 @@ public:
 	FastqReaderPair(FastqReader* left, FastqReader* right);
 	FastqReaderPair(string leftName, string rightName, bool hasQuality = true, bool phred64 = false, bool interleaved = false);
 	~FastqReaderPair();
-	ReadPair* read();
+	void read(ReadPair* pair);
+	bool eof();
 public:
 	FastqReader* mLeft;
 	FastqReader* mRight;
