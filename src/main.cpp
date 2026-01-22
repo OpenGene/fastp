@@ -164,7 +164,7 @@ int main(int argc, char* argv[]){
     if(argc == 1) {
         //output citation information
         cerr << "Citation:" <<endl;
-        cerr << "Shifu Chen. 2023. Ultrafast one-pass FASTQ data preprocessing, quality control, and deduplication using fastp. iMeta 2: e107" << endl;
+        cerr << "Chen, S. (2025). Fastp 1.0: An ultra‐fast all‐round tool for FASTQ data quality control and preprocessing. Imeta, 4(5), e70078." << endl;
         cerr << endl;
         return 0;
     }
