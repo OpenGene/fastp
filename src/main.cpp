@@ -59,6 +59,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("adapter_fasta", 0, "specify a FASTA file to trim both read1 and read2 (if PE) by all the sequences in this FASTA file", false, "");
     cmd.add("detect_adapter_for_pe", '2', "enable adapter detection for PE data to get ultra-clean data. It takes more time to find just a little bit more adapters.");
     cmd.add("allow_gap_overlap_trimming", 0, "allow up to one gap when trim adapters by overlap analysis for PE data. By default no gap is allowed.");
+    cmd.add<int>("dimer_max_len", 0, "if the read length is less than or equal to this value after adapter trimming, it is considered an adapter dimer. Requires adapter evidence.", false, 2);
 
     // trimming
     cmd.add<int>("trim_front1", 'f', "trimming how many bases in front for read1, default is 0", false, 0);
@@ -217,6 +218,7 @@ int main(int argc, char* argv[]){
     opt.adapter.enabled = !cmd.exist("disable_adapter_trimming");
     opt.adapter.detectAdapterForPE = cmd.exist("detect_adapter_for_pe");
     opt.adapter.allowGapOverlapTrimming = cmd.exist("allow_gap_overlap_trimming");
+    opt.adapter.dimerMaxLen = cmd.get<int>("dimer_max_len");
     opt.adapter.sequence = cmd.get<string>("adapter_sequence");
     opt.adapter.sequenceR2 = cmd.get<string>("adapter_sequence_r2");
     opt.adapter.fastaFile = cmd.get<string>("adapter_fasta");

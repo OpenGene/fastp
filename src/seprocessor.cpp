@@ -225,7 +225,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         if(mOptions->fixMGI) {
             or1->fixMGI();
         }
-        
+
         // umi processing
         if(mOptions->umi.enabled)
             mUmiProcessor->process(or1);
@@ -239,13 +239,20 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
                 PolyX::trimPolyG(r1, config->getFilterResult(), mOptions->polyGTrim.minLen);
         }
 
+        bool isAdapterDimer = false;
         if(r1 != NULL && mOptions->adapter.enabled){
             bool trimmed = false;
             if(mOptions->adapter.hasSeqR1)
                 trimmed = AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
             bool incTrimmedCounter = !trimmed;
             if(mOptions->adapter.hasFasta) {
-                AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, incTrimmedCounter);
+                trimmed |= AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, incTrimmedCounter);
+            }
+
+            // Check for adapter dimer: read shorter than threshold after adapter trimming
+            // AND adapter was detected (requires evidence)
+            if(r1 != NULL && trimmed && r1->length() <= mOptions->adapter.dimerMaxLen) {
+                isAdapterDimer = true;
             }
         }
 
@@ -260,6 +267,9 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         }
 
         int result = mFilter->passFilter(r1);
+
+        if(isAdapterDimer)
+            result = FAIL_ADAPTER_DIMER;
 
         config->addFilterResult(result, 1);
 
@@ -285,7 +295,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         // split output by each worker thread
         if(!mOptions->out1.empty())
             config->getWriter1()->writeString(outstr);
-    } 
+    }
 
     if(mLeftWriter) {
         mLeftWriter->input(tid, outstr);
@@ -438,7 +448,7 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
             usleep(100);
         }
     }
-    input->setConsumerFinished();        
+    input->setConsumerFinished();
 
     mFinishedThreads++;
     if(mFinishedThreads == mOptions->thread) {

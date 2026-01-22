@@ -24,12 +24,6 @@ typedef unsigned char uint8;
 
 const char ATCG_BASES[] = {'A', 'T', 'C', 'G'};
 
-#pragma pack(2) 
-
-
-#pragma pack() 
-
-
 // how many reads one pack has
 static const int PACK_SIZE = 256;
 
@@ -50,6 +44,7 @@ static const int FAIL_LENGTH = 16;
 static const int FAIL_TOO_LONG = 17;
 static const int FAIL_QUALITY = 20;
 static const int FAIL_COMPLEXITY = 24;
+static const int FAIL_ADAPTER_DIMER = 28;
 
 // how many types in total we support
 static const int FILTER_RESULT_TYPES = 32;
@@ -62,7 +57,7 @@ const static char* FAILED_TYPES[FILTER_RESULT_TYPES] = {
 	"failed_too_short", "failed_too_long", "", "",
 	"failed_quality_filter", "", "", "",
 	"failed_low_complexity", "", "", "",
-	"", "", "", ""
+	"failed_adapter_dimer", "", "", ""
 };
 
 #endif /* COMMON_H */

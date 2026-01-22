@@ -430,6 +430,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 PolyX::trimPolyG(r1, r2, config->getFilterResult(), mOptions->polyGTrim.minLen);
         }
         bool isizeEvaluated = false;
+        bool isAdapterDimer = false;
         if(r1 != NULL && r2!=NULL && (mOptions->adapter.enabled || mOptions->correction.enabled)){
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire, mOptions->overlapDiffPercentLimit/100.0, mOptions->adapter.allowGapOverlapTrimming);
             // we only use thread 0 to evaluae ISIZE
@@ -452,8 +453,16 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                         trimmed2 = AdapterTrimmer::trimBySequence(r2, config->getFilterResult(), mOptions->adapter.sequenceR2, true);
                 }
                 if(mOptions->adapter.hasFasta) {
-                    AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, !trimmed1);
-                    AdapterTrimmer::trimByMultiSequences(r2, config->getFilterResult(), mOptions->adapter.seqsInFasta, true, !trimmed2);
+                    trimmed1 |= AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, !trimmed1);
+                    trimmed2 |= AdapterTrimmer::trimByMultiSequences(r2, config->getFilterResult(), mOptions->adapter.seqsInFasta, true, !trimmed2);
+                }
+
+                // Check for adapter dimer: both reads shorter than threshold after adapter trimming
+                // AND adapters were detected in at least one of the reads (requires evidence)
+                if(r1 != NULL && r2 != NULL && (trimmed1 || trimmed2) &&
+                   r1->length() <= mOptions->adapter.dimerMaxLen &&
+                   r2->length() <= mOptions->adapter.dimerMaxLen) {
+                    isAdapterDimer = true;
                 }
             }
         }
@@ -504,13 +513,19 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 mergeProcessed = true;
             } else if(mOptions->merge.includeUnmerged){
                 int result1 = mFilter->passFilter(r1);
+                int result2 = mFilter->passFilter(r2);
+
+                if(isAdapterDimer) {
+                    result1 = FAIL_ADAPTER_DIMER;
+                    result2 = FAIL_ADAPTER_DIMER;
+                }
+
                 config->addFilterResult(result1, 1);
                 if(result1 == PASS_FILTER && !dedupOut) {
                     r1->appendToString(mergedOutput);
                     config->getPostStats1()->statRead(r1);
                 }
 
-                int result2 = mFilter->passFilter(r2);
                 config->addFilterResult(result2, 1);
                 if(result2 == PASS_FILTER && !dedupOut) {
                     r2->appendToString(mergedOutput);
@@ -526,6 +541,11 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
 
             int result1 = mFilter->passFilter(r1);
             int result2 = mFilter->passFilter(r2);
+
+            if(isAdapterDimer) {
+                result1 = FAIL_ADAPTER_DIMER;
+                result2 = FAIL_ADAPTER_DIMER;
+            }
 
             config->addFilterResult(max(result1, result2), 2);
 
