@@ -2,6 +2,7 @@
 #include "peprocessor.h"
 #include "seprocessor.h"
 #include "overlapanalysis.h"
+#include <cmath>
 
 Filter::Filter(Options* opt){
     mOptions = opt;
@@ -19,7 +20,7 @@ int Filter::passFilter(Read* r) {
     int rlen = r->length();
     int lowQualNum = 0;
     int nBaseNum = 0;
-    int totalQual = 0;
+    float totalQual = 0;
 
     // need to recalculate lowQualNum and nBaseNum if the corresponding filters are enabled
     if(mOptions->qualfilter.enabled || mOptions->lengthFilter.enabled) {
@@ -30,7 +31,7 @@ int Filter::passFilter(Read* r) {
             char base = seqstr[i];
             char qual = qualstr[i];
 
-            totalQual += qual - 33;
+            totalQual += pow(10, ((qual - 33)/(-10.0)));
 
             if(qual < mOptions->qualfilter.qualifiedQual)
                 lowQualNum ++;
@@ -43,7 +44,7 @@ int Filter::passFilter(Read* r) {
     if(mOptions->qualfilter.enabled) {
         if(lowQualNum > (mOptions->qualfilter.unqualifiedPercentLimit * rlen / 100.0) )
             return FAIL_QUALITY;
-        else if(mOptions->qualfilter.avgQualReq > 0 && (totalQual / rlen)<mOptions->qualfilter.avgQualReq)
+        else if(mOptions->qualfilter.avgQualReq > 0 && ((-10)*(log10(totalQual / rlen)))<mOptions->qualfilter.avgQualReq)
             return FAIL_QUALITY;
         else if(nBaseNum > mOptions->qualfilter.nBaseLimit )
             return FAIL_N_BASE;
