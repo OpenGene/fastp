@@ -32,6 +32,7 @@ SOFTWARE.
 #include <iostream>
 #include <fstream>
 #include "igzip_lib.h"
+#include <zstd.h>
 #include "readpool.h"
 
 class FastqReader{
@@ -61,6 +62,7 @@ private:
 	void clearLineBreaks(char* line);
 	void readToBuf();
 	void readToBufIgzip();
+	void readToBufZstd();
 	bool bufferFinished();
 
 private:
@@ -83,6 +85,11 @@ private:
 	bool mHasQuality;
 	bool mPhred64;
     ReadPool* mReadPool;
+	bool mUseZstd;
+	bool mZstdFinished;
+	ZSTD_DStream* mZstdStream;
+	ZSTD_inBuffer mZstdInput;
+	size_t mZstdInputUsedBytes;
 
 };
 

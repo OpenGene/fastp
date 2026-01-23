@@ -75,6 +75,7 @@ If you use fastp in your work, you can cite fastp as:  *Shifu Chen. fastp 1.0: A
 11. support long reads (data from PacBio / Nanopore devices).
 12. support reading from STDIN and writing to STDOUT
 13. support interleaved input
+14. support reading Zstandard-compressed FASTQ/FASTA files (`.zst` / `.zstd`)
 14. support ultra-fast FASTQ-level deduplication
 15. ...
 
@@ -160,6 +161,7 @@ sudo make install
 * for PE data, you should also specify read2 input by `-I` or `--in2`, and specify read2 output by `-O` or `--out2`.
 * if you don't specify the output file names, no output files will be written, but the QC will still be done for both data before and after filtering.
 * the output will be gzip-compressed if its file name ends with `.gz`
+* the input can be gzip-compressed (`.gz`) or Zstandard-compressed (`.zst`, `.zstd`); compression is auto-detected from the extension
 ## output to STDOUT
 `fastp` supports streaming the passing-filter reads to STDOUT, so that it can be passed to other compressors like `bzip2`, or be passed to aligners like `bwa` and `bowtie2`.
 * specify `--stdout` to enable this mode to stream output to STDOUT

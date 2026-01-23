@@ -4,8 +4,8 @@ DIR_OBJ := ./obj
 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
-INCLUDE_DIRS ?=
-LIBRARY_DIRS ?=
+INCLUDE_DIRS ?= 
+LIBRARY_DIRS ?= 
 
 SRC := $(wildcard ${DIR_SRC}/*.cpp)
 OBJ := $(patsubst %.cpp,${DIR_OBJ}/%.o,$(notdir ${SRC}))
@@ -16,7 +16,7 @@ BIN_TARGET := ${TARGET}
 
 CXX ?= g++
 CXXFLAGS := -std=c++11 -pthread -g -O3 -MD -MP -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS}
-LIBS := -lisal -ldeflate -lpthread
+LIBS := -lisal -ldeflate -lzstd -lpthread
 STATIC_FLAGS := -static -Wl,--no-as-needed -pthread
 LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_FLAGS)
 STATIC_LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(STATIC_FLAGS) $(LIBS) $(STATIC_LD_FLAGS)
