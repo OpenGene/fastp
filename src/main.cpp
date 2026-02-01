@@ -44,7 +44,7 @@ int main(int argc, char* argv[]){
     cmd.add("include_unmerged", 0, "in the merging mode, write the unmerged or unpaired reads to the file specified by --merge. Disabled by default.");
     cmd.add("phred64", '6', "indicate the input is using phred64 scoring (it'll be converted to phred33, so the output will still be phred33)");
     cmd.add<int>("compression", 'z', "compression level for gzip output (1 ~ 9). 1 is fastest, 9 is smallest, default is 4.", false, 4);
-    cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
+    cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in. Adapter auto-detection is disabled for STDIN mode");
     cmd.add("stdout", 0, "stream passing-filters reads to STDOUT. This option will result in interleaved FASTQ output for paired-end output. Disabled by default.");
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved FASTQ which contains both read1 and read2. Disabled by default.");
     cmd.add<int>("reads_to_process", 0, "specify how many reads/pairs to be processed. Default 0 means process all reads.", false, 0);
@@ -466,9 +466,7 @@ int main(int argc, char* argv[]){
         }
     }
     if(opt.shallDetectAdapter(true)) {
-        if(!supportEvaluation)
-            cerr << "Adapter auto-detection is disabled for STDIN mode" << endl;
-        else {
+        if(supportEvaluation) {
             cerr << "Detecting adapter sequence for read2..." << endl;
             string adapt = eva.evalAdapterAndReadNum(readNum, true);
             if(adapt.length() > 60 )
