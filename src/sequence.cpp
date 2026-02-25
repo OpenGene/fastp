@@ -1,4 +1,5 @@
 #include "sequence.h"
+#include "simd.h"
 
 Sequence::Sequence(){
 }
@@ -21,60 +22,16 @@ int Sequence::length(){
 }
 
 string Sequence::reverseComplement(string* origin) {
-    string str(origin->length(), 0);
     int len = origin->length();
-    for(int c=0;c<origin->length();c++){
-        char base = (*origin)[c];
-        switch(base){
-            case 'A':
-            case 'a':
-                str[len-c-1] = 'T';
-                break;
-            case 'T':
-            case 't':
-                str[len-c-1] = 'A';
-                break;
-            case 'C':
-            case 'c':
-                str[len-c-1] = 'G';
-                break;
-            case 'G':
-            case 'g':
-                str[len-c-1] = 'C';
-                break;
-            default:
-                str[len-c-1] = 'N';
-        }
-    }
+    string str(len, 0);
+    fastp_simd::reverseComplement(origin->c_str(), &str[0], len);
     return str;
 }
 
 Sequence Sequence::reverseComplement(){
-    string*  str = new string(mStr->length(), 0);
     int len = mStr->length();
-    for(int c=0;c<mStr->length();c++){
-        char base = (*mStr)[c];
-        switch(base){
-            case 'A':
-            case 'a':
-                (*str)[len-c-1] = 'T';
-                break;
-            case 'T':
-            case 't':
-                (*str)[len-c-1] = 'A';
-                break;
-            case 'C':
-            case 'c':
-                (*str)[len-c-1] = 'G';
-                break;
-            case 'G':
-            case 'g':
-                (*str)[len-c-1] = 'C';
-                break;
-            default:
-                (*str)[len-c-1] = 'N';
-        }
-    }
+    string* str = new string(len, 0);
+    fastp_simd::reverseComplement(mStr->c_str(), &(*str)[0], len);
     return Sequence(str);
 }
 
