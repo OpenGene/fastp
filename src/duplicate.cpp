@@ -116,15 +116,11 @@ void Duplicate::seq2intvector(const char* data, int len, uint64* output, int pos
 }
 
 bool Duplicate::checkRead(Read* r) {
-    uint64* positions = new uint64[mBufNum];
-
-    // init
-    for(int i=0; i<mBufNum; i++)
-        positions[i] = 0;
+    // max mBufNum is 8 (accuracy level 6), stack-allocate to avoid heap alloc per read
+    uint64 positions[8] = {0};
     int len = r->length();
     seq2intvector(r->mSeq->c_str(), len, positions);
     bool isDup = applyBloomFilter(positions);
-    delete[] positions;
 
     mTotalReads++;
     if(isDup)
@@ -134,15 +130,11 @@ bool Duplicate::checkRead(Read* r) {
 }
 
 bool Duplicate::checkPair(Read* r1, Read* r2) {
-    uint64* positions = new uint64[mBufNum];
-    
-    // init
-    for(int i=0; i<mBufNum; i++)
-        positions[i] = 0;
+    // max mBufNum is 8 (accuracy level 6), stack-allocate to avoid heap alloc per read
+    uint64 positions[8] = {0};
     seq2intvector(r1->mSeq->c_str(), r1->length(), positions);
     seq2intvector(r2->mSeq->c_str(), r2->length(), positions, r1->length());
     bool isDup = applyBloomFilter(positions);
-    delete[] positions;
 
     mTotalReads++;
     if(isDup)
