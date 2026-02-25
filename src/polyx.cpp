@@ -55,30 +55,30 @@ void PolyX::trimPolyX(Read* r, FilterResult* fr, int compareReq) {
     int rlen = r->length();
 
 
+    // Branchless base-to-index lookup (A=0, T=1, C=2, G=3, N=4, else=5)
+    static const int POLYX_BASE_IDX[256] = {
+        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5, 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5, 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+        5,0,5,2,5,5,5,3,5,5,5,5,5,5,4,5, 5,5,5,5,1,5,5,5,5,5,5,5,5,5,5,5,
+        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5, 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5, 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5, 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5, 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5, 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+    };
+
     int atcgNumbers[4] = {0, 0, 0, 0};
     int pos = 0;
     for(pos=0; pos<rlen; pos++) {
-        switch(data[rlen - pos - 1]) {
-            case 'A':
-                atcgNumbers[0]++;
-                break;
-            case 'T':
-                atcgNumbers[1]++;
-                break;
-            case 'C':
-                atcgNumbers[2]++;
-                break;
-            case 'G':
-                atcgNumbers[3]++;
-                break;
-            case 'N':
-                atcgNumbers[0]++;
-                atcgNumbers[1]++;
-                atcgNumbers[2]++;
-                atcgNumbers[3]++;
-                break;
-            default:
-                break;
+        int idx = POLYX_BASE_IDX[static_cast<unsigned char>(data[rlen - pos - 1])];
+        if(idx < 4) {
+            atcgNumbers[idx]++;
+        } else if(idx == 4) {
+            // N counts toward all bases
+            atcgNumbers[0]++;
+            atcgNumbers[1]++;
+            atcgNumbers[2]++;
+            atcgNumbers[3]++;
         }
 
         int cmp = (pos+1);
