@@ -9,6 +9,7 @@
 #include "polyx.h"
 #include "nucleotidetree.h"
 #include "evaluator.h"
+#include "simd.h"
 #include <time.h>
 
 UnitTest::UnitTest(){
@@ -17,6 +18,7 @@ UnitTest::UnitTest(){
 
 void UnitTest::run(){
     bool passed = true;
+    passed &= report(fastp_simd::testSimd(), "fastp_simd::testSimd");
     passed &= report(Sequence::test(), "Sequence::test");
     passed &= report(Read::test(), "Read::test");
     passed &= report(FastqReader::test(), "FastqReader::test");
