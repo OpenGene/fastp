@@ -83,31 +83,22 @@ void ReverseComplementImpl(const char* src, char* dst, int len) {
     const hn::ScalableTag<uint8_t> d;
     const int N = hn::Lanes(d);
 
-    // Complement via comparisons — portable across all SIMD widths
-    const auto vA = hn::Set(d, static_cast<uint8_t>('A'));
-    const auto vT = hn::Set(d, static_cast<uint8_t>('T'));
-    const auto vC = hn::Set(d, static_cast<uint8_t>('C'));
-    const auto vG = hn::Set(d, static_cast<uint8_t>('G'));
-    const auto va = hn::Set(d, static_cast<uint8_t>('a'));
-    const auto vt = hn::Set(d, static_cast<uint8_t>('t'));
-    const auto vc = hn::Set(d, static_cast<uint8_t>('c'));
-    const auto vg = hn::Set(d, static_cast<uint8_t>('g'));
-    const auto vN = hn::Set(d, static_cast<uint8_t>('N'));
+    // Complement via single table lookup on low nibble of ASCII code.
+    // DNA base low nibbles: A/a=1, C/c=3, T/t=4, G/g=7, N=14.
+    // Uppercase and lowercase share the same low nibble, so one table
+    // handles both.  Unmapped nibbles default to 'N'.
+    HWY_ALIGN static const uint8_t kComplement[16] = {
+        'N', 'T', 'N', 'G', 'A', 'N', 'N', 'C',
+        'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N'
+    };
+    const auto table = hn::LoadDup128(d, kComplement);
+    const auto vMask = hn::Set(d, static_cast<uint8_t>(0x0F));
 
     int i = 0;
     for (; i + N <= len; i += N) {
         const auto v = hn::LoadU(d, reinterpret_cast<const uint8_t*>(src + i));
-
-        // Build complement using conditional selects
-        auto comp = vN;  // default: N
-        comp = hn::IfThenElse(hn::Eq(v, vA), vT, comp);
-        comp = hn::IfThenElse(hn::Eq(v, vT), vA, comp);
-        comp = hn::IfThenElse(hn::Eq(v, vC), vG, comp);
-        comp = hn::IfThenElse(hn::Eq(v, vG), vC, comp);
-        comp = hn::IfThenElse(hn::Eq(v, va), vT, comp);
-        comp = hn::IfThenElse(hn::Eq(v, vt), vA, comp);
-        comp = hn::IfThenElse(hn::Eq(v, vc), vG, comp);
-        comp = hn::IfThenElse(hn::Eq(v, vg), vC, comp);
+        const auto indices = hn::And(v, vMask);
+        const auto comp = hn::TableLookupBytes(table, indices);
 
         // Reverse and store at mirrored position
         const auto revComp = hn::Reverse(d, comp);
