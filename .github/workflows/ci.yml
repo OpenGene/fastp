@@ -24,28 +24,11 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential nasm autoconf automake libtool libhwy-dev
+          sudo apt-get install -y build-essential libhwy-dev libdeflate-dev libisal-dev
 
       - name: install dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install automake autoconf nasm highway
-
-      - name: build libdeflate
-        run: |
-          git clone --depth=1 --branch v1.22 https://github.com/ebiggers/libdeflate.git /tmp/libdeflate
-          cd /tmp/libdeflate
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DLIBDEFLATE_BUILD_SHARED_LIB=OFF -DLIBDEFLATE_BUILD_GZIP=OFF
-          cmake --build build -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-          sudo cmake --install build
-
-      - name: build isa-l
-        run: |
-          git clone --depth=1 --branch v2.31.0 https://github.com/intel/isa-l.git /tmp/isa-l
-          cd /tmp/isa-l
-          ./autogen.sh
-          ./configure --prefix=/usr/local
-          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-          sudo make install
+        run: brew install highway libdeflate isa-l
 
       - name: build fastp
         run: make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
