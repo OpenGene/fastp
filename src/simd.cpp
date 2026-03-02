@@ -167,6 +167,32 @@ int CountMismatchesImpl(const char* a, const char* b, int len) {
     return diff;
 }
 
+int CountMismatchesBoundedImpl(const char* a, const char* b, int len, int limit) {
+    const hn::ScalableTag<uint8_t> d;
+    const int N = hn::Lanes(d);
+
+    int diff = 0;
+    int i = 0;
+
+    for (; i + N <= len; i += N) {
+        const auto va = hn::LoadU(d, reinterpret_cast<const uint8_t*>(a + i));
+        const auto vb = hn::LoadU(d, reinterpret_cast<const uint8_t*>(b + i));
+        const auto maskNe = hn::Ne(va, vb);
+        diff += hn::CountTrue(d, maskNe);
+        if (diff > limit) return diff;
+    }
+
+    // Scalar tail
+    for (; i < len; i++) {
+        if (a[i] != b[i]) {
+            diff++;
+            if (diff > limit) return diff;
+        }
+    }
+
+    return diff;
+}
+
 // NOLINTNEXTLINE(google-readability-namespace-comments)
 }  // namespace HWY_NAMESPACE
 }  // namespace fastp_simd
@@ -185,6 +211,7 @@ HWY_EXPORT(CountQualityMetricsImpl);
 HWY_EXPORT(ReverseComplementImpl);
 HWY_EXPORT(CountAdjacentDiffsImpl);
 HWY_EXPORT(CountMismatchesImpl);
+HWY_EXPORT(CountMismatchesBoundedImpl);
 
 void countQualityMetrics(const char* qualstr, const char* seqstr, int len,
                          char qualThreshold, int& lowQualNum, int& nBaseNum,
@@ -204,6 +231,10 @@ int countAdjacentDiffs(const char* data, int len) {
 
 int countMismatches(const char* a, const char* b, int len) {
     return HWY_DYNAMIC_DISPATCH(CountMismatchesImpl)(a, b, len);
+}
+
+int countMismatchesBounded(const char* a, const char* b, int len, int limit) {
+    return HWY_DYNAMIC_DISPATCH(CountMismatchesBoundedImpl)(a, b, len, limit);
 }
 
 // ---- Scalar reference implementations for testing ----
@@ -440,6 +471,52 @@ bool testSimd() {
         int d = countMismatches("A", "T", 0);
         if (d != 0) {
             fprintf(stderr, "FAIL: countMismatches len=0 got %d\n", d);
+            pass = false;
+        }
+    }
+
+    // --- countMismatchesBounded ---
+    // Under limit
+    {
+        int d = countMismatchesBounded("ACGTACGT", "ACGTACGT", 8, 2);
+        if (d != 0) {
+            fprintf(stderr, "FAIL: countMismatchesBounded identical got %d\n", d);
+            pass = false;
+        }
+    }
+    // Exactly at limit
+    {
+        int d = countMismatchesBounded("AACG", "TTCG", 4, 2);
+        if (d != 2) {
+            fprintf(stderr, "FAIL: countMismatchesBounded at-limit got %d\n", d);
+            pass = false;
+        }
+    }
+    // Over limit (early exit)
+    {
+        int d = countMismatchesBounded("AAAA", "TTTT", 4, 1);
+        if (d <= 1) {
+            fprintf(stderr, "FAIL: countMismatchesBounded over-limit got %d\n", d);
+            pass = false;
+        }
+    }
+    // Long string, under limit
+    {
+        const char* a = "ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG";
+        const char* b = "ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG";
+        int d = countMismatchesBounded(a, b, 68, 5);
+        if (d != 0) {
+            fprintf(stderr, "FAIL: countMismatchesBounded long-identical got %d\n", d);
+            pass = false;
+        }
+    }
+    // Long string, over limit (should exit early)
+    {
+        const char* a = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        const char* b = "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT";
+        int d = countMismatchesBounded(a, b, 66, 3);
+        if (d <= 3) {
+            fprintf(stderr, "FAIL: countMismatchesBounded long-over got %d\n", d);
             pass = false;
         }
     }

@@ -26,6 +26,10 @@ int countAdjacentDiffs(const char* data, int len);
 // Returns the number of positions where a[i] != b[i], up to len bytes.
 int countMismatches(const char* a, const char* b, int len);
 
+// Count mismatches with early exit.
+// Returns mismatch count if <= limit, or a value > limit if exceeded.
+int countMismatchesBounded(const char* a, const char* b, int len, int limit);
+
 // Run all SIMD unit tests. Returns true if all pass.
 bool testSimd();
 
