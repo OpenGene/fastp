@@ -1,8 +1,9 @@
 name: fastp ci
 on:
+  push:
+    branches: [master]
   pull_request:
-    branches:
-      - master
+    branches: [master]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -13,64 +14,43 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-24.04
-          - macos-12
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - name: checkout scm
-        uses: actions/checkout@v3
+      - name: checkout
+        uses: actions/checkout@v4
 
-      - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v1
-        id: cpu-cores
-
-      - name: install build dependencies (Ubuntu)
-        run: sudo apt update && sudo apt install -y build-essential nasm
+      - name: install dependencies (Ubuntu)
         if: runner.os == 'Linux'
-
-      - name: install build dependencies (MacOS)
-        run: brew install automake autoconf coreutils nasm
-        if: runner.os == 'macOS'
-
-      - name: get deflate
-        uses: actions/checkout@v3
-        with:
-          repository: ebiggers/libdeflate
-          path: src/libs/deflate
-          ref: v1.22
-
-      - name: build deflate
         run: |
-          cd src/libs/deflate
-          cmake -B build
-          cmake --build build -j ${{ steps.cpu-cores.outputs.count }}
-          sudo cmake --install build
-          cd -
+          sudo apt-get update
+          sudo apt-get install -y build-essential nasm autoconf automake libtool libhwy-dev
 
-      - name: get isa-l
-        uses: actions/checkout@v3
-        with:
-          repository: intel/isa-l
-          path: src/libs/isa-l
-          ref: v2.31.0
+      - name: install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install automake autoconf nasm highway
+
+      - name: build libdeflate
+        run: |
+          git clone --depth=1 --branch v1.22 https://github.com/ebiggers/libdeflate.git /tmp/libdeflate
+          cd /tmp/libdeflate
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DLIBDEFLATE_BUILD_SHARED_LIB=OFF -DLIBDEFLATE_BUILD_GZIP=OFF
+          cmake --build build -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+          sudo cmake --install build
 
       - name: build isa-l
         run: |
-          cd src/libs/isa-l
+          git clone --depth=1 --branch v2.31.0 https://github.com/intel/isa-l.git /tmp/isa-l
+          cd /tmp/isa-l
           ./autogen.sh
           ./configure --prefix=/usr/local
-          make -j ${{ steps.cpu-cores.outputs.count }}
+          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
           sudo make install
-          cd -
 
-      - name: make fatsp  (MacOS)
-        run: bash -c 'make -j $(nproc)'
-        if: runner.os == 'macOS'
+      - name: build fastp
+        run: make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 
-      - name: make fastp static (Ubuntu)
-        run: bash -c 'make -j $(nproc) static'
-        if: runner.os == 'Linux'
-
-      - name: test
-        run: chmod a+x ./fastp && ./fastp --version
+      - name: smoke test
+        run: |
+          ./fastp --version
+          ./fastp -i testdata/R1.fq -o /dev/null
