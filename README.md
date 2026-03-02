@@ -24,8 +24,9 @@ If you use fastp in your work, you can cite fastp as:  *Shifu Chen. fastp 1.0: A
   - [or download the latest prebuilt binary for Linux users](#or-download-the-latest-prebuilt-binary-for-linux-users)
   - [or compile from source](#or-compile-from-source)
     - [Step 1: install isa-l](#step-1-install-isa-l)
-    - [step 2: install libdeflate](#step-2-install-libdeflate)
-    - [Step 3: download and build fastp](#step-3-download-and-build-fastp)
+    - [Step 2: install libdeflate](#step-2-install-libdeflate)
+    - [Step 3: install highway](#step-3-install-highway)
+    - [Step 4: download and build fastp](#step-4-download-and-build-fastp)
 - [input and output](#input-and-output)
   - [output to STDOUT](#output-to-stdout)
   - [input from STDIN](#input-from-stdin)
@@ -117,11 +118,17 @@ mv fastp.0.23.4 fastp
 chmod a+x ./fastp
 ```
 ## or compile from source
-`fastp` depends on `libdeflate` and `libisal`, while `libisal` is not compatible with gcc 4.8. If you use gcc 4.8, your fastp will fail to run. Please upgrade your gcc before you build the libraries and fastp.
+`fastp` depends on `libisal`, `libdeflate` and `libhwy` (Google Highway). Please install all three before building.
+
+You can install all dependencies at once with conda:
+```shell
+conda install -c conda-forge isa-l libdeflate libhwy
+```
+
+Or install them individually using your system package manager:
 
 ### Step 1: install isa-l
-It's recommended that to install it using your package manager, for example `apt install isa-l` on ubuntu, or `brew install isa-l` on Mac. Otherwise you can compile it from source. Please be noted that `isa-l` is not compatible with gcc 4.8 or older versions. See https://github.com/intel/isa-l
-`autoconf`, `automake`, `libtools`, `nasm (>=2.11.01)` and `yasm (>=1.2.0)` are required to build isa-l.
+Install via package manager: `apt install libisal-dev` (Ubuntu) or `brew install isa-l` (macOS). Or compile from source (requires `autoconf`, `automake`, `libtool`, `nasm >=2.11.01`):
 ```shell
 git clone https://github.com/intel/isa-l.git
 cd isa-l
@@ -131,17 +138,27 @@ make -j
 sudo make install
 ```
 
-### step 2: install libdeflate
-It's recommended that to install it using your package manager, for example `apt install libdeflate` on ubuntu, or `brew install libdeflate` on Mac. Otherwise you can compile it from source. See https://github.com/ebiggers/libdeflate
+### Step 2: install libdeflate
+Install via package manager: `apt install libdeflate-dev` (Ubuntu) or `brew install libdeflate` (macOS). Or compile from source:
 ```shell
 git clone https://github.com/ebiggers/libdeflate.git
 cd libdeflate
 cmake -B build
 cmake --build build
-cmake --install build
+sudo cmake --install build
 ```
 
-### Step 3: download and build fastp
+### Step 3: install Highway
+[Google Highway](https://github.com/google/highway) provides portable SIMD acceleration. Install via package manager: `apt install libhwy-dev` (Ubuntu 23.04+) or `brew install highway` (macOS). Or compile from source:
+```shell
+git clone https://github.com/google/highway.git
+cd highway
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DHWY_ENABLE_EXAMPLES=OFF
+cmake --build build
+sudo cmake --install build
+```
+
+### Step 4: download and build fastp
 ```shell
 # get source (you can also use browser to download from master or releases)
 git clone https://github.com/OpenGene/fastp.git
@@ -152,6 +169,11 @@ make -j
 
 # Install
 sudo make install
+```
+
+On macOS with Homebrew, you may need to specify the include and library paths:
+```shell
+make -j INCLUDE_DIRS=/opt/homebrew/include LIBRARY_DIRS=/opt/homebrew/lib
 ```
 
 # input and output
