@@ -28,10 +28,27 @@ jobs:
 
       - name: install dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install highway libdeflate isa-l
+        run: brew install libdeflate isa-l
+
+      - name: build Highway static (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          git clone --depth=1 --branch 1.3.0 https://github.com/google/highway.git /tmp/highway
+          cd /tmp/highway
+          cmake -B _build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+            -DHWY_ENABLE_TESTS=OFF -DHWY_ENABLE_EXAMPLES=OFF \
+            -DCMAKE_INSTALL_PREFIX=/tmp/hwy-install
+          cmake --build _build -j$(sysctl -n hw.ncpu)
+          cmake --install _build
 
       - name: build fastp
-        run: make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+        run: |
+          if [ -d /tmp/hwy-install ]; then
+            EXTRA_INC="/tmp/hwy-install/include"
+            EXTRA_LIB="/tmp/hwy-install/lib"
+          fi
+          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu) \
+            INCLUDE_DIRS="${EXTRA_INC:-}" LIBRARY_DIRS="${EXTRA_LIB:-}"
 
       - name: smoke test
         run: |
