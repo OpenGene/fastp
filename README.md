@@ -118,7 +118,7 @@ mv fastp.0.23.4 fastp
 chmod a+x ./fastp
 ```
 ## or compile from source
-`fastp` depends on `libisal`, `libdeflate` and `libhwy` (Google Highway). Please install all three before building.
+`fastp` depends on `libisal`, `libdeflate` and `libhwy` (Google Highway >= 1.1.0). Please install all three before building.
 
 You can install all dependencies at once with conda:
 ```shell
@@ -128,9 +128,9 @@ conda install -c conda-forge isa-l libdeflate libhwy
 Or install them individually using your system package manager:
 
 ### Step 1: install isa-l
-Install via package manager: `apt install libisal-dev` (Ubuntu) or `brew install isa-l` (macOS). Or compile from source (requires `autoconf`, `automake`, `libtool`, `nasm >=2.11.01`):
+Install via `brew install isa-l` (macOS) or `apt install libisal-dev` (Ubuntu, dynamic linking only). Note: Ubuntu's `libisal-dev` does not ship a static library (`.a`). For static linking, compile from source (requires `nasm`, `autoconf`, `automake`, `libtool`):
 ```shell
-git clone https://github.com/intel/isa-l.git
+git clone --depth=1 --branch v2.31.0 https://github.com/intel/isa-l.git
 cd isa-l
 ./autogen.sh
 ./configure --prefix=/usr --libdir=/usr/lib64
@@ -149,11 +149,11 @@ sudo cmake --install build
 ```
 
 ### Step 3: install Highway
-[Google Highway](https://github.com/google/highway) provides portable SIMD acceleration. Install via package manager: `apt install libhwy-dev` (Ubuntu 23.04+) or `brew install highway` (macOS). Or compile from source:
+[Google Highway](https://github.com/google/highway) (>= 1.1.0) provides portable SIMD acceleration. Install via `brew install highway` (macOS) or `conda install -c conda-forge libhwy`. Note: `apt install libhwy-dev` on Ubuntu 24.04 provides 1.0.7 which is too old — compile from source instead:
 ```shell
-git clone https://github.com/google/highway.git
+git clone --depth=1 --branch 1.3.0 https://github.com/google/highway.git
 cd highway
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DHWY_ENABLE_EXAMPLES=OFF
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DHWY_ENABLE_TESTS=OFF -DHWY_ENABLE_EXAMPLES=OFF
 cmake --build build
 sudo cmake --install build
 ```

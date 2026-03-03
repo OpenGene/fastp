@@ -24,31 +24,42 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libhwy-dev libdeflate-dev libisal-dev
+          sudo apt-get install -y build-essential libdeflate-dev nasm
+
+      - name: build ISA-L static (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          git clone --depth=1 --branch v2.31.0 https://github.com/intel/isa-l.git /tmp/isa-l
+          cd /tmp/isa-l
+          ./autogen.sh
+          ./configure --prefix=/tmp/isal-install --enable-static --disable-shared
+          make -j$(nproc)
+          make install
 
       - name: install dependencies (macOS)
         if: runner.os == 'macOS'
         run: brew install libdeflate isa-l
 
-      - name: build Highway static (macOS)
-        if: runner.os == 'macOS'
+      - name: build Highway static
         run: |
           git clone --depth=1 --branch 1.3.0 https://github.com/google/highway.git /tmp/highway
           cd /tmp/highway
           cmake -B _build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
             -DHWY_ENABLE_TESTS=OFF -DHWY_ENABLE_EXAMPLES=OFF \
             -DCMAKE_INSTALL_PREFIX=/tmp/hwy-install
-          cmake --build _build -j$(sysctl -n hw.ncpu)
+          cmake --build _build -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
           cmake --install _build
 
       - name: build fastp
         run: |
-          if [ -d /tmp/hwy-install ]; then
-            EXTRA_INC="/tmp/hwy-install/include"
-            EXTRA_LIB="/tmp/hwy-install/lib"
-          fi
+          EXTRA_INC="" EXTRA_LIB=""
+          for prefix in /tmp/hwy-install /tmp/isal-install; do
+            [ -d "$prefix/include" ] && EXTRA_INC="$EXTRA_INC $prefix/include"
+            [ -d "$prefix/lib" ] && EXTRA_LIB="$EXTRA_LIB $prefix/lib"
+            [ -d "$prefix/lib64" ] && EXTRA_LIB="$EXTRA_LIB $prefix/lib64"
+          done
           make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu) \
-            INCLUDE_DIRS="${EXTRA_INC:-}" LIBRARY_DIRS="${EXTRA_LIB:-}"
+            INCLUDE_DIRS="$EXTRA_INC" LIBRARY_DIRS="$EXTRA_LIB"
 
       - name: smoke test
         run: |
