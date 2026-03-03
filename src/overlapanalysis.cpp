@@ -35,16 +35,9 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
         overlap_len = min(len1 - offset, len2);
         int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
 
-        diff = fastp_simd::countMismatches(str1 + offset, str2, overlap_len);
+        diff = fastp_simd::countMismatchesBounded(str1 + offset, str2, overlap_len, overlapDiffLimit);
 
-        // Accept if within limit, or for long overlaps where the prefix matches well
-        bool accepted = (diff <= overlapDiffLimit);
-        if (!accepted && overlap_len > complete_compare_require) {
-            int prefixDiff = fastp_simd::countMismatches(str1 + offset, str2, complete_compare_require);
-            accepted = (prefixDiff <= overlapDiffLimit);
-        }
-
-        if (accepted) {
+        if (diff <= overlapDiffLimit) {
             OverlapResult ov;
             ov.overlapped = true;
             ov.offset = offset;
@@ -69,15 +62,9 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
         overlap_len = min(len1,  len2- abs(offset));
         int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
 
-        diff = fastp_simd::countMismatches(str1, str2 + (-offset), overlap_len);
+        diff = fastp_simd::countMismatchesBounded(str1, str2 + (-offset), overlap_len, overlapDiffLimit);
 
-        bool accepted = (diff <= overlapDiffLimit);
-        if (!accepted && overlap_len > complete_compare_require) {
-            int prefixDiff = fastp_simd::countMismatches(str1, str2 + (-offset), complete_compare_require);
-            accepted = (prefixDiff <= overlapDiffLimit);
-        }
-
-        if (accepted) {
+        if (diff <= overlapDiffLimit) {
             OverlapResult ov;
             ov.overlapped = true;
             ov.offset = offset;
