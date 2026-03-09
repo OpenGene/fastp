@@ -28,6 +28,18 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
     int offset = 0;
     int diff = 0;
 
+    auto acceptNoGapOverlap = [&](const char* a, const char* b, int len, int overlapDiffLimit, int& mismatchCount) {
+        const int protectedPrefix = min(len, complete_compare_require);
+        mismatchCount = fastp_simd::countMismatchesBounded(a, b, protectedPrefix, overlapDiffLimit);
+        if (mismatchCount > overlapDiffLimit) {
+            return false;
+        }
+        if (len > complete_compare_require) {
+            mismatchCount = fastp_simd::countMismatches(a, b, len);
+        }
+        return true;
+    };
+
     // forward with no gap
     // a match of less than overlapRequire is considered as unconfident
     while (offset < len1-overlapRequire) {
@@ -35,9 +47,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
         overlap_len = min(len1 - offset, len2);
         int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
 
-        diff = fastp_simd::countMismatchesBounded(str1 + offset, str2, overlap_len, overlapDiffLimit);
-
-        if (diff <= overlapDiffLimit) {
+        if (acceptNoGapOverlap(str1 + offset, str2, overlap_len, overlapDiffLimit, diff)) {
             OverlapResult ov;
             ov.overlapped = true;
             ov.offset = offset;
@@ -62,9 +72,7 @@ OverlapResult OverlapAnalysis::analyze(string*  r1, string*  r2, int diffLimit, 
         overlap_len = min(len1,  len2- abs(offset));
         int overlapDiffLimit = min(diffLimit, (int)(overlap_len * diffPercentLimit));
 
-        diff = fastp_simd::countMismatchesBounded(str1, str2 + (-offset), overlap_len, overlapDiffLimit);
-
-        if (diff <= overlapDiffLimit) {
+        if (acceptNoGapOverlap(str1, str2 + (-offset), overlap_len, overlapDiffLimit, diff)) {
             OverlapResult ov;
             ov.overlapped = true;
             ov.offset = offset;
@@ -184,5 +192,16 @@ bool OverlapAnalysis::test(){
     Read* mergedRead = OverlapAnalysis::merge(&read1, &read2, ov);
     mergedRead->print();
 
-    return ov.overlapped && ov.offset == 10 && ov.overlap_len == 79 && ov.diff == 1;
+    bool basic = ov.overlapped && ov.offset == 10 && ov.overlap_len == 79 && ov.diff == 1;
+
+    string lateMismatchR1 = string(50, 'A') + string(30, 'C');
+    string lateMismatchRcr2 = string(50, 'A') + string(30, 'G');
+    string lateMismatchR2 = Sequence::reverseComplement(&lateMismatchRcr2);
+    OverlapResult lateMismatchOv = OverlapAnalysis::analyze(&lateMismatchR1, &lateMismatchR2, 0, 30, 0.0);
+
+    return basic
+        && lateMismatchOv.overlapped
+        && lateMismatchOv.offset == 0
+        && lateMismatchOv.overlap_len == 80
+        && lateMismatchOv.diff == 30;
 }
