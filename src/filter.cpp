@@ -2,6 +2,7 @@
 #include "peprocessor.h"
 #include "seprocessor.h"
 #include "overlapanalysis.h"
+#include "simd.h"
 
 Filter::Filter(Options* opt){
     mOptions = opt;
@@ -26,18 +27,9 @@ int Filter::passFilter(Read* r) {
         const char* seqstr = r->mSeq->c_str();
         const char* qualstr = r->mQuality->c_str();
 
-        for(int i=0; i<rlen; i++) {
-            char base = seqstr[i];
-            char qual = qualstr[i];
-
-            totalQual += qual - 33;
-
-            if(qual < mOptions->qualfilter.qualifiedQual)
-                lowQualNum ++;
-
-            if(base == 'N')
-                nBaseNum++;
-        }
+        fastp_simd::countQualityMetrics(qualstr, seqstr, rlen,
+                                        mOptions->qualfilter.qualifiedQual,
+                                        lowQualNum, nBaseNum, totalQual);
     }
 
     if(mOptions->qualfilter.enabled) {
@@ -65,19 +57,12 @@ int Filter::passFilter(Read* r) {
 }
 
 bool Filter::passLowComplexityFilter(Read* r) {
-    int diff = 0;
     int length = r->length();
     if(length <= 1)
         return false;
     const char* data = r->mSeq->c_str();
-    for(int i=0; i<length-1; i++) {
-        if(data[i] != data[i+1])
-            diff++;
-    }
-    if( (double)diff/(double)(length-1) >= mOptions->complexityFilter.threshold )
-        return true;
-    else
-        return false;
+    int diff = fastp_simd::countAdjacentDiffs(data, length);
+    return (double)diff/(double)(length-1) >= mOptions->complexityFilter.threshold;
 }
 
 Read* Filter::trimAndCut(Read* r, int front, int tail, int& frontTrimmed) {

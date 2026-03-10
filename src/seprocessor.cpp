@@ -194,8 +194,9 @@ void SingleEndProcessor::recycleToPool(int tid, Read* r) {
 }
 
 bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
-    string* outstr = new string();
-    string* failedOut = new string();
+    // build output on stack strings, move to heap only when handing off to writers
+    string outstr, failedOut;
+    outstr.reserve(pack->count * 320);
     int tid = config->getThreadId();
 
     int readPassed = 0;
@@ -275,13 +276,13 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
 
         if(!dedupOut) {
             if( r1 != NULL &&  result == PASS_FILTER) {
-                r1->appendToString(outstr);
+                r1->appendToString(&outstr);
 
                 // stats the read after filtering
                 config->getPostStats1()->statRead(r1);
                 readPassed++;
             } else if(mFailedWriter) {
-                or1->appendToStringWithTag(failedOut, FAILED_TYPES[result]);
+                or1->appendToStringWithTag(&failedOut, FAILED_TYPES[result]);
             }
         }
 
@@ -298,13 +299,10 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     }
 
     if(mLeftWriter) {
-        mLeftWriter->input(tid, outstr);
-        outstr = NULL;
+        mLeftWriter->input(tid, new string(std::move(outstr)));
     }
     if(mFailedWriter) {
-        // write failed data
-        mFailedWriter->input(tid, failedOut);
-        failedOut = NULL;
+        mFailedWriter->input(tid, new string(std::move(failedOut)));
     }
 
     if(mOptions->split.byFileLines)
@@ -312,10 +310,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     else
         config->markProcessed(pack->count);
 
-    if(outstr)
-        delete outstr;
-    if(failedOut)
-        delete failedOut;
+    // stack strings auto-cleanup - no manual delete needed
 
     delete pack->data;
     delete pack;
