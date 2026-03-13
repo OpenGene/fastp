@@ -117,6 +117,15 @@ wget http://opengene.org/fastp/fastp.0.23.4
 mv fastp.0.23.4 fastp
 chmod a+x ./fastp
 ```
+
+## Use a Docker container 
+The image is built with Ubuntu 20.04 as base.  See Dockerfile.fastp in Dockerfiles folder
+```shell
+git clone https://github.com/OpenGene/fastp.git
+export FP_VERSION="0.23.4"
+docker build --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg FP_VERSION=${FP_VERSION} --tag fastp:${FP_VERSION} --file ./Dockerfiles/Dockerfile.fastp  .
+```
+
 ## or compile from source
 `fastp` depends on `libisal`, `libdeflate` and `libhwy` (Google Highway >= 1.1.0). Please install all three before building.
 
