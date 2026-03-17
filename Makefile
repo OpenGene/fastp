@@ -20,8 +20,8 @@ LIBS := -lisal -ldeflate -lhwy -lpthread
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-  # Linux: fully static binary
-  LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) -static -Wl,--no-as-needed -pthread $(LIBS) $(LD_FLAGS)
+  # Linux: use the provided libraries without requiring static archives
+  LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) -Wl,--no-as-needed -pthread $(LIBS) $(LD_FLAGS)
 else
   # macOS: link 3rd-party libs statically via .a when available, fallback to dynamic
   FIND_STATIC = $(firstword $(foreach d,$(LIBRARY_DIRS),$(wildcard $(d)/lib$(1).a)) $(wildcard /usr/local/lib/lib$(1).a /opt/homebrew/lib/lib$(1).a))
