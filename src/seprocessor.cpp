@@ -1,5 +1,6 @@
 #include "seprocessor.h"
 #include "fastqreader.h"
+#include "fastqchunkparser.h"
 #include <iostream>
 #include <unistd.h>
 #include <functional>
@@ -30,6 +31,8 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
     mPackProcessedCounter = 0;
 
     mReadPool = new ReadPool(mOptions);
+    mChunkIndex = NULL;
+    mNextPackIndex = 0;
 }
 
 SingleEndProcessor::~SingleEndProcessor() {
@@ -37,6 +40,14 @@ SingleEndProcessor::~SingleEndProcessor() {
     if(mDuplicate) {
         delete mDuplicate;
         mDuplicate = NULL;
+    }
+    if(mReadPool) {
+        delete mReadPool;
+        mReadPool = NULL;
+    }
+    if(mChunkIndex) {
+        delete mChunkIndex;
+        mChunkIndex = NULL;
     }
     if(mReadPool) {
         delete mReadPool;
@@ -73,9 +84,34 @@ void SingleEndProcessor::initConfig(ThreadConfig* config) {
     }
 }
 
+bool SingleEndProcessor::canUseParallelRead() {
+    if (mOptions->in1 == "/dev/stdin")
+        return false;
+    if (ends_with(mOptions->in1, ".gz"))
+        return false;
+    if (mOptions->readsToProcess > 0)
+        return false;
+    if (mOptions->split.enabled)
+        return false;
+    return true;
+}
+
 bool SingleEndProcessor::process(){
     if(!mOptions->split.enabled)
         initOutput();
+
+    bool useParallelRead = canUseParallelRead();
+
+    if (useParallelRead) {
+        mChunkIndex = new FastqChunkIndex();
+        if (!mChunkIndex->build(mOptions->in1, PACK_SIZE)) {
+            delete mChunkIndex;
+            mChunkIndex = NULL;
+            useParallelRead = false;
+        } else if (mOptions->verbose) {
+            loginfo("parallel pread: indexed " + to_string(mChunkIndex->packCount()) + " packs from " + mOptions->in1);
+        }
+    }
 
     mInputLists = new SingleProducerSingleConsumerList<ReadPack*>*[mOptions->thread];
 
@@ -87,11 +123,25 @@ bool SingleEndProcessor::process(){
         initConfig(configs[t]);
     }
 
-    std::thread readerThread(std::bind(&SingleEndProcessor::readerTask, this));
+    if (useParallelRead) {
+        size_t totalPacks = mChunkIndex->packCount();
+        if (mLeftWriter)
+            mLeftWriter->setOrderedMode(totalPacks);
+        if (mFailedWriter)
+            mFailedWriter->setOrderedMode(totalPacks);
+    }
+
+    std::thread* readerThreadPtr = NULL;
+    if (!useParallelRead) {
+        readerThreadPtr = new std::thread(std::bind(&SingleEndProcessor::readerTask, this));
+    }
 
     std::thread** threads = new thread*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        threads[t] = new std::thread(std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
+        if (useParallelRead)
+            threads[t] = new std::thread(std::bind(&SingleEndProcessor::processorTaskParallel, this, configs[t]));
+        else
+            threads[t] = new std::thread(std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
     }
 
     std::thread* leftWriterThread = NULL;
@@ -101,7 +151,10 @@ bool SingleEndProcessor::process(){
     if(mFailedWriter)
         failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
 
-    readerThread.join();
+    if (readerThreadPtr) {
+        readerThreadPtr->join();
+        delete readerThreadPtr;
+    }
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
     }
@@ -194,7 +247,7 @@ void SingleEndProcessor::recycleToPool(int tid, Read* r) {
         delete r;
 }
 
-bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
+bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config, int64_t writeSeq){
     // build output on stack strings, move to heap only when handing off to writers
     string outstr, failedOut;
     outstr.reserve(pack->count * 320);
@@ -300,10 +353,16 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     }
 
     if(mLeftWriter) {
-        mLeftWriter->input(tid, new string(std::move(outstr)));
+        if (writeSeq >= 0)
+            mLeftWriter->inputWithSeq(tid, new string(std::move(outstr)), (size_t)writeSeq);
+        else
+            mLeftWriter->input(tid, new string(std::move(outstr)));
     }
     if(mFailedWriter) {
-        mFailedWriter->input(tid, new string(std::move(failedOut)));
+        if (writeSeq >= 0)
+            mFailedWriter->inputWithSeq(tid, new string(std::move(failedOut)), (size_t)writeSeq);
+        else
+            mFailedWriter->input(tid, new string(std::move(failedOut)));
     }
 
     if(mOptions->split.byFileLines)
@@ -464,6 +523,52 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
 
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " finished";
+        loginfo(msg);
+    }
+}
+
+void SingleEndProcessor::processorTaskParallel(ThreadConfig* config)
+{
+    int tid = config->getThreadId();
+    size_t totalPacks = mChunkIndex->packCount();
+    int fd = mChunkIndex->fd();
+
+    while (true) {
+        size_t packIdx = mNextPackIndex.fetch_add(1, std::memory_order_relaxed);
+        if (packIdx >= totalPacks)
+            break;
+
+        size_t offset = mChunkIndex->packStart(packIdx);
+        size_t len = mChunkIndex->packLength(packIdx);
+        char* buf = new char[len];
+        ssize_t bytesRead = pread(fd, buf, len, offset);
+        if (bytesRead <= 0) {
+            delete[] buf;
+            break;
+        }
+
+        ReadPack* pack = FastqChunkParser::parse(buf, bytesRead, tid, nullptr, mOptions->phred64);
+        delete[] buf;
+
+        processSingleEnd(pack, config, (int64_t)packIdx);
+
+        if (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
+            std::unique_lock<std::mutex> lk(mBackpressureMtx);
+            while (mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
+                mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
+            }
+        }
+    }
+
+    if (mFinishedThreads.fetch_add(1, std::memory_order_release) + 1 == mOptions->thread) {
+        if (mLeftWriter)
+            mLeftWriter->setInputCompleted();
+        if (mFailedWriter)
+            mFailedWriter->setInputCompleted();
+    }
+
+    if (mOptions->verbose) {
+        string msg = "thread " + to_string(tid + 1) + " finished (parallel pread)";
         loginfo(msg);
     }
 }

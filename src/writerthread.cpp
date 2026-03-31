@@ -13,13 +13,18 @@ WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mInputCompleted = false;
     mFilename = filename;
 
-    mPwriteMode = !isSTDOUT && ends_with(filename, ".gz") && mOptions->thread > 1;
+    mPwriteMode = !isSTDOUT && mOptions->thread > 1;
+    mCompressInPwrite = mPwriteMode && ends_with(filename, ".gz");
     mFd = -1;
     mOffsetRing = NULL;
     mNextSeq = NULL;
     mCompressors = NULL;
     mCompBufs = NULL;
     mCompBufSize = 0;
+    mOrderedMode = false;
+    mOrderedTotal = 0;
+    mOrderedRing = NULL;
+    mOrderedWriteCursor = 0;
     mBufferLists = NULL;
 
     if (mPwriteMode) {
@@ -30,14 +35,15 @@ WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
         mNextSeq = new size_t[mOptions->thread];
         for (int t = 0; t < mOptions->thread; t++)
             mNextSeq[t] = t;
-        mCompressors = new libdeflate_compressor*[mOptions->thread];
-        for (int t = 0; t < mOptions->thread; t++)
-            mCompressors[t] = libdeflate_alloc_compressor(mOptions->compression);
-        // Pre-allocate per-worker compress buffers (avoids malloc/free per pack)
-        mCompBufSize = PACK_SIZE * 500;  // ~500 bytes/read worst case
-        mCompBufs = new char*[mOptions->thread];
-        for (int t = 0; t < mOptions->thread; t++)
-            mCompBufs[t] = new char[mCompBufSize];
+        if (mCompressInPwrite) {
+            mCompressors = new libdeflate_compressor*[mOptions->thread];
+            for (int t = 0; t < mOptions->thread; t++)
+                mCompressors[t] = libdeflate_alloc_compressor(mOptions->compression);
+            mCompBufSize = PACK_SIZE * 500;  // ~500 bytes/read worst case
+            mCompBufs = new char*[mOptions->thread];
+            for (int t = 0; t < mOptions->thread; t++)
+                mCompBufs[t] = new char[mCompBufSize];
+        }
         mWorkingBufferList = 0;
         mBufferLength = 0;
     } else {
@@ -55,18 +61,45 @@ WriterThread::~WriterThread() {
 bool WriterThread::isCompleted()
 {
     if (mPwriteMode) return true;  // no writer thread needed
+    if (mOrderedMode)
+        return mInputCompleted && mOrderedWriteCursor.load(std::memory_order_acquire) >= mOrderedTotal;
     return mInputCompleted && (mBufferLength==0);
 }
 
 bool WriterThread::setInputCompleted() {
     if (mPwriteMode) {
-        setInputCompletedPwrite();
+        if (mOrderedMode) {
+            if (mOrderedTotal > 0) {
+                size_t lastSeq = mOrderedTotal - 1;
+                size_t lastSlot = lastSeq & (OFFSET_RING_SIZE - 1);
+                for (int spins = 0; mOffsetRing[lastSlot].published_seq.load(std::memory_order_acquire) != lastSeq; ) {
+                    if (++spins > 256) {
+                        usleep(1);
+                        spins = 0;
+                    } else {
+#if defined(__aarch64__)
+                        __asm__ volatile("yield");
+#elif defined(__x86_64__) || defined(__i386__)
+                        __asm__ volatile("pause");
+#endif
+                    }
+                }
+                size_t offset = mOffsetRing[lastSlot].cumulative_offset.load(std::memory_order_relaxed);
+                ftruncate(mFd, offset);
+            } else {
+                ftruncate(mFd, 0);
+            }
+        } else {
+            setInputCompletedPwrite();
+        }
         mInputCompleted = true;
         return true;
     }
     mInputCompleted = true;
-    for(int t=0; t<mOptions->thread; t++) {
-        mBufferLists[t]->setProducerFinished();
+    if (!mOrderedMode) {
+        for(int t=0; t<mOptions->thread; t++) {
+            mBufferLists[t]->setProducerFinished();
+        }
     }
     return true;
 }
@@ -89,8 +122,34 @@ void WriterThread::setInputCompletedPwrite() {
     ftruncate(mFd, offset);
 }
 
+void WriterThread::setOrderedMode(size_t totalPacks) {
+    mOrderedMode = true;
+    mOrderedTotal = totalPacks;
+    if (!mPwriteMode) {
+        mOrderedRing = new std::atomic<string*>[OFFSET_RING_SIZE];
+        for (int i = 0; i < OFFSET_RING_SIZE; i++)
+            mOrderedRing[i].store(nullptr, std::memory_order_relaxed);
+    }
+}
+
 void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
+    if (mOrderedMode) {
+        size_t cursor = mOrderedWriteCursor.load(std::memory_order_relaxed);
+        if (cursor >= mOrderedTotal) return;
+        size_t slot = cursor & (OFFSET_RING_SIZE - 1);
+        string* str = mOrderedRing[slot].load(std::memory_order_acquire);
+        if (str) {
+            mWriter1->write(str->data(), str->length());
+            delete str;
+            mOrderedRing[slot].store(nullptr, std::memory_order_release);
+            mOrderedWriteCursor.store(cursor + 1, std::memory_order_release);
+            mBufferLength--;
+        } else {
+            usleep(100);
+        }
+        return;
+    }
     SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
     if(!list->canBeConsumed()) {
         usleep(100);
@@ -113,33 +172,48 @@ void WriterThread::input(int tid, string* data) {
 }
 
 void WriterThread::inputPwrite(int tid, string* data) {
-    size_t bound = libdeflate_gzip_compress_bound(mCompressors[tid], data->size());
-    // Grow pre-allocated buffer if needed
-    if (bound > mCompBufSize) {
-        delete[] mCompBufs[tid];
-        mCompBufs[tid] = new char[bound];
-        // Note: mCompBufSize is shared but only grows, safe for other threads
-    }
-    size_t outsize = libdeflate_gzip_compress(mCompressors[tid], data->data(), data->size(),
-                                               mCompBufs[tid], bound);
-    if (outsize == 0)
-        error_exit("libdeflate gzip compression failed");
-    delete data;
-    const char* writeData = mCompBufs[tid];
-    size_t wsize = outsize;
-
     size_t seq = mNextSeq[tid];
+    doInputPwrite(tid, data, seq);
+    mNextSeq[tid] += mOptions->thread;
+}
+
+void WriterThread::doInputPwrite(int tid, string* data, size_t seq) {
+    const char* writeData;
+    size_t wsize;
+
+    if (mCompressInPwrite) {
+        size_t bound = libdeflate_gzip_compress_bound(mCompressors[tid], data->size());
+        if (bound > mCompBufSize) {
+            delete[] mCompBufs[tid];
+            mCompBufs[tid] = new char[bound];
+        }
+        size_t outsize = libdeflate_gzip_compress(mCompressors[tid], data->data(), data->size(),
+                                                   mCompBufs[tid], bound);
+        if (outsize == 0)
+            error_exit("libdeflate gzip compression failed");
+        delete data;
+        writeData = mCompBufs[tid];
+        wsize = outsize;
+    } else {
+        writeData = data->data();
+        wsize = data->size();
+    }
 
     // Wait for previous batch's cumulative offset
     size_t offset = 0;
     if (seq > 0) {
         size_t prevSlot = (seq - 1) & (OFFSET_RING_SIZE - 1);
-        while (mOffsetRing[prevSlot].published_seq.load(std::memory_order_acquire) != seq - 1) {
+        for (int spins = 0; mOffsetRing[prevSlot].published_seq.load(std::memory_order_acquire) != seq - 1; ) {
+            if (++spins > 256) {
+                usleep(1);
+                spins = 0;
+            } else {
 #if defined(__aarch64__)
-            __asm__ volatile("yield");
+                __asm__ volatile("yield");
 #elif defined(__x86_64__) || defined(__i386__)
-            __asm__ volatile("pause");
+                __asm__ volatile("pause");
 #endif
+            }
         }
         offset = mOffsetRing[prevSlot].cumulative_offset.load(std::memory_order_relaxed);
     }
@@ -164,10 +238,36 @@ void WriterThread::inputPwrite(int tid, string* data) {
         }
     }
 
-    mNextSeq[tid] += mOptions->thread;
+    if (!mCompressInPwrite)
+        delete data;
+}
+
+void WriterThread::inputOrderedRing(string* data, size_t seq) {
+    while (seq - mOrderedWriteCursor.load(std::memory_order_acquire) >= (size_t)OFFSET_RING_SIZE) {
+        usleep(10);
+    }
+    size_t slot = seq & (OFFSET_RING_SIZE - 1);
+    mOrderedRing[slot].store(data, std::memory_order_release);
+    mBufferLength++;
+}
+
+void WriterThread::inputWithSeq(int tid, string* data, size_t seq) {
+    if (mPwriteMode) {
+        doInputPwrite(tid, data, seq);
+    } else {
+        inputOrderedRing(data, seq);
+    }
 }
 
 void WriterThread::cleanup() {
+    if (mOrderedRing) {
+        for (int i = 0; i < OFFSET_RING_SIZE; i++) {
+            string* s = mOrderedRing[i].load(std::memory_order_relaxed);
+            if (s) delete s;
+        }
+        delete[] mOrderedRing;
+        mOrderedRing = NULL;
+    }
     if (mPwriteMode) {
         if (mFd >= 0) { close(mFd); mFd = -1; }
         delete[] mOffsetRing; mOffsetRing = NULL;

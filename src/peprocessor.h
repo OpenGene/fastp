@@ -17,7 +17,7 @@
 #include "writerthread.h"
 #include "duplicate.h"
 #include "readpool.h"
-
+#include "fastqchunkindex.h"
 
 using namespace std;
 
@@ -30,10 +30,12 @@ public:
     bool process();
 
 private:
-    bool processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config);
+    bool processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config, int64_t writeSeq = -1);
     void readerTask(bool isLeft);
     void interleavedReaderTask();
     void processorTask(ThreadConfig* config);
+    void processorTaskParallel(ThreadConfig* config);
+    bool canUseParallelRead();
     void initConfig(ThreadConfig* config);
     void initOutput();
     void closeOutput();
@@ -69,6 +71,9 @@ private:
     atomic_bool shouldStopReading;
     std::mutex mBackpressureMtx;
     std::condition_variable mBackpressureCV;
+    FastqChunkIndex* mChunkIndexLeft;
+    FastqChunkIndex* mChunkIndexRight;
+    std::atomic<size_t> mNextPackIndex;
 };
 
 

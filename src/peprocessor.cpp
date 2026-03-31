@@ -1,5 +1,6 @@
 #include "peprocessor.h"
 #include "fastqreader.h"
+#include "fastqchunkparser.h"
 #include <iostream>
 #include <unistd.h>
 #include <functional>
@@ -44,6 +45,9 @@ PairEndProcessor::PairEndProcessor(Options* opt){
 
     mLeftReadPool = new ReadPool(mOptions);
     mRightReadPool = new ReadPool(mOptions);
+    mChunkIndexLeft = NULL;
+    mChunkIndexRight = NULL;
+    mNextPackIndex = 0;
 }
 
 PairEndProcessor::~PairEndProcessor() {
@@ -62,6 +66,14 @@ PairEndProcessor::~PairEndProcessor() {
     }
     delete[] mLeftInputLists;
     delete[] mRightInputLists;
+    if(mChunkIndexLeft) {
+        delete mChunkIndexLeft;
+        mChunkIndexLeft = NULL;
+    }
+    if(mChunkIndexRight) {
+        delete mChunkIndexRight;
+        mChunkIndexRight = NULL;
+    }
 }
 
 void PairEndProcessor::initOutput() {
@@ -130,9 +142,39 @@ void PairEndProcessor::initConfig(ThreadConfig* config) {
 }
 
 
+bool PairEndProcessor::canUseParallelRead() {
+    if (mOptions->interleavedInput)
+        return false;
+    if (mOptions->in1 == "/dev/stdin" || mOptions->in2 == "/dev/stdin")
+        return false;
+    if (ends_with(mOptions->in1, ".gz") || ends_with(mOptions->in2, ".gz"))
+        return false;
+    if (mOptions->readsToProcess > 0)
+        return false;
+    if (mOptions->split.enabled)
+        return false;
+    return true;
+}
+
 bool PairEndProcessor::process(){
     if(!mOptions->split.enabled)
         initOutput();
+
+    bool useParallelRead = canUseParallelRead();
+
+    if (useParallelRead) {
+        mChunkIndexLeft = new FastqChunkIndex();
+        mChunkIndexRight = new FastqChunkIndex();
+        if (!mChunkIndexLeft->build(mOptions->in1, PACK_SIZE) ||
+            !mChunkIndexRight->build(mOptions->in2, PACK_SIZE) ||
+            mChunkIndexLeft->packCount() != mChunkIndexRight->packCount()) {
+            delete mChunkIndexLeft; mChunkIndexLeft = NULL;
+            delete mChunkIndexRight; mChunkIndexRight = NULL;
+            useParallelRead = false;
+        } else if (mOptions->verbose) {
+            loginfo("parallel pread: indexed " + to_string(mChunkIndexLeft->packCount()) + " packs from R1/R2");
+        }
+    }
 
     std::thread* readerLeft = NULL;
     std::thread* readerRight = NULL;
@@ -150,16 +192,32 @@ bool PairEndProcessor::process(){
         initConfig(configs[t]);
     }
 
-    if(mOptions->interleavedInput)
-        readerInterveleaved= new std::thread(std::bind(&PairEndProcessor::interleavedReaderTask, this));
-    else {
-        readerLeft = new std::thread(std::bind(&PairEndProcessor::readerTask, this, true));
-        readerRight = new std::thread(std::bind(&PairEndProcessor::readerTask, this, false));
+    if (useParallelRead) {
+        size_t totalPacks = mChunkIndexLeft->packCount();
+        if (mLeftWriter) mLeftWriter->setOrderedMode(totalPacks);
+        if (mRightWriter) mRightWriter->setOrderedMode(totalPacks);
+        if (mMergedWriter) mMergedWriter->setOrderedMode(totalPacks);
+        if (mFailedWriter) mFailedWriter->setOrderedMode(totalPacks);
+        if (mOverlappedWriter) mOverlappedWriter->setOrderedMode(totalPacks);
+        if (mUnpairedLeftWriter) mUnpairedLeftWriter->setOrderedMode(totalPacks);
+        if (mUnpairedRightWriter) mUnpairedRightWriter->setOrderedMode(totalPacks);
+    }
+
+    if (!useParallelRead) {
+        if(mOptions->interleavedInput)
+            readerInterveleaved= new std::thread(std::bind(&PairEndProcessor::interleavedReaderTask, this));
+        else {
+            readerLeft = new std::thread(std::bind(&PairEndProcessor::readerTask, this, true));
+            readerRight = new std::thread(std::bind(&PairEndProcessor::readerTask, this, false));
+        }
     }
 
     std::thread** threads = new thread*[mOptions->thread];
     for(int t=0; t<mOptions->thread; t++){
-        threads[t] = new std::thread(std::bind(&PairEndProcessor::processorTask, this, configs[t]));
+        if (useParallelRead)
+            threads[t] = new std::thread(std::bind(&PairEndProcessor::processorTaskParallel, this, configs[t]));
+        else
+            threads[t] = new std::thread(std::bind(&PairEndProcessor::processorTask, this, configs[t]));
     }
 
     std::thread* leftWriterThread = NULL;
@@ -186,7 +244,7 @@ bool PairEndProcessor::process(){
 
     if(readerInterveleaved) {
         readerInterveleaved->join();
-    } else {
+    } else if(readerLeft) {
         readerLeft->join();
         readerRight->join();
     }
@@ -359,7 +417,7 @@ void PairEndProcessor::recycleToPool2(int tid, Read* r) {
         delete r;
 }
 
-bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config){
+bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, ThreadConfig* config, int64_t writeSeq){
     if(leftPack->count != rightPack->count) {
         cerr << endl;
         cerr << "WARNING: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
@@ -645,33 +703,55 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
     }
 
     if(mMergedWriter) {
-        // move to heap for writer thread ownership
-        mMergedWriter->input(tid, new string(std::move(mergedOutput)));
+        if (writeSeq >= 0)
+            mMergedWriter->inputWithSeq(tid, new string(std::move(mergedOutput)), (size_t)writeSeq);
+        else
+            mMergedWriter->input(tid, new string(std::move(mergedOutput)));
     }
 
     if(mFailedWriter) {
-        mFailedWriter->input(tid, new string(std::move(failedOut)));
+        if (writeSeq >= 0)
+            mFailedWriter->inputWithSeq(tid, new string(std::move(failedOut)), (size_t)writeSeq);
+        else
+            mFailedWriter->input(tid, new string(std::move(failedOut)));
     }
 
     if(mOverlappedWriter) {
-        mOverlappedWriter->input(tid, new string(std::move(overlappedOut)));
+        if (writeSeq >= 0)
+            mOverlappedWriter->inputWithSeq(tid, new string(std::move(overlappedOut)), (size_t)writeSeq);
+        else
+            mOverlappedWriter->input(tid, new string(std::move(overlappedOut)));
     }
 
     // normal output by left/right writer thread
     if(mRightWriter && mLeftWriter) {
-        // write PE - move to heap for writer thread ownership
-        mLeftWriter->input(tid, new string(std::move(outstr1)));
-        mRightWriter->input(tid, new string(std::move(outstr2)));
+        if (writeSeq >= 0) {
+            mLeftWriter->inputWithSeq(tid, new string(std::move(outstr1)), (size_t)writeSeq);
+            mRightWriter->inputWithSeq(tid, new string(std::move(outstr2)), (size_t)writeSeq);
+        } else {
+            mLeftWriter->input(tid, new string(std::move(outstr1)));
+            mRightWriter->input(tid, new string(std::move(outstr2)));
+        }
     } else if(mLeftWriter) {
-        // write singleOutput
-        mLeftWriter->input(tid, new string(std::move(singleOutput)));
+        if (writeSeq >= 0)
+            mLeftWriter->inputWithSeq(tid, new string(std::move(singleOutput)), (size_t)writeSeq);
+        else
+            mLeftWriter->input(tid, new string(std::move(singleOutput)));
     }
     // output unpaired reads
     if(mUnpairedLeftWriter && mUnpairedRightWriter) {
-        mUnpairedLeftWriter->input(tid, new string(std::move(unpairedOut1)));
-        mUnpairedRightWriter->input(tid, new string(std::move(unpairedOut2)));
+        if (writeSeq >= 0) {
+            mUnpairedLeftWriter->inputWithSeq(tid, new string(std::move(unpairedOut1)), (size_t)writeSeq);
+            mUnpairedRightWriter->inputWithSeq(tid, new string(std::move(unpairedOut2)), (size_t)writeSeq);
+        } else {
+            mUnpairedLeftWriter->input(tid, new string(std::move(unpairedOut1)));
+            mUnpairedRightWriter->input(tid, new string(std::move(unpairedOut2)));
+        }
     } else if(mUnpairedLeftWriter) {
-        mUnpairedLeftWriter->input(tid, new string(std::move(unpairedOut1)));
+        if (writeSeq >= 0)
+            mUnpairedLeftWriter->inputWithSeq(tid, new string(std::move(unpairedOut1)), (size_t)writeSeq);
+        else
+            mUnpairedLeftWriter->input(tid, new string(std::move(unpairedOut1)));
     }
 
     if(mOptions->split.byFileLines)
@@ -1057,6 +1137,64 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
     
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " finished";
+        loginfo(msg);
+    }
+}
+
+void PairEndProcessor::processorTaskParallel(ThreadConfig* config)
+{
+    int tid = config->getThreadId();
+    size_t totalPacks = mChunkIndexLeft->packCount();
+    int fdLeft = mChunkIndexLeft->fd();
+    int fdRight = mChunkIndexRight->fd();
+
+    while (true) {
+        size_t packIdx = mNextPackIndex.fetch_add(1, std::memory_order_relaxed);
+        if (packIdx >= totalPacks)
+            break;
+
+        // pread left (R1)
+        size_t offL = mChunkIndexLeft->packStart(packIdx);
+        size_t lenL = mChunkIndexLeft->packLength(packIdx);
+        char* bufL = new char[lenL];
+        ssize_t nL = pread(fdLeft, bufL, lenL, offL);
+        if (nL <= 0) { delete[] bufL; break; }
+
+        // pread right (R2)
+        size_t offR = mChunkIndexRight->packStart(packIdx);
+        size_t lenR = mChunkIndexRight->packLength(packIdx);
+        char* bufR = new char[lenR];
+        ssize_t nR = pread(fdRight, bufR, lenR, offR);
+        if (nR <= 0) { delete[] bufL; delete[] bufR; break; }
+
+        ReadPack* leftPack = FastqChunkParser::parse(bufL, nL, tid, nullptr, mOptions->phred64);
+        ReadPack* rightPack = FastqChunkParser::parse(bufR, nR, tid, nullptr, mOptions->phred64);
+        delete[] bufL;
+        delete[] bufR;
+
+        processPairEnd(leftPack, rightPack, config, (int64_t)packIdx);
+
+        if (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
+            std::unique_lock<std::mutex> lk(mBackpressureMtx);
+            while (mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
+                mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
+            }
+        }
+    }
+
+    int finishedCount = mFinishedThreads.fetch_add(1, std::memory_order_release) + 1;
+    if (finishedCount == mOptions->thread) {
+        if (mLeftWriter) mLeftWriter->setInputCompleted();
+        if (mRightWriter) mRightWriter->setInputCompleted();
+        if (mUnpairedLeftWriter) mUnpairedLeftWriter->setInputCompleted();
+        if (mUnpairedRightWriter) mUnpairedRightWriter->setInputCompleted();
+        if (mMergedWriter) mMergedWriter->setInputCompleted();
+        if (mFailedWriter) mFailedWriter->setInputCompleted();
+        if (mOverlappedWriter) mOverlappedWriter->setInputCompleted();
+    }
+
+    if (mOptions->verbose) {
+        string msg = "thread " + to_string(tid + 1) + " finished (parallel pread)";
         loginfo(msg);
     }
 }

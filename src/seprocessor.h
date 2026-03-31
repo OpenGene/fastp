@@ -17,6 +17,7 @@
 #include "duplicate.h"
 #include "singleproducersingleconsumerlist.h"
 #include "readpool.h"
+#include "fastqchunkindex.h"
 
 using namespace std;
 
@@ -29,9 +30,11 @@ public:
     bool process();
 
 private:
-    bool processSingleEnd(ReadPack* pack, ThreadConfig* config);
+    bool processSingleEnd(ReadPack* pack, ThreadConfig* config, int64_t writeSeq = -1);
     void readerTask();
     void processorTask(ThreadConfig* config);
+    void processorTaskParallel(ThreadConfig* config);
+    bool canUseParallelRead();
     void initConfig(ThreadConfig* config);
     void initOutput();
     void closeOutput();
@@ -53,6 +56,8 @@ private:
     ReadPool* mReadPool;
     std::mutex mBackpressureMtx;
     std::condition_variable mBackpressureCV;
+    FastqChunkIndex* mChunkIndex;
+    std::atomic<size_t> mNextPackIndex;
 };
 
 
