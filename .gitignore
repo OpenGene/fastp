@@ -34,6 +34,9 @@ fastp
 *.out
 *.app
 
+# Python
+__pycache__/
+
 # Editor Config
 .vscode
 
