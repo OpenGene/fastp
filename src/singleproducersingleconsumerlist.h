@@ -63,7 +63,7 @@ template<typename T>
 class SingleProducerSingleConsumerList {
 public:
     inline SingleProducerSingleConsumerList() {
-        head = NULL;
+        head.store(NULL, std::memory_order_relaxed);
         tail = NULL;
         producerFinished = false;
         consumerFinished = false;
@@ -90,28 +90,33 @@ public:
         return produced -  consumed;
     }
     inline bool canBeConsumed() {
-        if(head == NULL)
+        if(head.load(std::memory_order_acquire) == NULL)
             return false;
-        return head->nextItemReady || producerFinished;
+        return head.load(std::memory_order_relaxed)->nextItemReady || producerFinished;
     }
     inline void produce(T val) {
         LockFreeListItem<T>* item = makeItem(val);
-        if(head==NULL) {
-            head = item;
+        if(head.load(std::memory_order_relaxed) == NULL) {
             tail = item;
+            // Release store: publishing head to consumer thread.
+            // All writes to *item are ordered before this store.
+            head.store(item, std::memory_order_release);
             // Signal the first item is consumable (no predecessor to set this)
-            head->nextItemReady.store(true, std::memory_order_release);
+            item->nextItemReady.store(true, std::memory_order_release);
         } else {
             tail->nextItem = item;
-            tail->nextItemReady = true;
+            // Release store: ensures nextItem write visible before nextItemReady flag.
+            tail->nextItemReady.store(true, std::memory_order_release);
             tail = item;
         }
         produced++;
     }
     inline T consume() {
-        assert(head != NULL);
-        T val = head->value;
-        head = head->nextItem;
+        LockFreeListItem<T>* h = head.load(std::memory_order_acquire);
+        assert(h != NULL);
+        T val = h->value;
+        // Advance head; release so next canBeConsumed() acquire sees updated state.
+        head.store(h->nextItem, std::memory_order_release);
         consumed++;
         if((consumed & 0xFFF) == 0)
             recycle();
@@ -156,8 +161,8 @@ private:
     }
 
 private:
-    LockFreeListItem<T>* head;
-    LockFreeListItem<T>* tail;
+    std::atomic<LockFreeListItem<T>*> head;
+    LockFreeListItem<T>* tail;       // tail is producer-private, no atomic needed
     LockFreeListItem<T>** blocks;
     std::atomic_bool producerFinished;
     std::atomic_bool consumerFinished;
