@@ -59,7 +59,7 @@ private:
     bool mPwriteMode;
     int mFd;
     OffsetSlot* mOffsetRing;
-    size_t* mNextSeq;
+    std::atomic<size_t>* mNextSeq;
     libdeflate_compressor** mCompressors;
     char** mCompBufs;       // per-worker pre-allocated compress output buffers
     size_t* mCompBufSizes;  // per-worker buffer sizes

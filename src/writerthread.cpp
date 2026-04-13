@@ -28,9 +28,9 @@ WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
         if (mFd < 0)
             error_exit("Failed to open for pwrite: " + mFilename);
         mOffsetRing = new OffsetSlot[OFFSET_RING_SIZE];
-        mNextSeq = new size_t[mOptions->thread];
+        mNextSeq = new std::atomic<size_t>[mOptions->thread];
         for (int t = 0; t < mOptions->thread; t++)
-            mNextSeq[t] = t;
+            mNextSeq[t].store(t, std::memory_order_relaxed);
         mCompressors = new libdeflate_compressor*[mOptions->thread];
         for (int t = 0; t < mOptions->thread; t++)
             mCompressors[t] = libdeflate_alloc_compressor(mOptions->compression);
@@ -75,12 +75,15 @@ bool WriterThread::setInputCompleted() {
 }
 
 void WriterThread::setInputCompletedPwrite() {
+    // Acquire fence: synchronize with the release stores in inputPwrite()
+    // so that all mNextSeq[t] writes from worker threads are visible here.
+    std::atomic_thread_fence(std::memory_order_acquire);
     int W = mOptions->thread;
     size_t lastSeq = 0;
     bool anyProcessed = false;
     for (int t = 0; t < W; t++) {
-        if (mNextSeq[t] != (size_t)t) {
-            size_t workerLastSeq = mNextSeq[t] - W;
+        if (mNextSeq[t].load(std::memory_order_relaxed) != (size_t)t) {
+            size_t workerLastSeq = mNextSeq[t].load(std::memory_order_relaxed) - W;
             if (!anyProcessed || workerLastSeq > lastSeq) {
                 lastSeq = workerLastSeq;
                 anyProcessed = true;
@@ -131,7 +134,7 @@ void WriterThread::inputPwrite(int tid, string* data) {
     const char* writeData = mCompBufs[tid];
     size_t wsize = outsize;
 
-    size_t seq = mNextSeq[tid];
+    size_t seq = mNextSeq[tid].load(std::memory_order_relaxed);
 
     // Wait for previous batch's cumulative offset.
     // Sleep yields CPU to prevent livelock under contention.
@@ -164,7 +167,11 @@ void WriterThread::inputPwrite(int tid, string* data) {
         }
     }
 
-    mNextSeq[tid] += mOptions->thread;
+    // Release store: ensures the pwrite and cumulative_offset publication
+    // happen-before the acquire fence in setInputCompletedPwrite().
+    mNextSeq[tid].store(
+        mNextSeq[tid].load(std::memory_order_relaxed) + mOptions->thread,
+        std::memory_order_release);
 }
 
 void WriterThread::cleanup() {
