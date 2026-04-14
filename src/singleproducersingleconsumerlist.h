@@ -87,7 +87,7 @@ public:
         blocks = NULL;
     }
     inline size_t size() {
-        return produced -  consumed;
+        return produced.load(std::memory_order_relaxed) - consumed.load(std::memory_order_relaxed);
     }
     inline bool canBeConsumed() {
         if(head.load(std::memory_order_acquire) == NULL)
@@ -109,7 +109,7 @@ public:
             tail->nextItemReady.store(true, std::memory_order_release);
             tail = item;
         }
-        produced++;
+        produced.fetch_add(1, std::memory_order_relaxed);
     }
     inline T consume() {
         LockFreeListItem<T>* h = head.load(std::memory_order_acquire);
@@ -117,8 +117,8 @@ public:
         T val = h->value;
         // Advance head; release so next canBeConsumed() acquire sees updated state.
         head.store(h->nextItem, std::memory_order_release);
-        consumed++;
-        if((consumed & 0xFFF) == 0)
+        unsigned long _c = consumed.fetch_add(1, std::memory_order_relaxed) + 1;
+        if((_c & 0xFFF) == 0)
             recycle();
         return val;
     }
@@ -137,8 +137,9 @@ public:
 private:
     // blockized list
     inline LockFreeListItem<T>* makeItem(T val) {
-        unsigned long blk = produced >> 12;
-        unsigned long idx = produced & 0xFFF;
+        unsigned long _p = produced.load(std::memory_order_relaxed);
+        unsigned long blk = _p >> 12;
+        unsigned long idx = _p & 0xFFF;
         size_t size = 0x01<<12;
         if(blocksNum <= blk) {
             LockFreeListItem<T>* buffer = new LockFreeListItem<T>[size];
@@ -152,7 +153,7 @@ private:
     }
 
     inline void recycle() {
-        unsigned long blk = consumed >> 12;
+        unsigned long blk = consumed.load(std::memory_order_relaxed) >> 12;
         while((recycled+1) < blk) {
             delete[] blocks[recycled & blocksRingBufferSizeMask];
             blocks[recycled & blocksRingBufferSizeMask] = NULL;
@@ -166,8 +167,8 @@ private:
     LockFreeListItem<T>** blocks;
     std::atomic_bool producerFinished;
     std::atomic_bool consumerFinished;
-    unsigned long produced;
-    unsigned long consumed;
+    std::atomic<unsigned long> produced;
+    std::atomic<unsigned long> consumed;
     unsigned long recycled;
     unsigned long blocksRingBufferSize;
     unsigned long blocksRingBufferSizeMask;
