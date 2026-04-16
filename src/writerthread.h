@@ -9,7 +9,6 @@
 #include "options.h"
 #include <atomic>
 #include <mutex>
-#include <semaphore>
 #include <libdeflate.h>
 #include "singleproducersingleconsumerlist.h"
 
@@ -53,7 +52,6 @@ private:
 
     bool mInputCompleted;
     atomic_long mBufferLength;
-    std::counting_semaphore<> mOutputSem;
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
 

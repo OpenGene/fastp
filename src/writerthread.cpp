@@ -8,8 +8,7 @@
 #include <thread>
 #include <chrono>
 
-WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT)
-    : mOutputSem(0){
+WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mOptions = opt;
     mWriter1 = NULL;
     mInputCompleted = false;
@@ -72,7 +71,6 @@ bool WriterThread::setInputCompleted() {
     for(int t=0; t<mOptions->thread; t++) {
         mBufferLists[t]->setProducerFinished();
     }
-    mOutputSem.release();  // Wake writer loop to detect completion
     return true;
 }
 
@@ -99,9 +97,10 @@ void WriterThread::setInputCompletedPwrite() {
 
 void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
-    mOutputSem.acquire();  // block until data available or completion signal
     SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
-    if(list->canBeConsumed()) {
+    if(!list->canBeConsumed()) {
+        std::this_thread::yield();
+    } else {
         string* str = list->consume();
         mWriter1->write(str->data(), str->length());
         delete str;
@@ -117,7 +116,6 @@ void WriterThread::input(int tid, string* data) {
     }
     mBufferLists[tid]->produce(data);
     mBufferLength++;
-    mOutputSem.release();
 }
 
 void WriterThread::inputPwrite(int tid, string* data) {
