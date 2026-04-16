@@ -1,4 +1,5 @@
 #include "seprocessor.h"
+#include <print>
 #include "fastqreader.h"
 #include <iostream>
 #include <unistd.h>
@@ -135,24 +136,24 @@ bool SingleEndProcessor::process(){
         postStats.push_back(configs[t]->getPostStats1());
     }
 
-    cerr << "Read1 before filtering:"<<endl;
+    std::println(stderr, "Read1 before filtering:");
     finalPreStats->print();
-    cerr << endl;
-    cerr << "Read1 after filtering:"<<endl;
+    std::println(stderr, "");
+    std::println(stderr, "Read1 after filtering:");
     finalPostStats->print();
 
-    cerr << endl;
-    cerr << "Filtering result:"<<endl;
+    std::println(stderr, "");
+    std::println(stderr, "Filtering result:");
     finalFilterResult->print();
 
     double dupRate = 0.0;
     if(mOptions->duplicate.enabled) {
         dupRate = mDuplicate->getDupRate();
-        cerr << endl;
-        cerr << "Duplication rate (may be overestimated since this is SE data): " << dupRate * 100.0 << "%" << endl;
+        std::println(stderr, "");
+        std::println(stderr, "Duplication rate (may be overestimated since this is SE data): {:.4}%", dupRate * 100.0);
     }
 
-    // make JSON report
+        // make JSON report
     JsonReporter jr(mOptions);
     jr.setDup(dupRate);
     jr.report(finalFilterResult, finalPreStats, finalPostStats);
