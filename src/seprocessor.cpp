@@ -88,38 +88,37 @@ bool SingleEndProcessor::process(){
         initConfig(configs[t]);
     }
 
-    std::thread readerThread(std::bind(&SingleEndProcessor::readerTask, this));
+    // Reader thread (jthread auto-joins on destruction)
+    std::jthread readerThread(std::bind(&SingleEndProcessor::readerTask, this));
 
-    std::thread** threads = new thread*[mOptions->thread];
-    for(int t=0; t<mOptions->thread; t++){
-        threads[t] = new std::thread(std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
-    }
+    // Worker threads
+    std::vector<std::jthread> workers;
+    workers.reserve(mOptions->thread);
+    for(int t=0; t<mOptions->thread; t++)
+        workers.emplace_back(std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
 
-    std::thread* leftWriterThread = NULL;
-    std::thread* failedWriterThread = NULL;
+    // Writer threads (conditional)
+    std::optional<std::jthread> leftWriterThread;
+    std::optional<std::jthread> failedWriterThread;
     if(mLeftWriter)
-        leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mLeftWriter));
+        leftWriterThread.emplace(std::bind(&SingleEndProcessor::writerTask, this, mLeftWriter));
     if(mFailedWriter)
-        failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
+        failedWriterThread.emplace(std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
 
+    // Wait for reader to finish, then workers, then signal writers
     readerThread.join();
 
-    // Wait for all worker threads to finish, then signal writers to flush and exit
     mWorkersLatch.wait();
     if(mLeftWriter)
         mLeftWriter->setInputCompleted();
     if(mFailedWriter)
         mFailedWriter->setInputCompleted();
 
-    for(int t=0; t<mOptions->thread; t++){
-        threads[t]->join();
-    }
+    workers.clear();
 
     if(!mOptions->split.enabled) {
-        if(leftWriterThread)
-            leftWriterThread->join();
-        if(failedWriterThread)
-            failedWriterThread->join();
+        leftWriterThread.reset();
+        failedWriterThread.reset();
     }
 
     if(mOptions->verbose)
@@ -173,8 +172,6 @@ bool SingleEndProcessor::process(){
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){
-        delete threads[t];
-        threads[t] = NULL;
         delete configs[t];
         configs[t] = NULL;
     }
@@ -183,13 +180,7 @@ bool SingleEndProcessor::process(){
     delete finalPostStats;
     delete finalFilterResult;
 
-    delete[] threads;
     delete[] configs;
-
-    if(leftWriterThread)
-        delete leftWriterThread;
-    if(failedWriterThread)
-        delete failedWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();

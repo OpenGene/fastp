@@ -312,17 +312,8 @@ bool PairEndProcessor::process(){
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){
-        delete threads[t];
-        threads[t] = NULL;
         delete configs[t];
         configs[t] = NULL;
-    }
-
-    if(readerInterveleaved) {
-        delete readerInterveleaved;
-    } else {
-        delete readerLeft;
-        delete readerRight;
     }
 
     delete finalPreStats1;
@@ -331,23 +322,7 @@ bool PairEndProcessor::process(){
     delete finalPostStats2;
     delete finalFilterResult;
 
-    delete[] threads;
     delete[] configs;
-
-    if(leftWriterThread)
-        delete leftWriterThread;
-    if(rightWriterThread)
-        delete rightWriterThread;
-    if(unpairedLeftWriterThread)
-        delete unpairedLeftWriterThread;
-    if(unpairedRightWriterThread)
-        delete unpairedRightWriterThread;
-    if(mergedWriterThread)
-        delete mergedWriterThread;
-    if(failedWriterThread)
-        delete failedWriterThread;
-    if(overlappedWriterThread)
-        delete overlappedWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();
