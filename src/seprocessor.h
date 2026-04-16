@@ -17,6 +17,7 @@
 #include "duplicate.h"
 #include "singleproducersingleconsumerlist.h"
 #include "readpool.h"
+#include <latch>
 
 using namespace std;
 
@@ -41,7 +42,7 @@ private:
 private:
     Options* mOptions;
     atomic_bool mReaderFinished;
-    alignas(128) atomic_int mFinishedThreads;
+    std::latch mWorkersLatch;
     Filter* mFilter;
     UmiProcessor* mUmiProcessor;
     WriterThread* mLeftWriter;

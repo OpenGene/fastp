@@ -14,11 +14,11 @@
 #include "htmlreporter.h"
 #include "polyx.h"
 
-PairEndProcessor::PairEndProcessor(Options* opt){
+PairEndProcessor::PairEndProcessor(Options* opt)
+    : mWorkersLatch(opt->thread){
     mOptions = opt;
     mLeftReaderFinished = false;
     mRightReaderFinished = false;
-    mFinishedThreads = 0;
     mFilter = new Filter(opt);
     mUmiProcessor = new UmiProcessor(opt);
 
@@ -191,6 +191,24 @@ bool PairEndProcessor::process(){
         readerLeft->join();
         readerRight->join();
     }
+
+    // Wait for all worker threads to finish, then signal writers to flush and exit
+    mWorkersLatch.wait();
+    if(mLeftWriter)
+        mLeftWriter->setInputCompleted();
+    if(mRightWriter)
+        mRightWriter->setInputCompleted();
+    if(mUnpairedLeftWriter)
+        mUnpairedLeftWriter->setInputCompleted();
+    if(mUnpairedRightWriter)
+        mUnpairedRightWriter->setInputCompleted();
+    if(mMergedWriter)
+        mMergedWriter->setInputCompleted();
+    if(mFailedWriter)
+        mFailedWriter->setInputCompleted();
+    if(mOverlappedWriter)
+        mOverlappedWriter->setInputCompleted();
+
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
     }
@@ -1034,27 +1052,10 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
     inputLeft->setConsumerFinished();
     inputRight->setConsumerFinished();
 
-    int finishedCount = mFinishedThreads.fetch_add(1, std::memory_order_release) + 1;
+    mWorkersLatch.count_down();
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
         loginfo(msg);
-    }
-
-    if(finishedCount == mOptions->thread) {
-        if(mLeftWriter)
-            mLeftWriter->setInputCompleted();
-        if(mRightWriter)
-            mRightWriter->setInputCompleted();
-        if(mUnpairedLeftWriter)
-            mUnpairedLeftWriter->setInputCompleted();
-        if(mUnpairedRightWriter)
-            mUnpairedRightWriter->setInputCompleted();
-        if(mMergedWriter)
-            mMergedWriter->setInputCompleted();
-        if(mFailedWriter)
-            mFailedWriter->setInputCompleted();
-        if(mOverlappedWriter)
-            mOverlappedWriter->setInputCompleted();
     }
     
     if(mOptions->verbose) {
