@@ -317,7 +317,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     delete pack;
 
     mPackProcessedCounter.fetch_add(1, std::memory_order_release);
-    mBackpressureCV.notify_all();
+    mPackProcessedCounter.notify_all();
 
     return true;
 }
@@ -347,7 +347,6 @@ void SingleEndProcessor::readerTask()
             pack->count = count;
             mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
             mPackReadCounter++;
-            mBackpressureCV.notify_all();
             data = NULL;
             if(read) {
                 delete read;
@@ -373,26 +372,22 @@ void SingleEndProcessor::readerTask()
             pack->count = count;
             mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
             mPackReadCounter++;
-            mBackpressureCV.notify_all();
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
-            // if the processor is far behind this reader, sleep and wait to limit memory usage
-            {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while( mPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                    slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                }
+            // if the processor is far behind this reader, wait to limit memory usage
+            while(mPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                long cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                mPackProcessedCounter.wait(cur, std::memory_order_acquire);
+                slept++;
             }
             readNum += count;
             // if the writer threads are far behind this reader, sleep and wait
             // check this only when necessary
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
                 while(mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
+                    std::this_thread::yield();
                     slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
                 }
             }
             // reset count to 0
@@ -449,8 +444,7 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
                 break;
             }
         } else {
-            std::unique_lock<std::mutex> lk(mBackpressureMtx);
-            mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
+            std::this_thread::yield();
         }
     }
     input->setConsumerFinished();

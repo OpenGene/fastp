@@ -52,8 +52,6 @@ private:
     size_t mPackReadCounter;
     alignas(128) atomic_long mPackProcessedCounter;
     ReadPool* mReadPool;
-    std::mutex mBackpressureMtx;
-    std::condition_variable mBackpressureCV;
 };
 
 

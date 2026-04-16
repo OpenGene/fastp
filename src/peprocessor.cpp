@@ -686,7 +686,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
     delete rightPack;
 
     mPackProcessedCounter.fetch_add(1, std::memory_order_release);
-    mBackpressureCV.notify_all();
+    mPackProcessedCounter.notify_all();
 
     return true;
 }
@@ -758,7 +758,6 @@ void PairEndProcessor::readerTask(bool isLeft)
                 mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
                 mRightPackReadCounter++;
             }
-            mBackpressureCV.notify_all();
             data = NULL;
             if(read) {
                 delete read;
@@ -795,34 +794,31 @@ void PairEndProcessor::readerTask(bool isLeft)
                 mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
                 mRightPackReadCounter++;
             }
-            mBackpressureCV.notify_all();
 
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
-            // if the processor is far behind this reader, sleep and wait to limit memory usage
-            {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                if(isLeft) {
-                    while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                        slept++;
-                        mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                    }
-                } else {
-                    while(mRightPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                        slept++;
-                        mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                    }
+            // if the processor is far behind this reader, wait to limit memory usage
+            if(isLeft) {
+                while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                    long cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                    mPackProcessedCounter.wait(cur, std::memory_order_acquire);
+                    slept++;
+                }
+            } else {
+                while(mRightPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                    long cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                    mPackProcessedCounter.wait(cur, std::memory_order_acquire);
+                    slept++;
                 }
             }
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
             // check this only when necessary
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
                 while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
+                    std::this_thread::yield();
                     slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
                 }
             }
             // reset count to 0
@@ -850,7 +846,6 @@ void PairEndProcessor::readerTask(bool isLeft)
         else
             mRightInputLists[t]->setProducerFinished();
     }
-    mBackpressureCV.notify_all();
 
     if(mOptions->verbose) {
         if(isLeft) {
@@ -905,7 +900,6 @@ void PairEndProcessor::interleavedReaderTask()
             mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
             mRightPackReadCounter++;
 
-            mBackpressureCV.notify_all();
             dataLeft = NULL;
             dataRight = NULL;
             break;
@@ -936,29 +930,25 @@ void PairEndProcessor::interleavedReaderTask()
 
             mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
             mRightPackReadCounter++;
-            mBackpressureCV.notify_all();
 
             //re-initialize data for next pack
             dataLeft = new Read*[PACK_SIZE];
             dataRight = new Read*[PACK_SIZE];
             memset(dataLeft, 0, sizeof(Read*)*PACK_SIZE);
             memset(dataRight, 0, sizeof(Read*)*PACK_SIZE);
-            // if the consumer is far behind this producer, sleep and wait to limit memory usage
-            {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                    slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                }
+            // if the consumer is far behind this producer, wait to limit memory usage
+            while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                long cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                mPackProcessedCounter.wait(cur, std::memory_order_acquire);
+                slept++;
             }
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
             // check this only when necessary
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
                 while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
+                    std::this_thread::yield();
                     slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
                 }
             }
             // reset count to 0
@@ -986,7 +976,6 @@ void PairEndProcessor::interleavedReaderTask()
         mLeftInputLists[t]->setProducerFinished();
         mRightInputLists[t]->setProducerFinished();
     }
-    mBackpressureCV.notify_all();
 
     if(mOptions->verbose) {
         loginfo("interleaved: loading completed with " + to_string(mLeftPackReadCounter) + " packs");
@@ -1020,8 +1009,7 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
         } else if(inputRight->isProducerFinished() && !inputRight->canBeConsumed()) {
             break;
         } else {
-            std::unique_lock<std::mutex> lk(mBackpressureMtx);
-            mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
+            std::this_thread::yield();
         }
     }
     inputLeft->setConsumerFinished();
