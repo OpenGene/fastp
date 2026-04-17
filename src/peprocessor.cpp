@@ -2,7 +2,6 @@
 #include "hwy/contrib/thread_pool/futex.h"
 #include "fastqreader.h"
 #include <iostream>
-#include <print>
 #include <unistd.h>
 #include <functional>
 #include <thread>
@@ -15,8 +14,8 @@
 #include "htmlreporter.h"
 #include "polyx.h"
 
-PairEndProcessor::PairEndProcessor(Options* opt)
-    : mWorkersLatch(opt->thread){
+PairEndProcessor::PairEndProcessor(Options* opt){
+    mWorkersLatch.store(opt->thread);
     mOptions = opt;
     mLeftReaderFinished = false;
     mRightReaderFinished = false;
@@ -194,8 +193,11 @@ bool PairEndProcessor::process(){
         readerRight->join();
     }
 
-    // Wait for all worker threads to finish, then signal writers to flush and exit
-    mWorkersLatch.wait();
+    // Wait for all worker threads to finish using futex-based latch
+    while(mWorkersLatch.load(std::memory_order_acquire) > 0) {
+        uint32_t cur = mWorkersLatch.load(std::memory_order_acquire);
+        if(cur > 0) hwy::BlockUntilDifferent(cur, mWorkersLatch);
+    }
     if(mLeftWriter)
         mLeftWriter->setInputCompleted();
     if(mRightWriter)
@@ -254,49 +256,49 @@ bool PairEndProcessor::process(){
     Stats* finalPostStats2 = Stats::merge(postStats2);
     FilterResult* finalFilterResult = FilterResult::merge(filterResults);
 
-    std::println(stderr, "Read1 before filtering:");
+    cerr << "Read1 before filtering:" << endl;
     finalPreStats1->print();
-    std::println(stderr, "");
-    std::println(stderr, "Read2 before filtering:");
+    cerr << endl;
+    cerr << "Read2 before filtering:" << endl;
     finalPreStats2->print();
-    std::println(stderr, "");
+    cerr << endl;
     if(!mOptions->merge.enabled) {
-        std::println(stderr, "Read1 after filtering:");
+        cerr << "Read1 after filtering:" << endl;
         finalPostStats1->print();
-        std::println(stderr, "");
-        std::println(stderr, "Read2 after filtering:");
+        cerr << endl;
+        cerr << "Read2 after filtering:" << endl;
         finalPostStats2->print();
     } else {
-        std::println(stderr, "Merged and filtered:");
+        cerr << "Merged and filtered:" << endl;
         finalPostStats1->print();
     }
 
-    std::println(stderr, "");
-    std::println(stderr, "Filtering result:");
+    cerr << endl;
+    cerr << "Filtering result:" << endl;
     finalFilterResult->print();
 
     double dupRate = 0.0;
     if(mOptions->duplicate.enabled) {
         dupRate = mDuplicate->getDupRate();
-        std::println(stderr, "");
-        std::println(stderr, "Duplication rate: {:.4}%", dupRate * 100.0);
+        cerr << endl;
+        cerr << "Duplication rate: " << dupRate * 100.0 << "%" << endl;
     }
 
     // insert size distribution
     int peakInsertSize = getPeakInsertSize();
-    std::println(stderr, "");
-    std::println(stderr, "Insert size peak (evaluated by paired-end reads): {}", peakInsertSize);
+    cerr << endl;
+    cerr << "Insert size peak (evaluated by paired-end reads): " << peakInsertSize << endl;
 
     if(mOptions->merge.enabled) {
-        std::println(stderr, "");
-        std::println(stderr, "Read pairs merged: {}", finalFilterResult->mMergedPairs);
+        cerr << endl;
+        cerr << "Read pairs merged: " << finalFilterResult->mMergedPairs << endl;
         if(finalPostStats1->getReads() > 0) {
             double postMergedPercent = 100.0 * finalFilterResult->mMergedPairs / finalPostStats1->getReads();
             double preMergedPercent = 100.0 * finalFilterResult->mMergedPairs / finalPreStats1->getReads();
-            std::println(stderr, "% of original read pairs: {:.4}%", preMergedPercent);
-            std::println(stderr, "% in reads after filtering: {:.4}%", postMergedPercent);
+            cerr << "% of original read pairs: " << preMergedPercent << "%" << endl;
+            cerr << "% in reads after filtering: " << postMergedPercent << "%" << endl;
         }
-        std::println(stderr, "");
+        cerr << endl;
     }
 
     // make JSON report
@@ -1024,7 +1026,8 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
     inputLeft->setConsumerFinished();
     inputRight->setConsumerFinished();
 
-    mWorkersLatch.count_down();
+    if(mWorkersLatch.fetch_sub(1, std::memory_order_release) - 1 == 0)
+        hwy::WakeAll(mWorkersLatch);
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
         loginfo(msg);

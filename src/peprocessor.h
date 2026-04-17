@@ -17,7 +17,7 @@
 #include "writerthread.h"
 #include "duplicate.h"
 #include "readpool.h"
-#include <latch>
+#include <atomic>
 
 
 using namespace std;
@@ -47,7 +47,7 @@ private:
 private:
     atomic_bool mLeftReaderFinished;
     atomic_bool mRightReaderFinished;
-    std::latch mWorkersLatch;
+    std::atomic<uint32_t> mWorkersLatch;
     Options* mOptions;
     Filter* mFilter;
     UmiProcessor* mUmiProcessor;

@@ -1,6 +1,5 @@
 #include "seprocessor.h"
 #include "hwy/contrib/thread_pool/futex.h"
-#include <print>
 #include "fastqreader.h"
 #include <iostream>
 #include <unistd.h>
@@ -14,8 +13,8 @@
 #include "adaptertrimmer.h"
 #include "polyx.h"
 
-SingleEndProcessor::SingleEndProcessor(Options* opt)
-    : mWorkersLatch(opt->thread){
+SingleEndProcessor::SingleEndProcessor(Options* opt){
+    mWorkersLatch.store(opt->thread);
     mOptions = opt;
     mReaderFinished = false;
     mFilter = new Filter(opt);
@@ -90,37 +89,41 @@ bool SingleEndProcessor::process(){
         initConfig(configs[t]);
     }
 
-    // Reader thread (jthread auto-joins on destruction)
-    std::jthread readerThread(std::bind(&SingleEndProcessor::readerTask, this));
+    std::thread readerThread(std::bind(&SingleEndProcessor::readerTask, this));
 
-    // Worker threads
-    std::vector<std::jthread> workers;
-    workers.reserve(mOptions->thread);
-    for(int t=0; t<mOptions->thread; t++)
-        workers.emplace_back(std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
+    std::thread** threads = new thread*[mOptions->thread];
+    for(int t=0; t<mOptions->thread; t++){
+        threads[t] = new std::thread(std::bind(&SingleEndProcessor::processorTask, this, configs[t]));
+    }
 
-    // Writer threads (conditional)
-    std::optional<std::jthread> leftWriterThread;
-    std::optional<std::jthread> failedWriterThread;
+    std::thread* leftWriterThread = NULL;
+    std::thread* failedWriterThread = NULL;
     if(mLeftWriter)
-        leftWriterThread.emplace(std::bind(&SingleEndProcessor::writerTask, this, mLeftWriter));
+        leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mLeftWriter));
     if(mFailedWriter)
-        failedWriterThread.emplace(std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
+        failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
 
-    // Wait for reader to finish, then workers, then signal writers
     readerThread.join();
 
-    mWorkersLatch.wait();
+    // Wait for all worker threads using futex-based latch
+    while(mWorkersLatch.load(std::memory_order_acquire) > 0) {
+        uint32_t cur = mWorkersLatch.load(std::memory_order_acquire);
+        if(cur > 0) hwy::BlockUntilDifferent(cur, mWorkersLatch);
+    }
     if(mLeftWriter)
         mLeftWriter->setInputCompleted();
     if(mFailedWriter)
         mFailedWriter->setInputCompleted();
 
-    workers.clear();
+    for(int t=0; t<mOptions->thread; t++){
+        threads[t]->join();
+    }
 
     if(!mOptions->split.enabled) {
-        leftWriterThread.reset();
-        failedWriterThread.reset();
+        if(leftWriterThread)
+            leftWriterThread->join();
+        if(failedWriterThread)
+            failedWriterThread->join();
     }
 
     if(mOptions->verbose)
@@ -145,21 +148,21 @@ bool SingleEndProcessor::process(){
         postStats.push_back(configs[t]->getPostStats1());
     }
 
-    std::println(stderr, "Read1 before filtering:");
+    cerr << "Read1 before filtering:" << endl;
     finalPreStats->print();
-    std::println(stderr, "");
-    std::println(stderr, "Read1 after filtering:");
+    cerr << endl;
+    cerr << "Read1 after filtering:" << endl;
     finalPostStats->print();
 
-    std::println(stderr, "");
-    std::println(stderr, "Filtering result:");
+    cerr << endl;
+    cerr << "Filtering result:" << endl;
     finalFilterResult->print();
 
     double dupRate = 0.0;
     if(mOptions->duplicate.enabled) {
         dupRate = mDuplicate->getDupRate();
-        std::println(stderr, "");
-        std::println(stderr, "Duplication rate (may be overestimated since this is SE data): {:.4}%", dupRate * 100.0);
+        cerr << endl;
+        cerr << "Duplication rate (may be overestimated since this is SE data): " << dupRate * 100.0 << "%" << endl;
     }
 
         // make JSON report
@@ -174,6 +177,8 @@ bool SingleEndProcessor::process(){
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){
+        delete threads[t];
+        threads[t] = NULL;
         delete configs[t];
         configs[t] = NULL;
     }
@@ -182,7 +187,13 @@ bool SingleEndProcessor::process(){
     delete finalPostStats;
     delete finalFilterResult;
 
+    delete[] threads;
     delete[] configs;
+
+    if(leftWriterThread)
+        delete leftWriterThread;
+    if(failedWriterThread)
+        delete failedWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -453,7 +464,8 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
     }
     input->setConsumerFinished();
 
-    mWorkersLatch.count_down();
+    if(mWorkersLatch.fetch_sub(1, std::memory_order_release) - 1 == 0)
+        hwy::WakeAll(mWorkersLatch);
 
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " finished";

@@ -24,7 +24,7 @@ TARGET := fastp
 BIN_TARGET := ${TARGET}
 
 CXX ?= g++
-CXXFLAGS := -std=c++23 -pthread -g -O3 -MD -MP -I. -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) $(HWY_CFLAGS) $(ISAL_CFLAGS) $(DEFLATE_CFLAGS) ${CXXFLAGS}
+CXXFLAGS := -std=c++11 -pthread -g -O3 -MD -MP -I. -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) $(HWY_CFLAGS) $(ISAL_CFLAGS) $(DEFLATE_CFLAGS) ${CXXFLAGS}
 LIBS := -lisal -ldeflate -lhwy -lpthread
 
 PKG_LDFLAGS := $(HWY_LIBS) $(ISAL_LIBS) $(DEFLATE_LIBS)

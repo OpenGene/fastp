@@ -17,7 +17,7 @@
 #include "duplicate.h"
 #include "singleproducersingleconsumerlist.h"
 #include "readpool.h"
-#include <latch>
+#include <atomic>
 
 using namespace std;
 
@@ -42,7 +42,7 @@ private:
 private:
     Options* mOptions;
     atomic_bool mReaderFinished;
-    std::latch mWorkersLatch;
+    std::atomic<uint32_t> mWorkersLatch;
     Filter* mFilter;
     UmiProcessor* mUmiProcessor;
     WriterThread* mLeftWriter;
