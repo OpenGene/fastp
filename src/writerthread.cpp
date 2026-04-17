@@ -6,7 +6,6 @@
 #include <cerrno>
 #include <cstring>
 #include <thread>
-#include <chrono>
 
 WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mOptions = opt;
@@ -148,13 +147,15 @@ void WriterThread::inputPwrite(int tid, string* data) {
 
     size_t seq = mNextSeq[tid].load(std::memory_order_relaxed);
 
-    // Wait for previous batch's cumulative offset.
-    // Sleep yields CPU to prevent livelock under contention.
+    // Wait for previous batch's cumulative offset using futex.
     size_t offset = 0;
     if (seq > 0) {
         size_t prevSlot = (seq - 1) & (OFFSET_RING_SIZE - 1);
-        while (mOffsetRing[prevSlot].published_seq.load(std::memory_order_acquire) != seq - 1) {
-            std::this_thread::sleep_for(std::chrono::microseconds(1));
+        uint32_t target = static_cast<uint32_t>(seq - 1);
+        while (mOffsetRing[prevSlot].published_seq.load(std::memory_order_acquire) != target) {
+            uint32_t cur = mOffsetRing[prevSlot].published_seq.load(std::memory_order_acquire);
+            if (cur != target)
+                hwy::BlockUntilDifferent(cur, mOffsetRing[prevSlot].published_seq);
         }
         offset = mOffsetRing[prevSlot].cumulative_offset.load(std::memory_order_relaxed);
     }
@@ -162,7 +163,8 @@ void WriterThread::inputPwrite(int tid, string* data) {
     // Publish offset BEFORE pwrite — next worker starts immediately
     size_t mySlot = seq & (OFFSET_RING_SIZE - 1);
     mOffsetRing[mySlot].cumulative_offset.store(offset + wsize, std::memory_order_relaxed);
-    mOffsetRing[mySlot].published_seq.store(seq, std::memory_order_release);
+    mOffsetRing[mySlot].published_seq.store(static_cast<uint32_t>(seq), std::memory_order_release);
+    hwy::WakeAll(mOffsetRing[mySlot].published_seq);
 
     // pwrite (concurrent with other workers on non-overlapping regions)
     if (wsize > 0) {

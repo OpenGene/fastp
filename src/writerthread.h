@@ -19,7 +19,7 @@ static constexpr int OFFSET_RING_SIZE = 512;
 
 struct alignas(64) OffsetSlot {
     std::atomic<size_t> cumulative_offset{0};
-    std::atomic<size_t> published_seq{SIZE_MAX};
+    std::atomic<uint32_t> published_seq{UINT32_MAX};
 };
 
 class WriterThread{
