@@ -6,8 +6,6 @@
 #include <string>
 #include "read.h"
 #include <cstdlib>
-#include <condition_variable>
-#include <mutex>
 #include <thread>
 #include "options.h"
 #include "threadconfig.h"

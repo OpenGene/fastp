@@ -9,7 +9,6 @@
 #include "options.h"
 #include <atomic>
 #include "hwy/contrib/thread_pool/futex.h"
-#include <mutex>
 #include <libdeflate.h>
 #include "singleproducersingleconsumerlist.h"
 
