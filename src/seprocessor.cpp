@@ -1,4 +1,5 @@
 #include "seprocessor.h"
+#include "hwy/contrib/thread_pool/futex.h"
 #include <print>
 #include "fastqreader.h"
 #include <iostream>
@@ -29,6 +30,7 @@ SingleEndProcessor::SingleEndProcessor(Options* opt)
 
     mPackReadCounter = 0;
     mPackProcessedCounter = 0;
+    mPackProducedCounter = 0;
 
     mReadPool = new ReadPool(mOptions);
 }
@@ -317,7 +319,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     delete pack;
 
     mPackProcessedCounter.fetch_add(1, std::memory_order_release);
-    mPackProcessedCounter.notify_all();
+    hwy::WakeAll(mPackProcessedCounter);
 
     return true;
 }
@@ -347,6 +349,8 @@ void SingleEndProcessor::readerTask()
             pack->count = count;
             mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
             mPackReadCounter++;
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
             data = NULL;
             if(read) {
                 delete read;
@@ -372,23 +376,22 @@ void SingleEndProcessor::readerTask()
             pack->count = count;
             mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
             mPackReadCounter++;
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
             // if the processor is far behind this reader, wait to limit memory usage
             while(mPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                long cur = mPackProcessedCounter.load(std::memory_order_acquire);
-                mPackProcessedCounter.wait(cur, std::memory_order_acquire);
+                uint32_t cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                hwy::BlockUntilDifferent(cur, mPackProcessedCounter);
                 slept++;
             }
             readNum += count;
             // if the writer threads are far behind this reader, sleep and wait
             // check this only when necessary
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                while(mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
-                    std::this_thread::yield();
-                    slept++;
-                }
+                mLeftWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
             }
             // reset count to 0
             count = 0;
@@ -444,7 +447,8 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
                 break;
             }
         } else {
-            std::this_thread::yield();
+            uint32_t cur = mPackProducedCounter.load(std::memory_order_acquire);
+            hwy::BlockUntilDifferent(cur, mPackProducedCounter);
         }
     }
     input->setConsumerFinished();

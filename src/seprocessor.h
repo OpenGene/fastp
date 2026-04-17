@@ -50,7 +50,8 @@ private:
     Duplicate* mDuplicate;
     SingleProducerSingleConsumerList<ReadPack*>** mInputLists;
     size_t mPackReadCounter;
-    alignas(128) atomic_long mPackProcessedCounter;
+    alignas(128) std::atomic<uint32_t> mPackProcessedCounter;
+    alignas(128) std::atomic<uint32_t> mPackProducedCounter;
     ReadPool* mReadPool;
 };
 

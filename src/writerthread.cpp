@@ -99,12 +99,14 @@ void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
     SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
     if(!list->canBeConsumed()) {
-        std::this_thread::yield();
+        uint32_t cur = mBufferLength.load(std::memory_order_acquire);
+        if(cur == 0) hwy::BlockUntilDifferent(cur, mBufferLength);
     } else {
         string* str = list->consume();
         mWriter1->write(str->data(), str->length());
         delete str;
-        mBufferLength--;
+        mBufferLength.fetch_sub(1, std::memory_order_release);
+        hwy::WakeAll(mBufferLength);
         mWorkingBufferList = (mWorkingBufferList+1)%mOptions->thread;
     }
 }
@@ -115,7 +117,8 @@ void WriterThread::input(int tid, string* data) {
         return;
     }
     mBufferLists[tid]->produce(data);
-    mBufferLength++;
+    mBufferLength.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mBufferLength);
 }
 
 void WriterThread::inputPwrite(int tid, string* data) {

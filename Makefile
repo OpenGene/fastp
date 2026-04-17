@@ -23,9 +23,9 @@ TARGET := fastp
 
 BIN_TARGET := ${TARGET}
 
-CXX := /home/kimy/build-env/bin/x86_64-conda-linux-gnu-g++
-INCLUDE_DIRS ?= /home/kimy/build-env/include
-LIBRARY_DIRS ?= /home/kimy/build-env/lib
+CXX := /var/tmp/kimy/workspace/build-env/bin/x86_64-conda-linux-gnu-g++
+INCLUDE_DIRS ?= /var/tmp/kimy/workspace/build-env/include
+LIBRARY_DIRS ?= /var/tmp/kimy/workspace/build-env/lib
 CXXFLAGS := -std=c++23 -pthread -g -O3 -MD -MP -I. -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) $(HWY_CFLAGS) $(ISAL_CFLAGS) $(DEFLATE_CFLAGS) ${CXXFLAGS}
 LIBS := -lisal -ldeflate -lhwy -lpthread
 

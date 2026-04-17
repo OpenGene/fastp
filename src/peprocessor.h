@@ -64,7 +64,8 @@ private:
     SingleProducerSingleConsumerList<ReadPack*>** mRightInputLists;
     size_t mLeftPackReadCounter;
     size_t mRightPackReadCounter;
-    alignas(128) atomic_long mPackProcessedCounter;
+    alignas(128) std::atomic<uint32_t> mPackProcessedCounter;
+    alignas(128) std::atomic<uint32_t> mPackProducedCounter;
     ReadPool* mLeftReadPool;
     ReadPool* mRightReadPool;
     atomic_bool shouldStopReading;

@@ -1,4 +1,5 @@
 #include "peprocessor.h"
+#include "hwy/contrib/thread_pool/futex.h"
 #include "fastqreader.h"
 #include <iostream>
 #include <print>
@@ -42,6 +43,7 @@ PairEndProcessor::PairEndProcessor(Options* opt)
     mLeftPackReadCounter = 0;
     mRightPackReadCounter = 0;
     mPackProcessedCounter = 0;
+    mPackProducedCounter = 0;
 
     mLeftReadPool = new ReadPool(mOptions);
     mRightReadPool = new ReadPool(mOptions);
@@ -686,7 +688,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
     delete rightPack;
 
     mPackProcessedCounter.fetch_add(1, std::memory_order_release);
-    mPackProcessedCounter.notify_all();
+    hwy::WakeAll(mPackProcessedCounter);
 
     return true;
 }
@@ -758,6 +760,8 @@ void PairEndProcessor::readerTask(bool isLeft)
                 mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
                 mRightPackReadCounter++;
             }
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
             data = NULL;
             if(read) {
                 delete read;
@@ -794,6 +798,8 @@ void PairEndProcessor::readerTask(bool isLeft)
                 mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
                 mRightPackReadCounter++;
             }
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
 
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
@@ -801,14 +807,14 @@ void PairEndProcessor::readerTask(bool isLeft)
             // if the processor is far behind this reader, wait to limit memory usage
             if(isLeft) {
                 while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                    long cur = mPackProcessedCounter.load(std::memory_order_acquire);
-                    mPackProcessedCounter.wait(cur, std::memory_order_acquire);
+                    uint32_t cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                    hwy::BlockUntilDifferent(cur, mPackProcessedCounter);
                     slept++;
                 }
             } else {
                 while(mRightPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                    long cur = mPackProcessedCounter.load(std::memory_order_acquire);
-                    mPackProcessedCounter.wait(cur, std::memory_order_acquire);
+                    uint32_t cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                    hwy::BlockUntilDifferent(cur, mPackProcessedCounter);
                     slept++;
                 }
             }
@@ -816,10 +822,8 @@ void PairEndProcessor::readerTask(bool isLeft)
             // if the writer threads are far behind this producer, sleep and wait
             // check this only when necessary
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
-                    std::this_thread::yield();
-                    slept++;
-                }
+                if(mLeftWriter) mLeftWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
+                if(mRightWriter) mRightWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
             }
             // reset count to 0
             count = 0;
@@ -900,6 +904,9 @@ void PairEndProcessor::interleavedReaderTask()
             mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
             mRightPackReadCounter++;
 
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
+
             dataLeft = NULL;
             dataRight = NULL;
             break;
@@ -931,6 +938,9 @@ void PairEndProcessor::interleavedReaderTask()
             mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
             mRightPackReadCounter++;
 
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
+
             //re-initialize data for next pack
             dataLeft = new Read*[PACK_SIZE];
             dataRight = new Read*[PACK_SIZE];
@@ -938,18 +948,16 @@ void PairEndProcessor::interleavedReaderTask()
             memset(dataRight, 0, sizeof(Read*)*PACK_SIZE);
             // if the consumer is far behind this producer, wait to limit memory usage
             while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                long cur = mPackProcessedCounter.load(std::memory_order_acquire);
-                mPackProcessedCounter.wait(cur, std::memory_order_acquire);
+                uint32_t cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                hwy::BlockUntilDifferent(cur, mPackProcessedCounter);
                 slept++;
             }
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
             // check this only when necessary
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
-                    std::this_thread::yield();
-                    slept++;
-                }
+                if(mLeftWriter) mLeftWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
+                if(mRightWriter) mRightWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
             }
             // reset count to 0
             count = 0;
@@ -1009,7 +1017,8 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
         } else if(inputRight->isProducerFinished() && !inputRight->canBeConsumed()) {
             break;
         } else {
-            std::this_thread::yield();
+            uint32_t cur = mPackProducedCounter.load(std::memory_order_acquire);
+            hwy::BlockUntilDifferent(cur, mPackProducedCounter);
         }
     }
     inputLeft->setConsumerFinished();

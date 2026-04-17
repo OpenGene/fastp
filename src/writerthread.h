@@ -8,6 +8,7 @@
 #include "writer.h"
 #include "options.h"
 #include <atomic>
+#include "hwy/contrib/thread_pool/futex.h"
 #include <mutex>
 #include <libdeflate.h>
 #include "singleproducersingleconsumerlist.h"
@@ -36,7 +37,14 @@ public:
     void input(int tid, string* data);
     bool setInputCompleted();
 
-    long bufferLength() {return mBufferLength;};
+    uint32_t bufferLength() {return mBufferLength;};
+    void waitForBufferBelow(uint32_t limit) {
+        for(;;) {
+            uint32_t cur = mBufferLength.load(std::memory_order_acquire);
+            if(cur <= limit) break;
+            hwy::BlockUntilDifferent(cur, mBufferLength);
+        }
+    }
     string getFilename() {return mFilename;}
     bool isPwriteMode() {return mPwriteMode;}
 
@@ -51,7 +59,7 @@ private:
     string mFilename;
 
     bool mInputCompleted;
-    atomic_long mBufferLength;
+    std::atomic<uint32_t> mBufferLength;
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
 
