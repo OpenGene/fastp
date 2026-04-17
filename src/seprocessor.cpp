@@ -104,17 +104,6 @@ bool SingleEndProcessor::process(){
         failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writerTask, this, mFailedWriter));
 
     readerThread.join();
-
-    // Wait for all worker threads using futex-based latch
-    while(mWorkersLatch.load(std::memory_order_acquire) > 0) {
-        uint32_t cur = mWorkersLatch.load(std::memory_order_acquire);
-        if(cur > 0) hwy::BlockUntilDifferent(cur, mWorkersLatch);
-    }
-    if(mLeftWriter)
-        mLeftWriter->setInputCompleted();
-    if(mFailedWriter)
-        mFailedWriter->setInputCompleted();
-
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
     }
@@ -464,8 +453,12 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
     }
     input->setConsumerFinished();
 
-    if(mWorkersLatch.fetch_sub(1, std::memory_order_release) - 1 == 0)
-        hwy::WakeAll(mWorkersLatch);
+    if(mWorkersLatch.fetch_sub(1, std::memory_order_release) - 1 == 0) {
+        if(mLeftWriter)
+            mLeftWriter->setInputCompleted();
+        if(mFailedWriter)
+            mFailedWriter->setInputCompleted();
+    }
 
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " finished";

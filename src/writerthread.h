@@ -60,6 +60,7 @@ private:
 
     bool mInputCompleted;
     std::atomic<uint32_t> mBufferLength;
+    std::atomic<uint32_t> mWriterNotify;  // incremented to wake writer thread
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
 

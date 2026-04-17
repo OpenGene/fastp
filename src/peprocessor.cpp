@@ -193,26 +193,6 @@ bool PairEndProcessor::process(){
         readerRight->join();
     }
 
-    // Wait for all worker threads to finish using futex-based latch
-    while(mWorkersLatch.load(std::memory_order_acquire) > 0) {
-        uint32_t cur = mWorkersLatch.load(std::memory_order_acquire);
-        if(cur > 0) hwy::BlockUntilDifferent(cur, mWorkersLatch);
-    }
-    if(mLeftWriter)
-        mLeftWriter->setInputCompleted();
-    if(mRightWriter)
-        mRightWriter->setInputCompleted();
-    if(mUnpairedLeftWriter)
-        mUnpairedLeftWriter->setInputCompleted();
-    if(mUnpairedRightWriter)
-        mUnpairedRightWriter->setInputCompleted();
-    if(mMergedWriter)
-        mMergedWriter->setInputCompleted();
-    if(mFailedWriter)
-        mFailedWriter->setInputCompleted();
-    if(mOverlappedWriter)
-        mOverlappedWriter->setInputCompleted();
-
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
     }
@@ -1026,8 +1006,22 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
     inputLeft->setConsumerFinished();
     inputRight->setConsumerFinished();
 
-    if(mWorkersLatch.fetch_sub(1, std::memory_order_release) - 1 == 0)
-        hwy::WakeAll(mWorkersLatch);
+    if(mWorkersLatch.fetch_sub(1, std::memory_order_release) - 1 == 0) {
+        if(mLeftWriter)
+            mLeftWriter->setInputCompleted();
+        if(mRightWriter)
+            mRightWriter->setInputCompleted();
+        if(mUnpairedLeftWriter)
+            mUnpairedLeftWriter->setInputCompleted();
+        if(mUnpairedRightWriter)
+            mUnpairedRightWriter->setInputCompleted();
+        if(mMergedWriter)
+            mMergedWriter->setInputCompleted();
+        if(mFailedWriter)
+            mFailedWriter->setInputCompleted();
+        if(mOverlappedWriter)
+            mOverlappedWriter->setInputCompleted();
+    }
     if(mOptions->verbose) {
         string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
         loginfo(msg);

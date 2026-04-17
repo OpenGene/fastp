@@ -43,11 +43,13 @@ WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
         }
         mWorkingBufferList = 0;
         mBufferLength = 0;
+        mWriterNotify = 0;
     } else {
         initWriter(filename, isSTDOUT);
         initBufferLists();
         mWorkingBufferList = 0;
         mBufferLength = 0;
+        mWriterNotify = 0;
     }
 }
 
@@ -71,6 +73,9 @@ bool WriterThread::setInputCompleted() {
     for(int t=0; t<mOptions->thread; t++) {
         mBufferLists[t]->setProducerFinished();
     }
+    // Wake the writer thread blocked in output() so it re-checks isCompleted()
+    mWriterNotify.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mWriterNotify);
     return true;
 }
 
@@ -99,16 +104,19 @@ void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
     SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
     if(!list->canBeConsumed()) {
-        uint32_t cur = mBufferLength.load(std::memory_order_acquire);
-        if(cur == 0) hwy::BlockUntilDifferent(cur, mBufferLength);
-    } else {
-        string* str = list->consume();
-        mWriter1->write(str->data(), str->length());
-        delete str;
-        mBufferLength.fetch_sub(1, std::memory_order_release);
-        hwy::WakeAll(mBufferLength);
-        mWorkingBufferList = (mWorkingBufferList+1)%mOptions->thread;
+        if(mInputCompleted) return;
+        // Current slot has no data yet. Block until a producer or
+        // setInputCompleted() wakes us via mWriterNotify.
+        uint32_t cur = mWriterNotify.load(std::memory_order_acquire);
+        hwy::BlockUntilDifferent(cur, mWriterNotify);
+        // After wake, return to writerTask loop which re-checks isCompleted()
+        return;
     }
+    string* str = list->consume();
+    mWriter1->write(str->data(), str->length());
+    delete str;
+    mBufferLength.fetch_sub(1, std::memory_order_release);
+    mWorkingBufferList = (mWorkingBufferList+1)%mOptions->thread;
 }
 
 void WriterThread::input(int tid, string* data) {
@@ -118,7 +126,8 @@ void WriterThread::input(int tid, string* data) {
     }
     mBufferLists[tid]->produce(data);
     mBufferLength.fetch_add(1, std::memory_order_release);
-    hwy::WakeAll(mBufferLength);
+    mWriterNotify.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mWriterNotify);
 }
 
 void WriterThread::inputPwrite(int tid, string* data) {
