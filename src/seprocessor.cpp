@@ -246,10 +246,12 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
             bool trimmed = false;
             if(mOptions->adapter.hasSeqR1)
                 trimmed = AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.sequence, false);
-            bool incTrimmedCounter = !trimmed;
             if(mOptions->adapter.hasFasta) {
-                trimmed |= AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, incTrimmedCounter);
+                trimmed |= AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false);
             }
+
+            if(trimmed )
+                config->getFilterResult()->incTrimmedAdapterRead(1);
 
             // Check for adapter dimer: read shorter than threshold after adapter trimming
             // AND adapter was detected (requires evidence)

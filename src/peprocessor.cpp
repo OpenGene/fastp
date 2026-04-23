@@ -465,9 +465,15 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                         trimmed2 = AdapterTrimmer::trimBySequence(r2, config->getFilterResult(), mOptions->adapter.sequenceR2, true);
                 }
                 if(mOptions->adapter.hasFasta) {
-                    trimmed1 |= AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false, !trimmed1);
-                    trimmed2 |= AdapterTrimmer::trimByMultiSequences(r2, config->getFilterResult(), mOptions->adapter.seqsInFasta, true, !trimmed2);
+                    trimmed1 |= AdapterTrimmer::trimByMultiSequences(r1, config->getFilterResult(), mOptions->adapter.seqsInFasta, false);
+                    trimmed2 |= AdapterTrimmer::trimByMultiSequences(r2, config->getFilterResult(), mOptions->adapter.seqsInFasta, true);
                 }
+
+                if(trimmed1 )
+                    config->getFilterResult()->incTrimmedAdapterRead(1);
+                if(trimmed2 )
+                    config->getFilterResult()->incTrimmedAdapterRead(1);
+
 
                 // Check for adapter dimer: both reads shorter than threshold after adapter trimming
                 // AND adapters were detected in at least one of the reads (requires evidence)
