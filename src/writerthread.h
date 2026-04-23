@@ -18,7 +18,7 @@ static constexpr int OFFSET_RING_SIZE = 512;
 
 struct alignas(64) OffsetSlot {
     std::atomic<size_t> cumulative_offset{0};
-    std::atomic<uint32_t> published_seq{UINT32_MAX};
+    std::atomic<uint32_t> generation{0};  // bumped each time slot is published
 };
 
 class WriterThread{
@@ -57,7 +57,7 @@ private:
     Options* mOptions;
     string mFilename;
 
-    bool mInputCompleted;
+    std::atomic<bool> mInputCompleted;
     std::atomic<uint32_t> mBufferLength;
     std::atomic<uint32_t> mWriterNotify;  // incremented to wake writer thread
     SingleProducerSingleConsumerList<string*>** mBufferLists;

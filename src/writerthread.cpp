@@ -10,7 +10,7 @@
 WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mOptions = opt;
     mWriter1 = NULL;
-    mInputCompleted = false;
+    mInputCompleted.store(false, std::memory_order_relaxed);
     mFilename = filename;
 
     mPwriteMode = !isSTDOUT && ends_with(filename, ".gz") && mOptions->thread > 1;
@@ -59,16 +59,16 @@ WriterThread::~WriterThread() {
 bool WriterThread::isCompleted()
 {
     if (mPwriteMode) return true;  // no writer thread needed
-    return mInputCompleted && (mBufferLength==0);
+    return mInputCompleted.load(std::memory_order_acquire) && (mBufferLength==0);
 }
 
 bool WriterThread::setInputCompleted() {
     if (mPwriteMode) {
         setInputCompletedPwrite();
-        mInputCompleted = true;
+        mInputCompleted.store(true, std::memory_order_release);
         return true;
     }
-    mInputCompleted = true;
+    mInputCompleted.store(true, std::memory_order_release);
     for(int t=0; t<mOptions->thread; t++) {
         mBufferLists[t]->setProducerFinished();
     }
@@ -103,7 +103,7 @@ void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
     SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
     if(!list->canBeConsumed()) {
-        if(mInputCompleted) return;
+        if(mInputCompleted.load(std::memory_order_acquire)) return;
         // Current slot has no data yet. Block until a producer or
         // setInputCompleted() wakes us via mWriterNotify.
         uint32_t cur = mWriterNotify.load(std::memory_order_acquire);
@@ -115,6 +115,7 @@ void WriterThread::output(){
     mWriter1->write(str->data(), str->length());
     delete str;
     mBufferLength.fetch_sub(1, std::memory_order_release);
+    hwy::WakeAll(mBufferLength);
     mWorkingBufferList = (mWorkingBufferList+1)%mOptions->thread;
 }
 
@@ -151,11 +152,11 @@ void WriterThread::inputPwrite(int tid, string* data) {
     size_t offset = 0;
     if (seq > 0) {
         size_t prevSlot = (seq - 1) & (OFFSET_RING_SIZE - 1);
-        uint32_t target = static_cast<uint32_t>(seq - 1);
-        while (mOffsetRing[prevSlot].published_seq.load(std::memory_order_acquire) != target) {
-            uint32_t cur = mOffsetRing[prevSlot].published_seq.load(std::memory_order_acquire);
-            if (cur != target)
-                hwy::BlockUntilDifferent(cur, mOffsetRing[prevSlot].published_seq);
+        uint32_t needGen = static_cast<uint32_t>((seq - 1) / OFFSET_RING_SIZE + 1);
+        while (mOffsetRing[prevSlot].generation.load(std::memory_order_acquire) < needGen) {
+            uint32_t cur = mOffsetRing[prevSlot].generation.load(std::memory_order_acquire);
+            if (cur < needGen)
+                hwy::BlockUntilDifferent(cur, mOffsetRing[prevSlot].generation);
         }
         offset = mOffsetRing[prevSlot].cumulative_offset.load(std::memory_order_relaxed);
     }
@@ -163,8 +164,8 @@ void WriterThread::inputPwrite(int tid, string* data) {
     // Publish offset BEFORE pwrite — next worker starts immediately
     size_t mySlot = seq & (OFFSET_RING_SIZE - 1);
     mOffsetRing[mySlot].cumulative_offset.store(offset + wsize, std::memory_order_relaxed);
-    mOffsetRing[mySlot].published_seq.store(static_cast<uint32_t>(seq), std::memory_order_release);
-    hwy::WakeAll(mOffsetRing[mySlot].published_seq);
+    mOffsetRing[mySlot].generation.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mOffsetRing[mySlot].generation);
 
     // pwrite (concurrent with other workers on non-overlapping regions)
     if (wsize > 0) {
