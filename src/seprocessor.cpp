@@ -388,11 +388,11 @@ void SingleEndProcessor::readerTask()
                 slept++;
             }
             readNum += count;
-            // if the writer threads are far behind this reader, sleep and wait
-            // check this only when necessary
-            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                mLeftWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
-            }
+            // NOTE: writer-buffer backpressure (waitForBufferBelow) removed —
+            // it formed a circular wait with round-robin writer consumption and
+            // deadlocked under high thread counts. Pack-level backpressure
+            // (mPackReadCounter - mPackProcessedCounter above) still bounds
+            // in-flight memory.
             // reset count to 0
             count = 0;
             // re-evaluate split size
@@ -414,6 +414,10 @@ void SingleEndProcessor::readerTask()
 
     for(int t=0; t<mOptions->thread; t++)
         mInputLists[t]->setProducerFinished();
+    // Wake any worker that snapshot mPackProducedCounter just before the
+    // setProducerFinished() above — without a counter bump they would miss it.
+    mPackProducedCounter.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mPackProducedCounter);
 
     //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
     mReaderFinished.store(true, std::memory_order_release);

@@ -801,12 +801,14 @@ void PairEndProcessor::readerTask(bool isLeft)
                 }
             }
             readNum += count;
-            // if the writer threads are far behind this producer, sleep and wait
-            // check this only when necessary
-            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                if(mLeftWriter) mLeftWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
-                if(mRightWriter) mRightWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
-            }
+            // NOTE: mLeftWriter->waitForBufferBelow() used to be gated here. It
+            // caused a mid-flight deadlock under -w>=23 + plain fq + adapter_fasta:
+            // writer consumes per-worker lists in strict round-robin, so one slow
+            // worker leaves its slot empty while others pile up, mBufferLength
+            // stays above the limit, the reader halts here, the slow worker never
+            // receives new input, its slot stays empty, and every thread blocks.
+            // Pack-level backpressure (mLeftPackReadCounter - mPackProcessedCounter
+            // above) already bounds in-flight memory without the cycle.
             // reset count to 0
             count = 0;
             // re-evaluate split size
@@ -832,6 +834,11 @@ void PairEndProcessor::readerTask(bool isLeft)
         else
             mRightInputLists[t]->setProducerFinished();
     }
+    // Wake workers that may have latched a mPackProducedCounter snapshot just
+    // before setProducerFinished() ran; setProducerFinished does not bump the
+    // counter so without this they would miss the completion signal.
+    mPackProducedCounter.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mPackProducedCounter);
 
     if(mOptions->verbose) {
         if(isLeft) {
@@ -935,12 +942,9 @@ void PairEndProcessor::interleavedReaderTask()
                 slept++;
             }
             readNum += count;
-            // if the writer threads are far behind this producer, sleep and wait
-            // check this only when necessary
-            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                if(mLeftWriter) mLeftWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
-                if(mRightWriter) mRightWriter->waitForBufferBelow(PACK_IN_MEM_LIMIT);
-            }
+            // NOTE: see readerTask() for why we no longer gate the reader on
+            // mLeftWriter->bufferLength here — round-robin writer + tight buffer
+            // limit caused a mid-flight deadlock.
             // reset count to 0
             count = 0;
             // re-evaluate split size
@@ -966,6 +970,10 @@ void PairEndProcessor::interleavedReaderTask()
         mLeftInputLists[t]->setProducerFinished();
         mRightInputLists[t]->setProducerFinished();
     }
+    // Wake any worker that snapshot mPackProducedCounter just before the
+    // setProducerFinished() above — without a counter bump they would miss it.
+    mPackProducedCounter.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mPackProducedCounter);
 
     if(mOptions->verbose) {
         loginfo("interleaved: loading completed with " + to_string(mLeftPackReadCounter) + " packs");

@@ -103,10 +103,14 @@ void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
     SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
     if(!list->canBeConsumed()) {
-        if(mInputCompleted.load(std::memory_order_acquire)) return;
-        // Current slot has no data yet. Block until a producer or
-        // setInputCompleted() wakes us via mWriterNotify.
+        // Snapshot mWriterNotify BEFORE checking mInputCompleted to avoid a
+        // lost-wakeup race: if setInputCompleted() runs between the state check
+        // and BlockUntilDifferent, it bumps mWriterNotify once and no further
+        // bumps arrive. Capturing cur first guarantees the bump is observable
+        // (cur != current value), so BlockUntilDifferent returns immediately.
         uint32_t cur = mWriterNotify.load(std::memory_order_acquire);
+        if(list->canBeConsumed()) return;  // producer raced in; let outer loop consume
+        if(mInputCompleted.load(std::memory_order_acquire)) return;
         hwy::BlockUntilDifferent(cur, mWriterNotify);
         // After wake, return to writerTask loop which re-checks isCompleted()
         return;
