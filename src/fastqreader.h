@@ -60,6 +60,8 @@ private:
 	void init();
 	void close();
 	void getLine(string* line);
+	void skipLine();
+	void readExact(string* str, int len);
 	void clearLineBreaks(char* line);
 	void readToBuf();
 	void readToBufIgzip();

@@ -243,11 +243,18 @@ void FastqReader::getLine(string* line){
 	int start = mBufUsedLen;
 	int end = start;
 
-	while(end < mBufDataLen) {
-		if(mFastqBuf[end] != '\r' && mFastqBuf[end] != '\n')
-			end++;
-		else
-			break;
+	{
+		const char* nl = (const char*)memchr(mFastqBuf + start, '\n', mBufDataLen - start);
+		if(nl) {
+			end = nl - mFastqBuf;
+			// handle \r before \n
+			if(end > start && mFastqBuf[end - 1] == '\r')
+				end--;
+		} else {
+			// no \n found; scan for lone \r
+			const char* cr = (const char*)memchr(mFastqBuf + start, '\r', mBufDataLen - start);
+			end = cr ? (cr - mFastqBuf) : mBufDataLen;
+		}
 	}
 
 	// this line well contained in this buf, or this is the last buf
@@ -255,10 +262,10 @@ void FastqReader::getLine(string* line){
 		int len = end - start;
 		line->assign(mFastqBuf+start, len);
 
-		// skip \n or \r
+		// skip \r and/or \n
 		end++;
 		// handle \r\n
-		if(end < mBufDataLen-1 && mFastqBuf[end-1]=='\r' && mFastqBuf[end] == '\n')
+		if(end < mBufDataLen && mFastqBuf[end-1]=='\r' && mFastqBuf[end] == '\n')
 			end++;
 
 		mBufUsedLen = end;
@@ -279,11 +286,18 @@ void FastqReader::getLine(string* line){
 				start++;
 			end = start;
 		}
-		while(end < mBufDataLen) {
-			if(mFastqBuf[end] != '\r' && mFastqBuf[end] != '\n')
-				end++;
-			else
-				break;
+		{
+			const char* nl = (const char*)memchr(mFastqBuf + end, '\n', mBufDataLen - end);
+			if(nl) {
+				end = nl - mFastqBuf;
+				// handle \r before \n
+				if(end > start && mFastqBuf[end - 1] == '\r')
+					end--;
+			} else {
+				// no \n found; scan for lone \r
+				const char* cr = (const char*)memchr(mFastqBuf + start, '\r', mBufDataLen - start);
+				end = cr ? (cr - mFastqBuf) : mBufDataLen;
+			}
 		}
 		// this line well contained in this buf
 		if(end < mBufDataLen || bufferFinished()) {
@@ -304,6 +318,56 @@ void FastqReader::getLine(string* line){
 	}
 
 	return;
+}
+
+void FastqReader::skipLine(){
+	// Advance past the next newline without storing any content.
+	// Used to skip the '+' strand line in FASTQ records.
+	while(true) {
+		if(mBufUsedLen >= mBufDataLen) {
+			if(bufferFinished()) return;
+			readToBuf();
+		}
+		const char* nl = (const char*)memchr(mFastqBuf + mBufUsedLen, '\n', mBufDataLen - mBufUsedLen);
+		if(nl) {
+			int end = nl - mFastqBuf + 1; // skip past \n
+			mBufUsedLen = end;
+			return;
+		}
+		// no newline in this buffer, consume it all and refill
+		mBufUsedLen = mBufDataLen;
+	}
+}
+
+void FastqReader::readExact(string* str, int len){
+	// Read exactly len bytes from the buffer, then skip trailing \n or \r\n.
+	// Used for quality line where length == sequence length.
+	str->resize(len);
+	int copied = 0;
+	while(copied < len) {
+		if(mBufUsedLen >= mBufDataLen) {
+			if(bufferFinished()) {
+				str->resize(copied);
+				return;
+			}
+			readToBuf();
+		}
+		int avail = mBufDataLen - mBufUsedLen;
+		int need = len - copied;
+		int take = (avail < need) ? avail : need;
+		memcpy(&(*str)[copied], mFastqBuf + mBufUsedLen, take);
+		mBufUsedLen += take;
+		copied += take;
+	}
+	// skip trailing \r\n or \n
+	if(mBufUsedLen < mBufDataLen) {
+		if(mFastqBuf[mBufUsedLen] == '\r') mBufUsedLen++;
+		if(mBufUsedLen < mBufDataLen && mFastqBuf[mBufUsedLen] == '\n') mBufUsedLen++;
+	} else if(!bufferFinished()) {
+		readToBuf();
+		if(mBufDataLen > 0 && mFastqBuf[0] == '\r') mBufUsedLen++;
+		if(mBufUsedLen < mBufDataLen && mFastqBuf[mBufUsedLen] == '\n') mBufUsedLen++;
+	}
 }
 
 Read* FastqReader::read(){
@@ -341,15 +405,21 @@ Read* FastqReader::read(){
 		return NULL;
 
 	getLine(sequence);
-	getLine(strand);
-	getLine(quality);
 
-	if (strand->empty() || (*strand)[0]!='+') {
+	// validate '+' line: peek at first char, then skip without storing
+	if(mBufUsedLen >= mBufDataLen && !bufferFinished())
+		readToBuf();
+	if(mBufUsedLen >= mBufDataLen || mFastqBuf[mBufUsedLen] != '+') {
 		cerr << *name << endl;
-		cerr << "Expected '+', got " << *strand << endl;
+		cerr << "Expected '+' line in FASTQ record" << endl;
 		cerr << "Your FASTQ may be invalid, please check the tail of your FASTQ file" << endl;
 		return NULL;
 	}
+	strand->assign("+");
+	skipLine();
+
+	// read quality by exact length (== sequence length), no newline scan needed
+	readExact(quality, sequence->length());
 
 	if(quality->length() != sequence->length()) {
 		cerr << "ERROR: sequence and quality have different length:" << endl;
