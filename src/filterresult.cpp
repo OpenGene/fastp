@@ -121,11 +121,9 @@ bool FilterResult::isLowComplexity(string& adapter) {
     return diff < adapter.length()/2;
 }
 
-void FilterResult::addAdapterTrimmed(string adapter, bool isR2, bool incTrimmedCounter ) {
+void FilterResult::addAdapterTrimmed(string adapter, bool isR2 ) {
     if(adapter.empty())
         return;
-    if(incTrimmedCounter)
-        mTrimmedAdapterRead++;
     mTrimmedAdapterBases += adapter.length();
     if(!isR2) {
         if(mAdapter1.count(adapter) >0 )
@@ -154,7 +152,6 @@ void FilterResult::addAdapterTrimmed(string adapter, bool isR2, bool incTrimmedC
 
 void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
     // paired
-    mTrimmedAdapterRead += 2;
     mTrimmedAdapterBases += adapter1.length() + adapter2.length();
     if(!adapter1.empty()){
         if(mAdapter1.count(adapter1) >0 )
@@ -180,6 +177,10 @@ void FilterResult::addAdapterTrimmed(string adapter1, string adapter2) {
             mAdapter2[adapter2] = 1;
         }
     }
+}
+
+void FilterResult::incTrimmedAdapterRead(int count) {
+    mTrimmedAdapterRead += count;
 }
 
 void FilterResult::addPolyXTrimmed(int base, int length) {

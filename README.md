@@ -13,7 +13,7 @@ This tool is designed for processing short reads (i.e. Illumina NovaSeq, MGI), i
 
 fastp supports batch processing of multiple FASTQ files in a folder, see - [batch processing](#batch-processing)  
 
-If you use fastp in your work, you can cite fastp as:  *Shifu Chen. fastp 1.0: An ultra-fast all-round tool for FASTQ data quality control and preprocessing. iMeta 4.5 (2025): e70078*
+If you use fastp in your work, you can cite fastp as:  [Shifu Chen. fastp 1.0: An ultra-fast all-round tool for FASTQ data quality control and preprocessing. iMeta 4.5 (2025): e70078 https://doi.org/10.1002/imt2.70078](https://doi.org/10.1002/imt2.70078)
 
 
 - [features](#features)
@@ -112,9 +112,9 @@ This binary was compiled on CentOS, and tested on CentOS/Ubuntu
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 
-# or download specified version, i.e. fastp v0.23.4
-wget http://opengene.org/fastp/fastp.0.23.4
-mv fastp.0.23.4 fastp
+# or download specified version, i.e. fastp v1.3.3
+wget http://opengene.org/fastp/fastp.1.3.3
+mv fastp.1.3.3 fastp
 chmod a+x ./fastp
 ```
 ## or compile from source

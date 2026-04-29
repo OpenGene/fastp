@@ -64,6 +64,9 @@ void Options::loadFastaAdapters() {
     map<string, string>::iterator iter;
     for(iter = contigs.begin(); iter != contigs.end(); iter++) {
         if(iter->second.length()>=6) {
+            // deduplicate adapter sequences in fasta file, for example when the same adapter is listed for multiple samples in a batch processing
+            if(find(adapter.seqsInFasta.begin(), adapter.seqsInFasta.end(), iter->second) != adapter.seqsInFasta.end())
+                continue;
             adapter.seqsInFasta.push_back(iter->second);
         }
         else {
