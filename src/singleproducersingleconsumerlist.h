@@ -45,17 +45,14 @@ SOFTWARE.
 template<typename T>
 struct LockFreeListItem {
 public:
-    inline LockFreeListItem(T val) {
+    inline LockFreeListItem(T val) : nextItem(nullptr), nextItemReady(false) {
         value = val;
-        nextItemReady = false;
-        nextItem = NULL;
     }
-    inline LockFreeListItem() {
-        nextItem = NULL;
-        nextItemReady = false;
-    }
+    inline LockFreeListItem() : value(), nextItem(nullptr), nextItemReady(false) {}
     T value;
-    LockFreeListItem<T>* nextItem;
+    // Atomic so producer's store(release) pairs with consumer's load(acquire) in consume(),
+    // regardless of whether consumer arrived via nextItemReady or h==tail path.
+    std::atomic<LockFreeListItem<T>*> nextItem;
     std::atomic_bool nextItemReady;
 };
 
@@ -64,7 +61,7 @@ class SingleProducerSingleConsumerList {
 public:
     inline SingleProducerSingleConsumerList() {
         head.store(NULL, std::memory_order_relaxed);
-        tail = NULL;
+        tail.store(NULL, std::memory_order_relaxed);
         producerFinished = false;
         consumerFinished = false;
         produced = 0;
@@ -100,23 +97,24 @@ public:
         // The last node has no successor, so `nextItemReady` may remain false;
         // it must still be consumable to avoid writer stalls when many queues exist.
         return h->nextItemReady.load(std::memory_order_acquire)
-            || (h == tail)
+            || (h == tail.load(std::memory_order_acquire))
             || producerFinished.load(std::memory_order_acquire);
     }
     inline void produce(T val) {
         LockFreeListItem<T>* item = makeItem(val);
-        if(head.load(std::memory_order_relaxed) == NULL) {
-            tail = item;
-            // Release store: publishing head to consumer thread.
-            // All writes to *item are ordered before this store.
+        // Acquire: ensures producer sees consumer's latest head advance (e.g. NULL after drain).
+        // Stale relaxed read would cause else-branch to link new item to consumed tail,
+        // making it unreachable (data loss) and racing on tail->nextItem.
+        if(head.load(std::memory_order_acquire) == NULL) {
+            tail.store(item, std::memory_order_release);
             head.store(item, std::memory_order_release);
-            // Signal the first item is consumable (no predecessor to set this)
             item->nextItemReady.store(true, std::memory_order_release);
         } else {
-            tail->nextItem = item;
-            // Release store: ensures nextItem write visible before nextItemReady flag.
-            tail->nextItemReady.store(true, std::memory_order_release);
-            tail = item;
+            LockFreeListItem<T>* t = tail.load(std::memory_order_relaxed);
+            // release: pairs with consume()'s nextItem.load(acquire) after nextItemReady check.
+            t->nextItem.store(item, std::memory_order_release);
+            t->nextItemReady.store(true, std::memory_order_release);
+            tail.store(item, std::memory_order_release);
         }
         produced.fetch_add(1, std::memory_order_relaxed);
     }
@@ -124,8 +122,16 @@ public:
         LockFreeListItem<T>* h = head.load(std::memory_order_acquire);
         assert(h != NULL);
         T val = h->value;
+        // Only read nextItem when nextItemReady is true; the acquire on nextItemReady
+        // establishes happens-before for the producer's nextItem.store(release),
+        // so a relaxed load suffices.  If nextItemReady is false (last item in queue),
+        // skip the read entirely — next = nullptr — to avoid racing with a concurrent
+        // producer that may be writing nextItem in the else branch of produce().
+        LockFreeListItem<T>* next = nullptr;
+        if(h->nextItemReady.load(std::memory_order_acquire))
+            next = h->nextItem.load(std::memory_order_relaxed);
         // Advance head; release so next canBeConsumed() acquire sees updated state.
-        head.store(h->nextItem, std::memory_order_release);
+        head.store(next, std::memory_order_release);
         unsigned long _c = consumed.fetch_add(1, std::memory_order_relaxed) + 1;
         if((_c & 0xFFF) == 0)
             recycle();
@@ -152,7 +158,8 @@ private:
         size_t size = 0x01<<12;
         if(blocksNum <= blk) {
             LockFreeListItem<T>* buffer = new LockFreeListItem<T>[size];
-            memset(buffer, 0, sizeof(LockFreeListItem<T>) * size);
+            // No memset: constructors zero-initialise value, nextItem, nextItemReady.
+            // memset on std::atomic objects is UB.
             blocks[blocksNum & blocksRingBufferSizeMask] = buffer;
             blocksNum++;
         }
@@ -172,7 +179,7 @@ private:
 
 private:
     std::atomic<LockFreeListItem<T>*> head;
-    LockFreeListItem<T>* tail;       // tail is producer-private, no atomic needed
+    std::atomic<LockFreeListItem<T>*> tail;  // read by consumer in canBeConsumed()
     LockFreeListItem<T>** blocks;
     std::atomic_bool producerFinished;
     std::atomic_bool consumerFinished;
