@@ -1,4 +1,5 @@
 #include "seprocessor.h"
+#include "hwy/contrib/thread_pool/futex.h"
 #include "fastqreader.h"
 #include <iostream>
 #include <unistd.h>
@@ -13,9 +14,9 @@
 #include "polyx.h"
 
 SingleEndProcessor::SingleEndProcessor(Options* opt){
+    mWorkersLatch.store(opt->thread);
     mOptions = opt;
     mReaderFinished = false;
-    mFinishedThreads = 0;
     mFilter = new Filter(opt);
     mUmiProcessor = new UmiProcessor(opt);
     mLeftWriter =  NULL;
@@ -28,6 +29,7 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
 
     mPackReadCounter = 0;
     mPackProcessedCounter = 0;
+    mPackProducedCounter = 0;
 
     mReadPool = new ReadPool(mOptions);
 }
@@ -135,14 +137,14 @@ bool SingleEndProcessor::process(){
         postStats.push_back(configs[t]->getPostStats1());
     }
 
-    cerr << "Read1 before filtering:"<<endl;
+    cerr << "Read1 before filtering:" << endl;
     finalPreStats->print();
     cerr << endl;
-    cerr << "Read1 after filtering:"<<endl;
+    cerr << "Read1 after filtering:" << endl;
     finalPostStats->print();
 
     cerr << endl;
-    cerr << "Filtering result:"<<endl;
+    cerr << "Filtering result:" << endl;
     finalFilterResult->print();
 
     double dupRate = 0.0;
@@ -152,7 +154,7 @@ bool SingleEndProcessor::process(){
         cerr << "Duplication rate (may be overestimated since this is SE data): " << dupRate * 100.0 << "%" << endl;
     }
 
-    // make JSON report
+        // make JSON report
     JsonReporter jr(mOptions);
     jr.setDup(dupRate);
     jr.report(finalFilterResult, finalPreStats, finalPostStats);
@@ -319,7 +321,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     delete pack;
 
     mPackProcessedCounter.fetch_add(1, std::memory_order_release);
-    mBackpressureCV.notify_all();
+    hwy::WakeAll(mPackProcessedCounter);
 
     return true;
 }
@@ -349,7 +351,8 @@ void SingleEndProcessor::readerTask()
             pack->count = count;
             mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
             mPackReadCounter++;
-            mBackpressureCV.notify_all();
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
             data = NULL;
             if(read) {
                 delete read;
@@ -375,28 +378,23 @@ void SingleEndProcessor::readerTask()
             pack->count = count;
             mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
             mPackReadCounter++;
-            mBackpressureCV.notify_all();
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
-            // if the processor is far behind this reader, sleep and wait to limit memory usage
-            {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while( mPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                    slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                }
+            // if the processor is far behind this reader, wait to limit memory usage
+            while(mPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                uint32_t cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                hwy::BlockUntilDifferent(cur, mPackProcessedCounter);
+                slept++;
             }
             readNum += count;
-            // if the writer threads are far behind this reader, sleep and wait
-            // check this only when necessary
-            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while(mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
-                    slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                }
-            }
+            // NOTE: writer-buffer backpressure (waitForBufferBelow) removed —
+            // it formed a circular wait with round-robin writer consumption and
+            // deadlocked under high thread counts. Pack-level backpressure
+            // (mPackReadCounter - mPackProcessedCounter above) still bounds
+            // in-flight memory.
             // reset count to 0
             count = 0;
             // re-evaluate split size
@@ -418,6 +416,10 @@ void SingleEndProcessor::readerTask()
 
     for(int t=0; t<mOptions->thread; t++)
         mInputLists[t]->setProducerFinished();
+    // Wake any worker that snapshot mPackProducedCounter just before the
+    // setProducerFinished() above — without a counter bump they would miss it.
+    mPackProducedCounter.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mPackProducedCounter);
 
     //std::unique_lock<std::mutex> lock(mRepo.readCounterMtx);
     mReaderFinished.store(true, std::memory_order_release);
@@ -451,13 +453,13 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
                 break;
             }
         } else {
-            std::unique_lock<std::mutex> lk(mBackpressureMtx);
-            mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
+            uint32_t cur = mPackProducedCounter.load(std::memory_order_acquire);
+            hwy::BlockUntilDifferent(cur, mPackProducedCounter);
         }
     }
     input->setConsumerFinished();
 
-    if(mFinishedThreads.fetch_add(1, std::memory_order_release) + 1 == mOptions->thread) {
+    if(mWorkersLatch.fetch_sub(1, std::memory_order_release) - 1 == 0) {
         if(mLeftWriter)
             mLeftWriter->setInputCompleted();
         if(mFailedWriter)

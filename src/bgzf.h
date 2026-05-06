@@ -6,10 +6,9 @@
 #include <cstring>
 #include <atomic>
 #include <thread>
-#include <mutex>
-#include <condition_variable>
 #include <vector>
 #include <isa-l/igzip_lib.h>
+#include <hwy/contrib/thread_pool/futex.h>
 
 static const int BGZF_HEADER_SIZE = 18;
 static const int BGZF_MAX_BLOCK_SIZE = 65536;
@@ -32,44 +31,46 @@ static inline uint32_t bgzfBlockSize(const unsigned char* h) {
 
 // Parallel BGZF decompression with fixed thread pool.
 // All decompress threads start upfront; ring buffer provides backpressure.
-// Slot lifecycle: FREE → COMPRESSED → DECOMPRESSING → READY → FREE
+// Slot lifecycle: FREE -> COMPRESSED -> DECOMPRESSING -> READY -> FREE
+// Synchronization: Highway futex (BlockUntilDifferent/WakeAll) on per-slot
+// atomic state, plus a global mSlotNotify counter for decompressor wakeup.
 class BgzfMtReader {
-    enum SlotState { FREE, COMPRESSED, DECOMPRESSING, READY, DONE };
+    static const uint32_t STATE_FREE          = 0;
+    static const uint32_t STATE_COMPRESSED    = 1;
+    static const uint32_t STATE_DECOMPRESSING = 2;
+    static const uint32_t STATE_READY         = 3;
+    static const uint32_t STATE_DONE          = 4;
 
     struct alignas(64) Slot {
         unsigned char comp[BGZF_MAX_BLOCK_SIZE];
         unsigned char decomp[BGZF_MAX_BLOCK_SIZE];
         int compLen;
         int decompLen;
-        std::atomic<SlotState> state{FREE};
+        std::atomic<uint32_t> state{STATE_FREE};
     };
 
 public:
-    // threadBudget: max decompress threads allowed for this reader.
-    // 0 = auto (use half of available CPU cores).
-    // Caller should compute: (hardware_concurrency - workers - readers - writers) / num_gz_inputs
     BgzfMtReader(FILE* fp, int threadBudget = 0)
         : mFp(fp), mConsumeIdx(0), mConsumeOffset(0),
           mProduceIdx(0), mStop(false) {
+        mSlotNotify.store(0, std::memory_order_relaxed);
         int cpus = std::thread::hardware_concurrency();
         if (cpus < 2) cpus = 2;
         mMaxPool = (threadBudget > 0) ? threadBudget : std::max(1, cpus / 2);
         mRingSize = mMaxPool * 4;
         if (mRingSize < 16) mRingSize = 16;
-        if (mRingSize > 64) mRingSize = 64;  // cap at ~8MB per reader
+        if (mRingSize > 64) mRingSize = 64;
         mSlots = new Slot[mRingSize];
 
-        // Start all decompress threads upfront — ring buffer handles backpressure
         for (int i = 0; i < mMaxPool; i++)
             mPool.push_back(new std::thread(&BgzfMtReader::decompWorker, this));
         mReaderThread = new std::thread(&BgzfMtReader::readerLoop, this);
     }
 
     ~BgzfMtReader() {
-        mStop = true;
-        mDecompCv.notify_all();
-        mProduceCv.notify_all();
-        mConsumeCv.notify_all();
+        mStop.store(true, std::memory_order_release);
+        // Wake all waiters so they see mStop
+        notifyAll();
         if (mReaderThread) { mReaderThread->join(); delete mReaderThread; }
         for (auto* t : mPool) { t->join(); delete t; }
         delete[] mSlots;
@@ -79,14 +80,13 @@ public:
         int filled = 0;
         while (filled < outBufSize) {
             Slot& s = mSlots[mConsumeIdx % mRingSize];
-            {
-                std::unique_lock<std::mutex> lk(mConsumeMtx);
-                mConsumeCv.wait(lk, [&]() {
-                    SlotState v = s.state.load(std::memory_order_acquire);
-                    return v == READY || v == DONE;
-                });
+            // Wait for slot to become READY or DONE
+            while (true) {
+                uint32_t v = s.state.load(std::memory_order_acquire);
+                if (v == STATE_READY || v == STATE_DONE) break;
+                hwy::BlockUntilDifferent(v, s.state);
             }
-            if (s.state.load(std::memory_order_acquire) == DONE) break;
+            if (s.state.load(std::memory_order_acquire) == STATE_DONE) break;
 
             int avail = s.decompLen - mConsumeOffset;
             int tocopy = (outBufSize - filled) < avail ? (outBufSize - filled) : avail;
@@ -95,27 +95,39 @@ public:
             mConsumeOffset += tocopy;
 
             if (mConsumeOffset >= s.decompLen) {
-                s.state.store(FREE, std::memory_order_release);
+                s.state.store(STATE_FREE, std::memory_order_release);
+                hwy::WakeAll(s.state);
                 mConsumeOffset = 0;
                 mConsumeIdx++;
-                mProduceCv.notify_one();
+                // Notify producer that a slot is free
+                mSlotNotify.fetch_add(1, std::memory_order_release);
+                hwy::WakeAll(mSlotNotify);
             }
         }
         return filled;
     }
 
 private:
+    void notifyAll() {
+        // Wake all threads blocked on slot states or mSlotNotify
+        for (int i = 0; i < mRingSize; i++) {
+            hwy::WakeAll(mSlots[i].state);
+        }
+        mSlotNotify.fetch_add(1, std::memory_order_release);
+        hwy::WakeAll(mSlotNotify);
+    }
+
     void readerLoop() {
         unsigned char header[BGZF_HEADER_SIZE];
 
-        while (!mStop) {
+        while (!mStop.load(std::memory_order_acquire)) {
             Slot& s = mSlots[mProduceIdx % mRingSize];
-            {
-                std::unique_lock<std::mutex> lk(mProduceMtx);
-                mProduceCv.wait(lk, [&]() {
-                    return s.state.load(std::memory_order_acquire) == FREE || mStop;
-                });
-                if (mStop) break;
+            // Wait for slot to become FREE
+            while (true) {
+                if (mStop.load(std::memory_order_acquire)) return;
+                uint32_t v = s.state.load(std::memory_order_acquire);
+                if (v == STATE_FREE) break;
+                hwy::BlockUntilDifferent(v, s.state);
             }
 
             size_t n = fread(header, 1, BGZF_HEADER_SIZE, mFp);
@@ -134,22 +146,24 @@ private:
             }
 
             s.compLen = bsize;
-            s.state.store(COMPRESSED, std::memory_order_release);
+            s.state.store(STATE_COMPRESSED, std::memory_order_release);
+            hwy::WakeAll(s.state);
             mProduceIdx++;
-            mDecompCv.notify_all();
+            // Notify decompressors that a slot has data
+            mSlotNotify.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mSlotNotify);
         }
     }
 
     void decompWorker() {
-        while (!mStop) {
+        while (!mStop.load(std::memory_order_acquire)) {
             Slot* target = nullptr;
-            {
-                std::unique_lock<std::mutex> lk(mDecompMtx);
-                mDecompCv.wait(lk, [&]() {
-                    return mStop.load(std::memory_order_relaxed) || claimSlot(&target);
-                });
-                if (mStop && !target) return;
-                if (!target) continue;
+            if (!claimSlot(&target)) {
+                if (mStop.load(std::memory_order_acquire)) return;
+                // No slot available — block until state changes somewhere
+                uint32_t cur = mSlotNotify.load(std::memory_order_acquire);
+                hwy::BlockUntilDifferent(cur, mSlotNotify);
+                continue;
             }
 
             struct inflate_state ist;
@@ -162,8 +176,11 @@ private:
             int ret = isal_inflate_stateless(&ist);
             target->decompLen = (ret == ISAL_DECOMP_OK) ? (int)ist.total_out : 0;
 
-            target->state.store(READY, std::memory_order_release);
-            mConsumeCv.notify_one();
+            target->state.store(STATE_READY, std::memory_order_release);
+            hwy::WakeAll(target->state);
+            // Notify consumer that data is ready
+            mSlotNotify.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mSlotNotify);
         }
     }
 
@@ -172,8 +189,8 @@ private:
         int tail = mProduceIdx;
         for (int i = head; i < tail; i++) {
             Slot& s = mSlots[i % mRingSize];
-            SlotState expected = COMPRESSED;
-            if (s.state.compare_exchange_strong(expected, DECOMPRESSING,
+            uint32_t expected = STATE_COMPRESSED;
+            if (s.state.compare_exchange_strong(expected, STATE_DECOMPRESSING,
                     std::memory_order_acq_rel)) {
                 *out = &s;
                 return true;
@@ -183,25 +200,24 @@ private:
     }
 
     void markDone(Slot& s) {
-        s.state.store(DONE, std::memory_order_release);
-        mConsumeCv.notify_all();
-        mDecompCv.notify_all();
+        s.state.store(STATE_DONE, std::memory_order_release);
+        hwy::WakeAll(s.state);
+        mSlotNotify.fetch_add(1, std::memory_order_release);
+        hwy::WakeAll(mSlotNotify);
     }
 
-    FILE* mFp;  // not owned — caller must keep open for lifetime of BgzfMtReader
+    FILE* mFp;
     Slot* mSlots;
     int mRingSize;
     std::atomic<int> mConsumeIdx;
-    int mConsumeOffset;  // only accessed by consumer thread
+    int mConsumeOffset;
     std::atomic<int> mProduceIdx;
     int mMaxPool;
     std::atomic<bool> mStop;
+    std::atomic<uint32_t> mSlotNotify;  // monotonic counter for cross-thread wakeup
 
     std::thread* mReaderThread;
     std::vector<std::thread*> mPool;
-
-    std::mutex mConsumeMtx, mProduceMtx, mDecompMtx;
-    std::condition_variable mConsumeCv, mProduceCv, mDecompCv;
 };
 
 #endif

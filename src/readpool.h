@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <atomic>
 #include "read.h"
 #include "options.h"
 #include "singleproducersingleconsumerlist.h"
@@ -29,10 +30,10 @@ private:
 private:
     Options* mOptions;
     SingleProducerSingleConsumerList<Read*>** mBufferLists;
-    size_t mProduced;
+    std::atomic<size_t> mProduced;
     size_t mConsumed;
     unsigned long mLimit;
-    bool mIsFull;
+    std::atomic<bool> mIsFull;
 };
 
 #endif

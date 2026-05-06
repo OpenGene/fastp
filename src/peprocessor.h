@@ -6,8 +6,6 @@
 #include <string>
 #include "read.h"
 #include <cstdlib>
-#include <condition_variable>
-#include <mutex>
 #include <thread>
 #include "options.h"
 #include "threadconfig.h"
@@ -17,6 +15,7 @@
 #include "writerthread.h"
 #include "duplicate.h"
 #include "readpool.h"
+#include <atomic>
 
 
 using namespace std;
@@ -46,7 +45,7 @@ private:
 private:
     atomic_bool mLeftReaderFinished;
     atomic_bool mRightReaderFinished;
-    alignas(128) atomic_int mFinishedThreads;
+    std::atomic<uint32_t> mWorkersLatch;
     Options* mOptions;
     Filter* mFilter;
     UmiProcessor* mUmiProcessor;
@@ -63,12 +62,11 @@ private:
     SingleProducerSingleConsumerList<ReadPack*>** mRightInputLists;
     size_t mLeftPackReadCounter;
     size_t mRightPackReadCounter;
-    alignas(128) atomic_long mPackProcessedCounter;
+    alignas(128) std::atomic<uint32_t> mPackProcessedCounter;
+    alignas(128) std::atomic<uint32_t> mPackProducedCounter;
     ReadPool* mLeftReadPool;
     ReadPool* mRightReadPool;
     atomic_bool shouldStopReading;
-    std::mutex mBackpressureMtx;
-    std::condition_variable mBackpressureCV;
 };
 
 
