@@ -8,6 +8,7 @@
 #include "options.h"
 #include "processor.h"
 #include "evaluator.h"
+#include <sysexits.h>
 
 // TODO: code refactoring to remove these global variables
 string command;
@@ -17,8 +18,7 @@ int main(int argc, char* argv[]){
     // display version info if no argument is given
     if(argc == 1) {
         cerr << "fastp: an ultra-fast all-in-one FASTQ preprocessor" << endl << "version " << FASTP_VER << endl;
-        //cerr << "fastp --help to see the help"<<endl;
-        //return 0;
+	return EX_USAGE;
     }
     if (argc == 2 && strcmp(argv[1], "test")==0){
         UnitTest tester;
