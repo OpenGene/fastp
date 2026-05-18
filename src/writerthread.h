@@ -35,6 +35,7 @@ public:
     void output();
     void input(int tid, string* data);
     bool setInputCompleted();
+    bool allBufferListsDrained();
 
     long bufferLength() {return mBufferLength;};
     string getFilename() {return mFilename;}
@@ -50,7 +51,7 @@ private:
     Options* mOptions;
     string mFilename;
 
-    bool mInputCompleted;
+    atomic_bool mInputCompleted;
     atomic_long mBufferLength;
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
