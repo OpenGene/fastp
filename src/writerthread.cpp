@@ -22,6 +22,8 @@ WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mCompBufs = NULL;
     mCompBufSizes = NULL;
     mBufferLists = NULL;
+    mNextOutputSeq = 0;
+    mOrderedOutput = true;
 
     if (mPwriteMode) {
         mFd = open(mFilename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -104,6 +106,27 @@ void WriterThread::setInputCompletedPwrite() {
 
 void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
+    if(mOrderedOutput)
+        outputOrdered();
+    else
+        outputReady();
+}
+
+void WriterThread::outputOrdered() {
+    int tid = mNextOutputSeq % mOptions->thread;
+    SingleProducerSingleConsumerList<string*>* list = mBufferLists[tid];
+    if(list->canBeConsumed()) {
+        string* str = list->consume();
+        mWriter1->write(str->data(), str->length());
+        delete str;
+        mBufferLength--;
+        mNextOutputSeq++;
+        return;
+    }
+    usleep(100);
+}
+
+void WriterThread::outputReady() {
     for(int i=0; i<mOptions->thread; i++) {
         SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
         if(list->canBeConsumed()) {

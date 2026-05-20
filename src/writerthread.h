@@ -44,6 +44,8 @@ public:
 private:
     void deleteWriter();
     void inputPwrite(int tid, string* data);
+    void outputOrdered();
+    void outputReady();
     void setInputCompletedPwrite();
 
 private:
@@ -55,6 +57,8 @@ private:
     atomic_long mBufferLength;
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
+    size_t mNextOutputSeq;
+    bool mOrderedOutput;
 
     // pwrite mode: parallel libdeflate gz compression + direct file write
     bool mPwriteMode;
