@@ -35,6 +35,7 @@ public:
     void output();
     void input(int tid, string* data);
     bool setInputCompleted();
+    bool allBufferListsDrained();
 
     long bufferLength() {return mBufferLength;};
     string getFilename() {return mFilename;}
@@ -43,6 +44,8 @@ public:
 private:
     void deleteWriter();
     void inputPwrite(int tid, string* data);
+    void outputOrdered();
+    void outputReady();
     void setInputCompletedPwrite();
 
 private:
@@ -50,10 +53,12 @@ private:
     Options* mOptions;
     string mFilename;
 
-    bool mInputCompleted;
+    atomic_bool mInputCompleted;
     atomic_long mBufferLength;
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
+    size_t mNextOutputSeq;
+    bool mOrderedOutput;
 
     // pwrite mode: parallel libdeflate gz compression + direct file write
     bool mPwriteMode;

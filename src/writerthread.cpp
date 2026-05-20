@@ -22,6 +22,8 @@ WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mCompBufs = NULL;
     mCompBufSizes = NULL;
     mBufferLists = NULL;
+    mNextOutputSeq = 0;
+    mOrderedOutput = true;
 
     if (mPwriteMode) {
         mFd = open(mFilename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -58,19 +60,29 @@ WriterThread::~WriterThread() {
 bool WriterThread::isCompleted()
 {
     if (mPwriteMode) return true;  // no writer thread needed
-    return mInputCompleted && (mBufferLength==0);
+    return mInputCompleted.load(std::memory_order_acquire) && allBufferListsDrained();
+}
+
+bool WriterThread::allBufferListsDrained() {
+    if(mBufferLists == NULL)
+        return true;
+    for(int t=0; t<mOptions->thread; t++) {
+        if(!mBufferLists[t]->isProducerFinished() || !mBufferLists[t]->isEmpty())
+            return false;
+    }
+    return true;
 }
 
 bool WriterThread::setInputCompleted() {
     if (mPwriteMode) {
         setInputCompletedPwrite();
-        mInputCompleted = true;
+        mInputCompleted.store(true, std::memory_order_release);
         return true;
     }
-    mInputCompleted = true;
     for(int t=0; t<mOptions->thread; t++) {
         mBufferLists[t]->setProducerFinished();
     }
+    mInputCompleted.store(true, std::memory_order_release);
     return true;
 }
 
@@ -94,16 +106,40 @@ void WriterThread::setInputCompletedPwrite() {
 
 void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
-    SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
-    if(!list->canBeConsumed()) {
-        usleep(100);
-    } else {
+    if(mOrderedOutput)
+        outputOrdered();
+    else
+        outputReady();
+}
+
+void WriterThread::outputOrdered() {
+    int tid = mNextOutputSeq % mOptions->thread;
+    SingleProducerSingleConsumerList<string*>* list = mBufferLists[tid];
+    if(list->canBeConsumed()) {
         string* str = list->consume();
         mWriter1->write(str->data(), str->length());
         delete str;
         mBufferLength--;
+        mNextOutputSeq++;
+        return;
+    }
+    usleep(100);
+}
+
+void WriterThread::outputReady() {
+    for(int i=0; i<mOptions->thread; i++) {
+        SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
+        if(list->canBeConsumed()) {
+            string* str = list->consume();
+            mWriter1->write(str->data(), str->length());
+            delete str;
+            mBufferLength--;
+            mWorkingBufferList = (mWorkingBufferList+1)%mOptions->thread;
+            return;
+        }
         mWorkingBufferList = (mWorkingBufferList+1)%mOptions->thread;
     }
+    usleep(100);
 }
 
 void WriterThread::input(int tid, string* data) {
