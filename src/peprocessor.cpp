@@ -669,8 +669,13 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         mLeftWriter->input(tid, new string(std::move(outstr1)));
         mRightWriter->input(tid, new string(std::move(outstr2)));
     } else if(mLeftWriter) {
-        // write singleOutput
-        mLeftWriter->input(tid, new string(std::move(singleOutput)));
+        if(mOptions->merge.enabled && mOptions->outputToSTDOUT) {
+            // in merge+stdout mode, merged reads are buffered in mergedOutput
+            mLeftWriter->input(tid, new string(std::move(mergedOutput)));
+        } else {
+            // write singleOutput
+            mLeftWriter->input(tid, new string(std::move(singleOutput)));
+        }
     }
     // output unpaired reads
     if(mUnpairedLeftWriter && mUnpairedRightWriter) {
