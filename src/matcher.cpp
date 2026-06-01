@@ -1,4 +1,5 @@
 #include "matcher.h"
+#include <vector>
 
 Matcher::Matcher(){
 }
@@ -9,8 +10,8 @@ Matcher::~Matcher(){
 
 bool Matcher::matchWithOneInsertion(const char* insData, const char* normalData, int cmplen, int diffLimit) {
     // accumlated mismatches from left/right
-    int accMismatchFromLeft[cmplen];
-    int accMismatchFromRight[cmplen];
+    vector<int> accMismatchFromLeft(cmplen);
+    vector<int> accMismatchFromRight(cmplen);
 
     // accMismatchFromLeft[0]: head vs. head
     // accMismatchFromRight[cmplen-1]: tail vs. tail
@@ -55,8 +56,8 @@ bool Matcher::matchWithOneInsertion(const char* insData, const char* normalData,
 
 int Matcher::diffWithOneInsertion(const char* insData, const char* normalData, int cmplen, int diffLimit) {
     // accumlated mismatches from left/right
-    int accMismatchFromLeft[cmplen];
-    int accMismatchFromRight[cmplen];
+    vector<int> accMismatchFromLeft(cmplen);
+    vector<int> accMismatchFromRight(cmplen);
 
     // accMismatchFromLeft[0]: head vs. head
     // accMismatchFromRight[cmplen-1]: tail vs. tail

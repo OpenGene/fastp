@@ -8,7 +8,7 @@
 #include "writer.h"
 #include "options.h"
 #include <atomic>
-#include <mutex>
+#include "hwy/contrib/thread_pool/futex.h"
 #include <libdeflate.h>
 #include "singleproducersingleconsumerlist.h"
 
@@ -18,7 +18,7 @@ static constexpr int OFFSET_RING_SIZE = 512;
 
 struct alignas(64) OffsetSlot {
     std::atomic<size_t> cumulative_offset{0};
-    std::atomic<size_t> published_seq{SIZE_MAX};
+    std::atomic<uint32_t> generation{0};  // bumped each time slot is published
 };
 
 class WriterThread{
@@ -36,7 +36,14 @@ public:
     void input(int tid, string* data);
     bool setInputCompleted();
 
-    long bufferLength() {return mBufferLength;};
+    uint32_t bufferLength() {return mBufferLength;};
+    void waitForBufferBelow(uint32_t limit) {
+        for(;;) {
+            uint32_t cur = mBufferLength.load(std::memory_order_acquire);
+            if(cur <= limit) break;
+            hwy::BlockUntilDifferent(cur, mBufferLength);
+        }
+    }
     string getFilename() {return mFilename;}
     bool isPwriteMode() {return mPwriteMode;}
 
@@ -50,8 +57,9 @@ private:
     Options* mOptions;
     string mFilename;
 
-    bool mInputCompleted;
-    atomic_long mBufferLength;
+    std::atomic<bool> mInputCompleted;
+    std::atomic<uint32_t> mBufferLength;
+    std::atomic<uint32_t> mWriterNotify;  // incremented to wake writer thread
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
 
@@ -59,7 +67,7 @@ private:
     bool mPwriteMode;
     int mFd;
     OffsetSlot* mOffsetRing;
-    size_t* mNextSeq;
+    std::atomic<size_t>* mNextSeq;
     libdeflate_compressor** mCompressors;
     char** mCompBufs;       // per-worker pre-allocated compress output buffers
     size_t* mCompBufSizes;  // per-worker buffer sizes

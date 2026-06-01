@@ -1,4 +1,5 @@
 #include "peprocessor.h"
+#include "hwy/contrib/thread_pool/futex.h"
 #include "fastqreader.h"
 #include <iostream>
 #include <unistd.h>
@@ -14,10 +15,10 @@
 #include "polyx.h"
 
 PairEndProcessor::PairEndProcessor(Options* opt){
+    mWorkersLatch.store(opt->thread);
     mOptions = opt;
     mLeftReaderFinished = false;
     mRightReaderFinished = false;
-    mFinishedThreads = 0;
     mFilter = new Filter(opt);
     mUmiProcessor = new UmiProcessor(opt);
 
@@ -41,6 +42,7 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mLeftPackReadCounter = 0;
     mRightPackReadCounter = 0;
     mPackProcessedCounter = 0;
+    mPackProducedCounter = 0;
 
     mLeftReadPool = new ReadPool(mOptions);
     mRightReadPool = new ReadPool(mOptions);
@@ -190,6 +192,7 @@ bool PairEndProcessor::process(){
         readerLeft->join();
         readerRight->join();
     }
+
     for(int t=0; t<mOptions->thread; t++){
         threads[t]->join();
     }
@@ -233,25 +236,25 @@ bool PairEndProcessor::process(){
     Stats* finalPostStats2 = Stats::merge(postStats2);
     FilterResult* finalFilterResult = FilterResult::merge(filterResults);
 
-    cerr << "Read1 before filtering:"<<endl;
+    cerr << "Read1 before filtering:" << endl;
     finalPreStats1->print();
     cerr << endl;
-    cerr << "Read2 before filtering:"<<endl;
+    cerr << "Read2 before filtering:" << endl;
     finalPreStats2->print();
     cerr << endl;
     if(!mOptions->merge.enabled) {
-        cerr << "Read1 after filtering:"<<endl;
+        cerr << "Read1 after filtering:" << endl;
         finalPostStats1->print();
         cerr << endl;
-        cerr << "Read2 after filtering:"<<endl;
+        cerr << "Read2 after filtering:" << endl;
         finalPostStats2->print();
     } else {
-        cerr << "Merged and filtered:"<<endl;
+        cerr << "Merged and filtered:" << endl;
         finalPostStats1->print();
     }
 
     cerr << endl;
-    cerr << "Filtering result:"<<endl;
+    cerr << "Filtering result:" << endl;
     finalFilterResult->print();
 
     double dupRate = 0.0;
@@ -279,6 +282,7 @@ bool PairEndProcessor::process(){
     }
 
     // make JSON report
+
     JsonReporter jr(mOptions);
     jr.setDup(dupRate);
     jr.setInsertHist(mInsertSizeHist, peakInsertSize);
@@ -292,17 +296,8 @@ bool PairEndProcessor::process(){
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){
-        delete threads[t];
-        threads[t] = NULL;
         delete configs[t];
         configs[t] = NULL;
-    }
-
-    if(readerInterveleaved) {
-        delete readerInterveleaved;
-    } else {
-        delete readerLeft;
-        delete readerRight;
     }
 
     delete finalPreStats1;
@@ -311,23 +306,7 @@ bool PairEndProcessor::process(){
     delete finalPostStats2;
     delete finalFilterResult;
 
-    delete[] threads;
     delete[] configs;
-
-    if(leftWriterThread)
-        delete leftWriterThread;
-    if(rightWriterThread)
-        delete rightWriterThread;
-    if(unpairedLeftWriterThread)
-        delete unpairedLeftWriterThread;
-    if(unpairedRightWriterThread)
-        delete unpairedRightWriterThread;
-    if(mergedWriterThread)
-        delete mergedWriterThread;
-    if(failedWriterThread)
-        delete failedWriterThread;
-    if(overlappedWriterThread)
-        delete overlappedWriterThread;
 
     if(!mOptions->split.enabled)
         closeOutput();
@@ -702,7 +681,7 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
     delete rightPack;
 
     mPackProcessedCounter.fetch_add(1, std::memory_order_release);
-    mBackpressureCV.notify_all();
+    hwy::WakeAll(mPackProcessedCounter);
 
     return true;
 }
@@ -774,7 +753,8 @@ void PairEndProcessor::readerTask(bool isLeft)
                 mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
                 mRightPackReadCounter++;
             }
-            mBackpressureCV.notify_all();
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
             data = NULL;
             if(read) {
                 delete read;
@@ -811,36 +791,35 @@ void PairEndProcessor::readerTask(bool isLeft)
                 mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
                 mRightPackReadCounter++;
             }
-            mBackpressureCV.notify_all();
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
 
             //re-initialize data for next pack
             data = new Read*[PACK_SIZE];
             memset(data, 0, sizeof(Read*)*PACK_SIZE);
-            // if the processor is far behind this reader, sleep and wait to limit memory usage
-            {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                if(isLeft) {
-                    while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                        slept++;
-                        mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                    }
-                } else {
-                    while(mRightPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                        slept++;
-                        mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                    }
+            // if the processor is far behind this reader, wait to limit memory usage
+            if(isLeft) {
+                while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                    uint32_t cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                    hwy::BlockUntilDifferent(cur, mPackProcessedCounter);
+                    slept++;
+                }
+            } else {
+                while(mRightPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                    uint32_t cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                    hwy::BlockUntilDifferent(cur, mPackProcessedCounter);
+                    slept++;
                 }
             }
             readNum += count;
-            // if the writer threads are far behind this producer, sleep and wait
-            // check this only when necessary
-            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
-                    slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                }
-            }
+            // NOTE: mLeftWriter->waitForBufferBelow() used to be gated here. It
+            // caused a mid-flight deadlock under -w>=23 + plain fq + adapter_fasta:
+            // writer consumes per-worker lists in strict round-robin, so one slow
+            // worker leaves its slot empty while others pile up, mBufferLength
+            // stays above the limit, the reader halts here, the slow worker never
+            // receives new input, its slot stays empty, and every thread blocks.
+            // Pack-level backpressure (mLeftPackReadCounter - mPackProcessedCounter
+            // above) already bounds in-flight memory without the cycle.
             // reset count to 0
             count = 0;
             // re-evaluate split size
@@ -866,7 +845,11 @@ void PairEndProcessor::readerTask(bool isLeft)
         else
             mRightInputLists[t]->setProducerFinished();
     }
-    mBackpressureCV.notify_all();
+    // Wake workers that may have latched a mPackProducedCounter snapshot just
+    // before setProducerFinished() ran; setProducerFinished does not bump the
+    // counter so without this they would miss the completion signal.
+    mPackProducedCounter.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mPackProducedCounter);
 
     if(mOptions->verbose) {
         if(isLeft) {
@@ -921,7 +904,9 @@ void PairEndProcessor::interleavedReaderTask()
             mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
             mRightPackReadCounter++;
 
-            mBackpressureCV.notify_all();
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
+
             dataLeft = NULL;
             dataRight = NULL;
             break;
@@ -952,31 +937,25 @@ void PairEndProcessor::interleavedReaderTask()
 
             mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
             mRightPackReadCounter++;
-            mBackpressureCV.notify_all();
+
+            mPackProducedCounter.fetch_add(1, std::memory_order_release);
+            hwy::WakeAll(mPackProducedCounter);
 
             //re-initialize data for next pack
             dataLeft = new Read*[PACK_SIZE];
             dataRight = new Read*[PACK_SIZE];
             memset(dataLeft, 0, sizeof(Read*)*PACK_SIZE);
             memset(dataRight, 0, sizeof(Read*)*PACK_SIZE);
-            // if the consumer is far behind this producer, sleep and wait to limit memory usage
-            {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
-                    slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                }
+            // if the consumer is far behind this producer, wait to limit memory usage
+            while(mLeftPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                uint32_t cur = mPackProcessedCounter.load(std::memory_order_acquire);
+                hwy::BlockUntilDifferent(cur, mPackProcessedCounter);
+                slept++;
             }
             readNum += count;
-            // if the writer threads are far behind this producer, sleep and wait
-            // check this only when necessary
-            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
-                std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while( (mLeftWriter && mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) || (mRightWriter && mRightWriter->bufferLength() > PACK_IN_MEM_LIMIT) ){
-                    slept++;
-                    mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
-                }
-            }
+            // NOTE: see readerTask() for why we no longer gate the reader on
+            // mLeftWriter->bufferLength here — round-robin writer + tight buffer
+            // limit caused a mid-flight deadlock.
             // reset count to 0
             count = 0;
             // re-evaluate split size
@@ -1002,7 +981,10 @@ void PairEndProcessor::interleavedReaderTask()
         mLeftInputLists[t]->setProducerFinished();
         mRightInputLists[t]->setProducerFinished();
     }
-    mBackpressureCV.notify_all();
+    // Wake any worker that snapshot mPackProducedCounter just before the
+    // setProducerFinished() above — without a counter bump they would miss it.
+    mPackProducedCounter.fetch_add(1, std::memory_order_release);
+    hwy::WakeAll(mPackProducedCounter);
 
     if(mOptions->verbose) {
         loginfo("interleaved: loading completed with " + to_string(mLeftPackReadCounter) + " packs");
@@ -1036,20 +1018,14 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
         } else if(inputRight->isProducerFinished() && !inputRight->canBeConsumed()) {
             break;
         } else {
-            std::unique_lock<std::mutex> lk(mBackpressureMtx);
-            mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
+            uint32_t cur = mPackProducedCounter.load(std::memory_order_acquire);
+            hwy::BlockUntilDifferent(cur, mPackProducedCounter);
         }
     }
     inputLeft->setConsumerFinished();
     inputRight->setConsumerFinished();
 
-    int finishedCount = mFinishedThreads.fetch_add(1, std::memory_order_release) + 1;
-    if(mOptions->verbose) {
-        string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
-        loginfo(msg);
-    }
-
-    if(finishedCount == mOptions->thread) {
+    if(mWorkersLatch.fetch_sub(1, std::memory_order_release) - 1 == 0) {
         if(mLeftWriter)
             mLeftWriter->setInputCompleted();
         if(mRightWriter)
@@ -1064,6 +1040,10 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
             mFailedWriter->setInputCompleted();
         if(mOverlappedWriter)
             mOverlappedWriter->setInputCompleted();
+    }
+    if(mOptions->verbose) {
+        string msg = "thread " + to_string(config->getThreadId() + 1) + " data processing completed";
+        loginfo(msg);
     }
     
     if(mOptions->verbose) {
