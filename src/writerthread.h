@@ -55,14 +55,14 @@ private:
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
 
-    // pwrite mode: parallel libdeflate gz compression + direct file write
     bool mPwriteMode;
+    bool mGzipMode;
     int mFd;
     OffsetSlot* mOffsetRing;
     size_t* mNextSeq;
     libdeflate_compressor** mCompressors;
-    char** mCompBufs;       // per-worker pre-allocated compress output buffers
-    size_t* mCompBufSizes;  // per-worker buffer sizes
+    char** mCompBufs;
+    size_t* mCompBufSizes;
 };
 
 #endif
