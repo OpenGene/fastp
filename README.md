@@ -370,7 +370,7 @@ By default, fastp uses 1/20 reads for sequence counting, and you can change this
 # merge paired-end reads
 For paired-end (PE) input, fastp supports stiching them by specifying the `-m/--merge` option. In this `merging` mode:
 
-* `--merged_out` shouuld be given to specify the file to store merged reads, otherwise you should enable `--stdout` to stream the merged reads to STDOUT. The merged reads are also filtered.
+* `--merged_out` should be given to specify the file to store merged reads, otherwise you should enable `--stdout` to stream the merged reads to STDOUT. The merged reads are also filtered.
 * `--out1` and `--out2` will be the reads that cannot be merged successfully, but both pass all the filters.
 * `--unpaired1` will be the reads that cannot be merged, `read1` passes filters but `read2` doesn't.
 * `--unpaired2` will be the reads that cannot be merged, `read2` passes filters but `read1` doesn't.
@@ -552,5 +552,4 @@ options:
 ### Shifu Chen. 2025. fastp 1.0: An ultra-fast all-round tool for FASTQ data quality control and preprocessing. iMeta 2025: [https://doi.org/10.1002/imt2.107](https://doi.org/10.1002/imt2.70078)
 ### Shifu Chen. 2023. Ultrafast one-pass FASTQ data preprocessing, quality control, and deduplication using fastp. iMeta 2: e107. https://doi.org/10.1002/imt2.107
 ### Shifu Chen, Yanqing Zhou, Yaru Chen, Jia Gu; fastp: an ultra-fast all-in-one FASTQ preprocessor, Bioinformatics, Volume 34, Issue 17, 1 September 2018, Pages i884–i890, https://doi.org/10.1093/bioinformatics/bty560
-
 
