@@ -106,7 +106,12 @@ public:
             mConsumeOffset += tocopy;
 
             if (mConsumeOffset >= s.decompLen) {
-                s.state.store(FREE, std::memory_order_release);
+                // Publish FREE under mProduceMtx so readerLoop, which waits on
+                // mProduceCv for this slot to free up, cannot miss the wakeup.
+                {
+                    std::lock_guard<std::mutex> lk(mProduceMtx);
+                    s.state.store(FREE, std::memory_order_release);
+                }
                 mConsumeOffset = 0;
                 mConsumeIdx++;
                 mProduceCv.notify_one();
@@ -145,8 +150,13 @@ private:
             }
 
             s.compLen = bsize;
-            s.state.store(COMPRESSED, std::memory_order_release);
-            mProduceIdx++;
+            // Publish the COMPRESSED slot (state + mProduceIdx, which claimSlot scans)
+            // under mDecompMtx so a decompWorker parked on mDecompCv cannot miss it.
+            {
+                std::lock_guard<std::mutex> lk(mDecompMtx);
+                s.state.store(COMPRESSED, std::memory_order_release);
+                mProduceIdx++;
+            }
             mDecompCv.notify_all();
         }
     }
@@ -173,7 +183,12 @@ private:
             int ret = isal_inflate_stateless(&ist);
             target->decompLen = (ret == ISAL_DECOMP_OK) ? (int)ist.total_out : 0;
 
-            target->state.store(READY, std::memory_order_release);
+            // Publish READY under mConsumeMtx so the consumer parked in read() on
+            // mConsumeCv cannot miss the wakeup for this slot.
+            {
+                std::lock_guard<std::mutex> lk(mConsumeMtx);
+                target->state.store(READY, std::memory_order_release);
+            }
             mConsumeCv.notify_one();
         }
     }
@@ -194,7 +209,14 @@ private:
     }
 
     void markDone(Slot& s) {
-        s.state.store(DONE, std::memory_order_release);
+        // Publish DONE under mConsumeMtx before notifying: the consumer in read()
+        // waits on mConsumeCv for READY/DONE, and at EOF this is the terminal
+        // notification (no further producer follows), so a lost wakeup here would
+        // strand the reader thread in read() forever.
+        {
+            std::lock_guard<std::mutex> lk(mConsumeMtx);
+            s.state.store(DONE, std::memory_order_release);
+        }
         mConsumeCv.notify_all();
         mDecompCv.notify_all();
     }
