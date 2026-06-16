@@ -98,7 +98,7 @@ public:
         // `nextItemReady` is a publication barrier for `nextItem`.
         // The last node has no successor, so `nextItemReady` may remain false;
         // it must still be consumable to avoid writer stalls when many queues exist.
-        return head->nextItemReady.load(std::memory_order_acquire) || (head == tail) || producerFinished.load(std::memory_order_acquire);
+        return head->nextItemReady.load(std::memory_order_acquire) || producerFinished.load(std::memory_order_acquire);
     }
     inline void produce(T val) {
         LockFreeListItem<T>* item = makeItem(val);
@@ -106,7 +106,7 @@ public:
             head = item;
             tail = item;
             // Signal the first item is consumable (no predecessor to set this)
-            head->nextItemReady.store(true, std::memory_order_release);
+            //head->nextItemReady.store(true, std::memory_order_release);
         } else {
             tail->nextItem = item;
             tail->nextItemReady.store(true, std::memory_order_release);
