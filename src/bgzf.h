@@ -66,7 +66,18 @@ public:
     }
 
     ~BgzfMtReader() {
-        mStop = true;
+        // Publish mStop while holding every CV's mutex before notifying. mStop is a
+        // wait predicate for all three CVs; a thread that has evaluated its predicate
+        // as false but not yet parked still holds that mutex, so taking all three here
+        // serializes the stop+notify against that gap. Storing mStop outside the locks
+        // (as before) lets notify_all() slip into that window and be missed, leaving a
+        // worker parked forever and the join() below hung — an intermittent deadlock.
+        {
+            std::lock_guard<std::mutex> l1(mProduceMtx);
+            std::lock_guard<std::mutex> l2(mDecompMtx);
+            std::lock_guard<std::mutex> l3(mConsumeMtx);
+            mStop = true;
+        }
         mDecompCv.notify_all();
         mProduceCv.notify_all();
         mConsumeCv.notify_all();
