@@ -53,6 +53,7 @@ public:
           mProduceIdx(0), mStop(false) {
         int cpus = std::thread::hardware_concurrency();
         if (cpus < 2) cpus = 2;
+        if (cpus > 8) cpus = 8; // cap at 8 cores for now, to avoid starving workers
         mMaxPool = (threadBudget > 0) ? threadBudget : std::max(1, cpus / 2);
         mRingSize = mMaxPool * 4;
         if (mRingSize < 16) mRingSize = 16;
