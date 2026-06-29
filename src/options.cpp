@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string.h>
 #include "fastareader.h"
+#include <thread>
 
 Options::Options(){
     in1 = "";
@@ -290,11 +291,12 @@ bool Options::validate() {
     if(readsToProcess < 0)
         error_exit("the number of reads to process (--reads_to_process) cannot be negative");
 
+    int cores = std::thread::hardware_concurrency();
     if(thread < 1) {
         thread = 1;
-    } else if(thread > 64) {
-        cerr << "WARNING: fastp uses up to 64 threads although you specified " << thread << endl;
-        thread = 64;
+    } else if(thread > cores && thread>4) {
+        cerr << "Reduce worker threads to "<<cores<<" due to CPU cores limit" << endl;
+        thread = cores;
     }
 
     if(trim.front1 < 0)
