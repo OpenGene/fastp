@@ -217,6 +217,9 @@ void FilterResult::print() {
     if(mOptions->complexityFilter.enabled) {
         cerr <<  "reads failed due to low complexity: " << mFilterReadStats[FAIL_COMPLEXITY] << endl;
     }
+    if(mOptions->duplicate.dedup) {
+        cerr <<  "reads failed due to duplication: " << mFilterReadStats[FAIL_DUPLICATE] << endl;
+    }
     if(mOptions->adapter.enabled) {
         cerr <<  "reads failed due to adapter dimer: " << mFilterReadStats[FAIL_ADAPTER_DIMER] << endl;
         cerr <<  "reads with adapter trimmed: " << mTrimmedAdapterRead << endl;
@@ -244,6 +247,8 @@ void FilterResult::reportJson(ofstream& ofs, string padding) {
     ofs << padding << "\t" << "\"too_many_N_reads\": " << mFilterReadStats[FAIL_N_BASE] << "," << endl;
     if(mOptions->complexityFilter.enabled)
         ofs << padding << "\t" << "\"low_complexity_reads\": " << mFilterReadStats[FAIL_COMPLEXITY] << "," << endl;
+    if(mOptions->duplicate.dedup)
+        ofs << padding << "\t" << "\"duplicated_reads\": " << mFilterReadStats[FAIL_DUPLICATE] << "," << endl;
     if(mOptions->adapter.enabled)
         ofs << padding << "\t" << "\"adapter_dimer_reads\": " << mFilterReadStats[FAIL_ADAPTER_DIMER] << "," << endl;
     ofs << padding << "\t" << "\"too_short_reads\": " << mFilterReadStats[FAIL_LENGTH] << "," << endl;
@@ -372,6 +377,8 @@ void FilterResult::reportHtml(ofstream& ofs, long totalReads, long totalBases) {
     }
     if(mOptions->complexityFilter.enabled)
         HtmlReporter::outputRow(ofs, "reads with low complexity:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_COMPLEXITY]) + " (" + to_string(mFilterReadStats[FAIL_COMPLEXITY] * 100.0 / total) + "%)");
+    if(mOptions->duplicate.dedup)
+        HtmlReporter::outputRow(ofs, "reads duplicated:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_DUPLICATE]) + " (" + to_string(mFilterReadStats[FAIL_DUPLICATE] * 100.0 / total) + "%)");
     if(mOptions->adapter.enabled)
         HtmlReporter::outputRow(ofs, "reads with adapter dimer:", HtmlReporter::formatNumber(mFilterReadStats[FAIL_ADAPTER_DIMER]) + " (" + to_string(mFilterReadStats[FAIL_ADAPTER_DIMER] * 100.0 / total) + "%)");
     ofs << "</table>\n";

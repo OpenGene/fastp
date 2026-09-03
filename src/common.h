@@ -49,6 +49,7 @@ static const int FAIL_TOO_LONG = 17;
 static const int FAIL_QUALITY = 20;
 static const int FAIL_COMPLEXITY = 24;
 static const int FAIL_ADAPTER_DIMER = 28;
+static const int FAIL_DUPLICATE = 29;
 
 // how many types in total we support
 static const int FILTER_RESULT_TYPES = 32;
@@ -61,7 +62,7 @@ const static char* FAILED_TYPES[FILTER_RESULT_TYPES] = {
 	"failed_too_short", "failed_too_long", "", "",
 	"failed_quality_filter", "", "", "",
 	"failed_low_complexity", "", "", "",
-	"failed_adapter_dimer", "", "", ""
+	"failed_adapter_dimer", "failed_duplicate", "", ""
 };
 
 #endif /* COMMON_H */
