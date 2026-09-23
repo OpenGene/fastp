@@ -36,6 +36,15 @@ static const int PACK_SIZE = 1000;
 // similar peak memory: 32 × 1000 reads ≈ 32K reads in flight ≈ old 128 × 256.
 static const int PACK_IN_MEM_LIMIT = 32;
 
+// Each worker thread owns one input list, and a list's newest item only becomes
+// consumable once another item is produced behind it (or the producer finishes).
+// Reader backpressure must therefore allow at least one in-flight pack per worker;
+// otherwise, with more workers than PACK_IN_MEM_LIMIT, readers stop before any
+// worker has a consumable pack and all threads wait forever (#721).
+inline long packInMemLimit(int threads) {
+    return threads * 2L > PACK_IN_MEM_LIMIT ? threads * 2L : PACK_IN_MEM_LIMIT;
+}
+
 
 // different filtering results, bigger number means worse
 // if r1 and r2 are both failed, then the bigger one of the two results will be recorded

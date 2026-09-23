@@ -14,6 +14,7 @@
 
 SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOptions = opt;
+    mPackInMemLimit = packInMemLimit(mOptions->thread);
     mReaderFinished = false;
     mFinishedThreads = 0;
     mFilter = new Filter(opt);
@@ -382,7 +383,7 @@ void SingleEndProcessor::readerTask()
             // if the processor is far behind this reader, sleep and wait to limit memory usage
             {
                 std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while( mPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > PACK_IN_MEM_LIMIT){
+                while( mPackReadCounter - mPackProcessedCounter.load(std::memory_order_acquire) > mPackInMemLimit){
                     slept++;
                     mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
                 }
@@ -392,7 +393,7 @@ void SingleEndProcessor::readerTask()
             // check this only when necessary
             if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
                 std::unique_lock<std::mutex> lk(mBackpressureMtx);
-                while(mLeftWriter->bufferLength() > PACK_IN_MEM_LIMIT) {
+                while(mLeftWriter->bufferLength() > mPackInMemLimit) {
                     slept++;
                     mBackpressureCV.wait_for(lk, std::chrono::milliseconds(1));
                 }
