@@ -391,7 +391,7 @@ void SingleEndProcessor::readerTask()
             readNum += count;
             // if the writer threads are far behind this reader, sleep and wait
             // check this only when necessary
-            if(readNum % (PACK_SIZE * PACK_IN_MEM_LIMIT) == 0 && mLeftWriter) {
+            if(readNum % (PACK_SIZE * mPackInMemLimit) == 0 && mLeftWriter) {
                 std::unique_lock<std::mutex> lk(mBackpressureMtx);
                 while(mLeftWriter->bufferLength() > mPackInMemLimit) {
                     slept++;

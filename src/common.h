@@ -45,7 +45,6 @@ inline long packInMemLimit(int threads) {
     return threads * 2L > PACK_IN_MEM_LIMIT ? threads * 2L : PACK_IN_MEM_LIMIT;
 }
 
-
 // different filtering results, bigger number means worse
 // if r1 and r2 are both failed, then the bigger one of the two results will be recorded
 // we reserve some gaps for future types to be added
