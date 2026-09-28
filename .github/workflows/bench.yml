@@ -26,10 +26,9 @@ jobs:
       THRESHOLD_PCT: ${{ vars.BENCH_THRESHOLD_PCT || '10' }}
       SIGNED_OFF: ${{ contains(github.event.pull_request.labels.*.name, 'perf-regression-ok') }}
     steps:
+      # head at the workspace root: github-action-benchmark runs git there
       - name: checkout
         uses: actions/checkout@v4
-        with:
-          path: head
 
       # PRs are measured against their base on the same runner: numbers from
       # different shared runners differ by more than most real changes.
@@ -38,55 +37,56 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
-          path: base
+          path: _base
 
       - name: build dependencies
-        uses: ./head/.github/actions/build-deps
+        uses: ./.github/actions/build-deps
 
       - name: build
         run: |
-          make -C head -j$(nproc)
-          if [ -d base ]; then make -C base -j$(nproc); fi
+          make -j$(nproc)
+          if [ -d _base ]; then make -C _base -j$(nproc); fi
 
       - name: cache datasets
         uses: actions/cache@v4
         with:
           path: bench-data
-          key: bench-data-${{ hashFiles('head/.github/scripts/bench.py', 'head/.github/scripts/gen_reads.py') }}
+          key: bench-data-${{ hashFiles('.github/scripts/bench.py', '.github/scripts/gen_reads.py') }}
 
       - name: prepare datasets
-        run: python3 head/.github/scripts/bench.py prepare bench-data
+        run: python3 .github/scripts/bench.py prepare bench-data
 
       - name: benchmark
         id: bench
         run: |
-          builds=head=head/fastp signoff=
-          if [ -d base ]; then builds=base=base/fastp,head=head/fastp; fi
+          # outside the checkout, so the gh-pages switch below can't touch them
+          out=$RUNNER_TEMP/bench; mkdir -p "$out"
+          builds=head=./fastp signoff=
+          if [ -d _base ]; then builds=base=_base/fastp,head=./fastp; fi
           if [ "$SIGNED_OFF" = true ]; then signoff=--signed-off; fi
-          python3 head/.github/scripts/bench.py run --builds "$builds" --data bench-data \
+          python3 .github/scripts/bench.py run --builds "$builds" --data bench-data \
             --threads 1,4 --reps 3 --threshold "$THRESHOLD_PCT" $signoff \
-            --summary "$GITHUB_STEP_SUMMARY" --comment comment.md \
-            --compare-json bench-compare.json --json bench.json --tsv bench.tsv
+            --summary "$GITHUB_STEP_SUMMARY" --comment "$out/comment.md" \
+            --compare-json "$out/bench-compare.json" --json "$out/bench.json" --tsv "$out/bench.tsv"
 
       - name: upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bench-results
-          path: |
-            comment.md
-            bench-compare.json
-            bench.json
-            bench.tsv
+          path: ${{ runner.temp }}/bench/
 
       - name: comment on PR
         if: >-
-          always() && hashFiles('comment.md') != '' && github.event_name == 'pull_request' &&
+          always() && github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
-        run: head/.github/scripts/sticky_comment.sh "$GITHUB_REPOSITORY" "$PR" comment.md
+        run: |
+          if [ -f "$RUNNER_TEMP/bench/comment.md" ]; then
+            .github/scripts/sticky_comment.sh "$GITHUB_REPOSITORY" "$PR" "$RUNNER_TEMP/bench/comment.md"
+          fi
 
       - name: regression gate
         if: github.event_name == 'pull_request'
@@ -104,7 +104,7 @@ jobs:
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: customSmallerIsBetter
-          output-file-path: bench.json
+          output-file-path: ${{ runner.temp }}/bench/bench.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           alert-threshold: '130%'

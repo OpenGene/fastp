@@ -114,7 +114,7 @@ def main():
         d = lambda m: os.path.join(a.data, f"{src}_R{m}.fastq.gz")
         for t in threads:
             for rep in range(a.reps):
-                for bname, path in builds:
+                for bname, path in (builds if rep % 2 == 0 else builds[::-1]):  # alternate order: no first-run bias
                     w = tempfile.mkdtemp()
                     if layout == "PE":
                         args = ["-i", d(1), "-I", d(2), "-o", f"{w}/o1.fq.gz", "-O", f"{w}/o2.fq.gz", "--detect_adapter_for_pe"]
