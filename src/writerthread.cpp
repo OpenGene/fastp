@@ -1,6 +1,5 @@
 #include "writerthread.h"
 #include "util.h"
-#include "common.h"
 #include <memory.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -18,19 +17,20 @@ WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
     mPwriteMode = !isSTDOUT && ends_with(filename, ".gz") && mOptions->thread > 1;
     mFd = -1;
     mOffsetRing = NULL;
-    mMaxPublishedSeq = SIZE_MAX;
+    mNextSeq = NULL;
     mCompressors = NULL;
     mCompBufs = NULL;
     mCompBufSizes = NULL;
-    mOutputRing = NULL;
-    mNextExpectedSeq = 0;
-    mBufferLength = 0;
+    mBufferLists = NULL;
 
     if (mPwriteMode) {
         mFd = open(mFilename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (mFd < 0)
             error_exit("Failed to open for pwrite: " + mFilename);
         mOffsetRing = new OffsetSlot[OFFSET_RING_SIZE];
+        mNextSeq = new size_t[mOptions->thread];
+        for (int t = 0; t < mOptions->thread; t++)
+            mNextSeq[t] = t;
         mCompressors = new libdeflate_compressor*[mOptions->thread];
         for (int t = 0; t < mOptions->thread; t++)
             mCompressors[t] = libdeflate_alloc_compressor(mOptions->compression);
@@ -41,9 +41,13 @@ WriterThread::WriterThread(Options* opt, string filename, bool isSTDOUT){
             mCompBufs[t] = new char[initBufSize];
             mCompBufSizes[t] = initBufSize;
         }
+        mWorkingBufferList = 0;
+        mBufferLength = 0;
     } else {
         initWriter(filename, isSTDOUT);
-        initOutputRing();
+        initBufferLists();
+        mWorkingBufferList = 0;
+        mBufferLength = 0;
     }
 }
 
@@ -64,51 +68,59 @@ bool WriterThread::setInputCompleted() {
         return true;
     }
     mInputCompleted = true;
+    for(int t=0; t<mOptions->thread; t++) {
+        mBufferLists[t]->setProducerFinished();
+    }
     mOutputCV.notify_all();
     return true;
 }
 
 void WriterThread::setInputCompletedPwrite() {
-    size_t maxSeq = mMaxPublishedSeq.load(std::memory_order_acquire);
-    size_t offset = (maxSeq == SIZE_MAX) ? 0 :
-        mOffsetRing[maxSeq % OFFSET_RING_SIZE].cumulative_offset.load(std::memory_order_relaxed);
+    int W = mOptions->thread;
+    size_t lastSeq = 0;
+    bool anyProcessed = false;
+    for (int t = 0; t < W; t++) {
+        if (mNextSeq[t] != (size_t)t) {
+            size_t workerLastSeq = mNextSeq[t] - W;
+            if (!anyProcessed || workerLastSeq > lastSeq) {
+                lastSeq = workerLastSeq;
+                anyProcessed = true;
+            }
+        }
+    }
+    size_t offset = anyProcessed ?
+        mOffsetRing[lastSeq & (OFFSET_RING_SIZE - 1)].cumulative_offset.load(std::memory_order_relaxed) : 0;
     ftruncate(mFd, offset);
 }
 
 void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
-    size_t want = mNextExpectedSeq.load(std::memory_order_relaxed);
-    size_t slot = want % mOutputRingSize;
-    if (mOutputRing[slot].seq.load(std::memory_order_acquire) != want) {
+    SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
+    if(!list->canBeConsumed()) {
         // Wait for input()/setInputCompleted() to notify, with a short timeout
         // as a safety net rather than blind-sleeping every empty check.
         std::unique_lock<std::mutex> lk(mOutputMtx);
         mOutputCV.wait_for(lk, std::chrono::microseconds(100));
-        return;
+    } else {
+        string* str = list->consume();
+        mWriter1->write(str->data(), str->length());
+        delete str;
+        mBufferLength--;
+        mWorkingBufferList = (mWorkingBufferList+1)%mOptions->thread;
     }
-    string* str = mOutputRing[slot].data.load(std::memory_order_relaxed);
-    mWriter1->write(str->data(), str->length());
-    delete str;
-    // Free the slot before advancing so a producer wrapping the ring can't
-    // publish into it while it still looks "ready" under the old seq.
-    mOutputRing[slot].seq.store(SIZE_MAX, std::memory_order_relaxed);
-    mNextExpectedSeq.fetch_add(1, std::memory_order_relaxed);
-    mBufferLength--;
 }
 
-void WriterThread::input(int tid, size_t seq, string* data) {
+void WriterThread::input(int tid, string* data) {
     if (mPwriteMode) {
-        inputPwrite(tid, seq, data);
+        inputPwrite(tid, data);
         return;
     }
-    size_t slot = seq % mOutputRingSize;
-    mOutputRing[slot].data.store(data, std::memory_order_relaxed);
-    mOutputRing[slot].seq.store(seq, std::memory_order_release);
+    mBufferLists[tid]->produce(data);
     mBufferLength++;
     mOutputCV.notify_one();
 }
 
-void WriterThread::inputPwrite(int tid, size_t seq, string* data) {
+void WriterThread::inputPwrite(int tid, string* data) {
     size_t bound = libdeflate_gzip_compress_bound(mCompressors[tid], data->size());
     // Grow per-worker buffer if needed
     if (bound > mCompBufSizes[tid]) {
@@ -124,30 +136,23 @@ void WriterThread::inputPwrite(int tid, size_t seq, string* data) {
     const char* writeData = mCompBufs[tid];
     size_t wsize = outsize;
 
-    // Wait for previous sequence's cumulative offset.
+    size_t seq = mNextSeq[tid];
+
+    // Wait for previous batch's cumulative offset.
     // Sleep yields CPU to prevent livelock under contention.
     size_t offset = 0;
     if (seq > 0) {
-        size_t prevSlot = (seq - 1) % OFFSET_RING_SIZE;
+        size_t prevSlot = (seq - 1) & (OFFSET_RING_SIZE - 1);
         while (mOffsetRing[prevSlot].published_seq.load(std::memory_order_acquire) != seq - 1) {
             std::this_thread::sleep_for(std::chrono::microseconds(1));
         }
         offset = mOffsetRing[prevSlot].cumulative_offset.load(std::memory_order_relaxed);
     }
 
-    // Publish offset BEFORE pwrite — whoever holds seq+1 starts immediately
-    size_t mySlot = seq % OFFSET_RING_SIZE;
+    // Publish offset BEFORE pwrite — next worker starts immediately
+    size_t mySlot = seq & (OFFSET_RING_SIZE - 1);
     mOffsetRing[mySlot].cumulative_offset.store(offset + wsize, std::memory_order_relaxed);
     mOffsetRing[mySlot].published_seq.store(seq, std::memory_order_release);
-
-    // Track the highest sequence any worker has published, for truncating
-    // the file to the right final size once input is complete (workers no
-    // longer publish sequences in a fixed per-worker residue class, so this
-    // can't be inferred from any one worker's own progress anymore).
-    size_t prevMax = mMaxPublishedSeq.load(std::memory_order_relaxed);
-    while ((prevMax == SIZE_MAX || seq > prevMax) &&
-           !mMaxPublishedSeq.compare_exchange_weak(prevMax, seq, std::memory_order_relaxed)) {
-    }
 
     // pwrite (concurrent with other workers on non-overlapping regions)
     if (wsize > 0) {
@@ -163,12 +168,15 @@ void WriterThread::inputPwrite(int tid, size_t seq, string* data) {
             written += ret;
         }
     }
+
+    mNextSeq[tid] += mOptions->thread;
 }
 
 void WriterThread::cleanup() {
     if (mPwriteMode) {
         if (mFd >= 0) { close(mFd); mFd = -1; }
         delete[] mOffsetRing; mOffsetRing = NULL;
+        delete[] mNextSeq; mNextSeq = NULL;
         if (mCompressors) {
             for (int t = 0; t < mOptions->thread; t++)
                 libdeflate_free_compressor(mCompressors[t]);
@@ -183,9 +191,11 @@ void WriterThread::cleanup() {
         return;
     }
     deleteWriter();
-    if (mOutputRing) {
-        delete[] mOutputRing;
-        mOutputRing = NULL;
+    if (mBufferLists) {
+        for(int t=0; t<mOptions->thread; t++)
+            delete mBufferLists[t];
+        delete[] mBufferLists;
+        mBufferLists = NULL;
     }
 }
 
@@ -201,10 +211,9 @@ void WriterThread::initWriter(string filename1, bool isSTDOUT) {
     mWriter1 = new Writer(mOptions, filename1, mOptions->compression, isSTDOUT);
 }
 
-void WriterThread::initOutputRing() {
-    // Must comfortably exceed the largest possible gap between the fastest
-    // and slowest worker's progress, which packInMemLimit bounds (mirrors
-    // PairEndProcessor::mQueueAssignRingSize's sizing rationale).
-    mOutputRingSize = (size_t)(packInMemLimit(mOptions->thread) * 4);
-    mOutputRing = new OutputSlot[mOutputRingSize];
+void WriterThread::initBufferLists() {
+    mBufferLists = new SingleProducerSingleConsumerList<string*>*[mOptions->thread];
+    for(int t=0; t<mOptions->thread; t++) {
+        mBufferLists[t] = new SingleProducerSingleConsumerList<string*>();
+    }
 }

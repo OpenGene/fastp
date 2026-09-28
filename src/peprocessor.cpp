@@ -17,12 +17,6 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
     mPackInMemLimit = packInMemLimit(mOptions->thread);
     mPackSize = packSize(mOptions->thread);
-    mQueueDepth.assign(mOptions->thread, 0);
-    // Bounded comfortably above mPackInMemLimit, the largest possible gap
-    // between how far the left and right reader threads can each run ahead
-    // of processing (see assignQueueForRound).
-    mQueueAssignRingSize = (size_t)(mPackInMemLimit * 4);
-    mQueueAssignments.assign(mQueueAssignRingSize, QueueAssignmentSlot());
     mLeftReaderFinished = false;
     mRightReaderFinished = false;
     mFinishedThreads = 0;
@@ -377,11 +371,6 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         shouldStopReading = true;
     }
     int tid = config->getThreadId();
-    // leftPack/rightPack share the same global round number by construction
-    // (see assignQueueForRound / pickLeastFullQueue) -- writers use it to
-    // reassemble output in original read order regardless of which worker
-    // queue actually handled this round.
-    size_t seq = leftPack->seq;
 
     // build output on stack strings, move to heap only when handing off to writers
     string outstr1, outstr2, unpairedOut1, unpairedOut2;
@@ -665,37 +654,37 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
 
     if(mMergedWriter) {
         // move to heap for writer thread ownership
-        mMergedWriter->input(tid, seq, new string(std::move(mergedOutput)));
+        mMergedWriter->input(tid, new string(std::move(mergedOutput)));
     }
 
     if(mFailedWriter) {
-        mFailedWriter->input(tid, seq, new string(std::move(failedOut)));
+        mFailedWriter->input(tid, new string(std::move(failedOut)));
     }
 
     if(mOverlappedWriter) {
-        mOverlappedWriter->input(tid, seq, new string(std::move(overlappedOut)));
+        mOverlappedWriter->input(tid, new string(std::move(overlappedOut)));
     }
 
     // normal output by left/right writer thread
     if(mRightWriter && mLeftWriter) {
         // write PE - move to heap for writer thread ownership
-        mLeftWriter->input(tid, seq, new string(std::move(outstr1)));
-        mRightWriter->input(tid, seq, new string(std::move(outstr2)));
+        mLeftWriter->input(tid, new string(std::move(outstr1)));
+        mRightWriter->input(tid, new string(std::move(outstr2)));
     } else if(mLeftWriter) {
         if(mOptions->merge.enabled && mOptions->outputToSTDOUT) {
             // in merge+stdout mode, merged reads are buffered in mergedOutput
-            mLeftWriter->input(tid, seq, new string(std::move(mergedOutput)));
+            mLeftWriter->input(tid, new string(std::move(mergedOutput)));
         } else {
             // write singleOutput
-            mLeftWriter->input(tid, seq, new string(std::move(singleOutput)));
+            mLeftWriter->input(tid, new string(std::move(singleOutput)));
         }
     }
     // output unpaired reads
     if(mUnpairedLeftWriter && mUnpairedRightWriter) {
-        mUnpairedLeftWriter->input(tid, seq, new string(std::move(unpairedOut1)));
-        mUnpairedRightWriter->input(tid, seq, new string(std::move(unpairedOut2)));
+        mUnpairedLeftWriter->input(tid, new string(std::move(unpairedOut1)));
+        mUnpairedRightWriter->input(tid, new string(std::move(unpairedOut2)));
     } else if(mUnpairedLeftWriter) {
-        mUnpairedLeftWriter->input(tid, seq, new string(std::move(unpairedOut1)));
+        mUnpairedLeftWriter->input(tid, new string(std::move(unpairedOut1)));
     }
 
     if(mOptions->split.byFileLines)
@@ -733,54 +722,6 @@ void PairEndProcessor::statInsertSize(Read* r1, Read* r2, OverlapResult& ov, int
         isize = mOptions->insertSizeMax;
 
     mInsertSizeHist[isize]++;
-}
-
-// Picks whichever worker queue currently holds the fewest in-flight packs,
-// instead of blind round-robin. Safe to call directly (no round coordination
-// needed) from a single-producer reader path: the interleaved PE reader has
-// exactly one thread producing both the left and right pack for a round, so
-// there's no risk of two threads disagreeing on the choice.
-int PairEndProcessor::pickLeastFullQueue() {
-    std::lock_guard<std::mutex> lock(mQueueAssignMtx);
-    int best = 0;
-    for (int t = 1; t < mOptions->thread; t++) {
-        if (mQueueDepth[t] < mQueueDepth[best])
-            best = t;
-    }
-    // Interleaved PE produces one left AND one right pack to this same index
-    // per call, so count both toward this queue's depth -- otherwise depth
-    // would undercount by half relative to the two per-round decrements
-    // releaseQueueSlot() makes in the matching consumer.
-    mQueueDepth[best] += 2;
-    return best;
-}
-
-// Non-interleaved PE reads left/right from two independent threads, but a
-// worker's mLeftInputLists[t]/mRightInputLists[t] pair only line up correctly
-// if both sides land pack #round on the *same* t. Whichever side reaches
-// round first computes the least-full queue and caches it; the other side,
-// arriving later (possibly much later -- see mQueueAssignRingSize), reuses
-// that exact choice instead of picking independently.
-int PairEndProcessor::assignQueueForRound(size_t round) {
-    std::lock_guard<std::mutex> lock(mQueueAssignMtx);
-    size_t slot = round % mQueueAssignRingSize;
-    if (mQueueAssignments[slot].round != (long)round) {
-        int best = 0;
-        for (int t = 1; t < mOptions->thread; t++) {
-            if (mQueueDepth[t] < mQueueDepth[best])
-                best = t;
-        }
-        mQueueAssignments[slot].round = (long)round;
-        mQueueAssignments[slot].queueIndex = best;
-    }
-    int idx = mQueueAssignments[slot].queueIndex;
-    mQueueDepth[idx]++;
-    return idx;
-}
-
-void PairEndProcessor::releaseQueueSlot(int queueIndex) {
-    std::lock_guard<std::mutex> lock(mQueueAssignMtx);
-    mQueueDepth[queueIndex]--;
 }
 
 void PairEndProcessor::readerTask(bool isLeft)
@@ -829,12 +770,10 @@ void PairEndProcessor::readerTask(bool isLeft)
             pack->count = count;
 
             if(isLeft) {
-                pack->seq = mLeftPackReadCounter;
-                mLeftInputLists[assignQueueForRound(mLeftPackReadCounter)]->produce(pack);
+                mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
                 mLeftPackReadCounter++;
             } else {
-                pack->seq = mRightPackReadCounter;
-                mRightInputLists[assignQueueForRound(mRightPackReadCounter)]->produce(pack);
+                mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
                 mRightPackReadCounter++;
             }
             mBackpressureCV.notify_all();
@@ -866,14 +805,12 @@ void PairEndProcessor::readerTask(bool isLeft)
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-
+            
             if(isLeft) {
-                pack->seq = mLeftPackReadCounter;
-                mLeftInputLists[assignQueueForRound(mLeftPackReadCounter)]->produce(pack);
+                mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(pack);
                 mLeftPackReadCounter++;
             } else {
-                pack->seq = mRightPackReadCounter;
-                mRightInputLists[assignQueueForRound(mRightPackReadCounter)]->produce(pack);
+                mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(pack);
                 mRightPackReadCounter++;
             }
             mBackpressureCV.notify_all();
@@ -979,17 +916,12 @@ void PairEndProcessor::interleavedReaderTask()
             packRight->data = dataRight;
             packLeft->count = count;
             packRight->count = count;
-            packLeft->seq = mLeftPackReadCounter;
-            packRight->seq = mRightPackReadCounter;
 
-            {
-                int target = pickLeastFullQueue();
-                mLeftInputLists[target]->produce(packLeft);
-                mLeftPackReadCounter++;
+            mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
+            mLeftPackReadCounter++;
 
-                mRightInputLists[target]->produce(packRight);
-                mRightPackReadCounter++;
-            }
+            mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
+            mRightPackReadCounter++;
 
             mBackpressureCV.notify_all();
             dataLeft = NULL;
@@ -1016,17 +948,12 @@ void PairEndProcessor::interleavedReaderTask()
             packRight->data = dataRight;
             packLeft->count = count;
             packRight->count = count;
-            packLeft->seq = mLeftPackReadCounter;
-            packRight->seq = mRightPackReadCounter;
 
-            {
-                int target = pickLeastFullQueue();
-                mLeftInputLists[target]->produce(packLeft);
-                mLeftPackReadCounter++;
+            mLeftInputLists[mLeftPackReadCounter % mOptions->thread]->produce(packLeft);
+            mLeftPackReadCounter++;
 
-                mRightInputLists[target]->produce(packRight);
-                mRightPackReadCounter++;
-            }
+            mRightInputLists[mRightPackReadCounter % mOptions->thread]->produce(packRight);
+            mRightPackReadCounter++;
             mBackpressureCV.notify_all();
 
             //re-initialize data for next pack
@@ -1104,8 +1031,6 @@ void PairEndProcessor::processorTask(ThreadConfig* config)
         while(inputLeft->canBeConsumed() && inputRight->canBeConsumed()) {
             ReadPack* dataLeft = inputLeft->consume();
             ReadPack* dataRight = inputRight->consume();
-            releaseQueueSlot(config->getThreadId());
-            releaseQueueSlot(config->getThreadId());
             processPairEnd(dataLeft, dataRight, config);
         }
         if(inputLeft->isProducerFinished() && !inputLeft->canBeConsumed()) {

@@ -66,11 +66,6 @@ public:
 struct ReadPack {
     Read** data;
     int count;
-    // Global round number this pack was read at (0, 1, 2, ...), independent
-    // of which worker queue it's routed to. Writers use this to reassemble
-    // output in the original read order even when packs aren't distributed
-    // strictly round-robin (see PairEndProcessor::assignQueueForRound).
-    size_t seq;
 };
 
 typedef struct ReadPack ReadPack;
