@@ -45,6 +45,25 @@ inline long packInMemLimit(int threads) {
     return threads * 2L > PACK_IN_MEM_LIMIT ? threads * 2L : PACK_IN_MEM_LIMIT;
 }
 
+// Total buffered reads is roughly packInMemLimit(threads) * packSize(threads).
+// packInMemLimit can't safely drop below 2*threads (see above), so it grows
+// linearly with thread count with no slack to spare. To keep total buffered
+// memory from also growing unboundedly on high-thread-count hosts, shrink the
+// per-pack read count instead once thread count exceeds the point where
+// packInMemLimit's own floor (PACK_IN_MEM_LIMIT) stops mattering. This keeps
+// packInMemLimit(threads) * packSize(threads) roughly constant rather than
+// linear in threads, at the cost of smaller (so slightly less efficient) gzip
+// members per pack at very high thread counts. PACK_SIZE_FLOOR keeps packs
+// from shrinking so far that per-pack overhead dominates.
+static const int PACK_SIZE_FLOOR = 100;
+inline int packSize(int threads) {
+    const int baselineThreads = PACK_IN_MEM_LIMIT / 2;
+    if (threads <= baselineThreads)
+        return PACK_SIZE;
+    long scaled = (long)PACK_SIZE * baselineThreads / threads;
+    return scaled > PACK_SIZE_FLOOR ? (int)scaled : PACK_SIZE_FLOOR;
+}
+
 // different filtering results, bigger number means worse
 // if r1 and r2 are both failed, then the bigger one of the two results will be recorded
 // we reserve some gaps for future types to be added
