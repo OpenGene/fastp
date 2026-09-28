@@ -9,6 +9,8 @@
 #include "options.h"
 #include <atomic>
 #include <mutex>
+#include <condition_variable>
+#include <chrono>
 #include <libdeflate.h>
 #include "singleproducersingleconsumerlist.h"
 
@@ -54,6 +56,8 @@ private:
     atomic_long mBufferLength;
     SingleProducerSingleConsumerList<string*>** mBufferLists;
     int mWorkingBufferList;
+    std::mutex mOutputMtx;
+    std::condition_variable mOutputCV;
 
     // pwrite mode: parallel libdeflate gz compression + direct file write
     bool mPwriteMode;

@@ -71,6 +71,7 @@ bool WriterThread::setInputCompleted() {
     for(int t=0; t<mOptions->thread; t++) {
         mBufferLists[t]->setProducerFinished();
     }
+    mOutputCV.notify_all();
     return true;
 }
 
@@ -96,7 +97,10 @@ void WriterThread::output(){
     if (mPwriteMode) return;  // no-op
     SingleProducerSingleConsumerList<string*>* list = mBufferLists[mWorkingBufferList];
     if(!list->canBeConsumed()) {
-        usleep(100);
+        // Wait for input()/setInputCompleted() to notify, with a short timeout
+        // as a safety net rather than blind-sleeping every empty check.
+        std::unique_lock<std::mutex> lk(mOutputMtx);
+        mOutputCV.wait_for(lk, std::chrono::microseconds(100));
     } else {
         string* str = list->consume();
         mWriter1->write(str->data(), str->length());
@@ -113,6 +117,7 @@ void WriterThread::input(int tid, string* data) {
     }
     mBufferLists[tid]->produce(data);
     mBufferLength++;
+    mOutputCV.notify_one();
 }
 
 void WriterThread::inputPwrite(int tid, string* data) {
