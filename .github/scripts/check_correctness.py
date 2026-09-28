@@ -83,7 +83,7 @@ def run(fastp, args, workdir):
         p = subprocess.run([fastp] + args.split() + ["-j", "r.json", "-h", "r.html"], cwd=workdir,
                            stdout=stdout, stderr=subprocess.PIPE, timeout=TIMEOUT, env=ENV)
         err = p.stderr.decode(errors="replace")
-        if "Reduce worker threads" in err:
+        if "Reduce worker threads" in err:  # a statically linked fastp ignores the LD_PRELOAD shim
             return "CAPPED", err
         return ("OK" if p.returncode == 0 else f"EXIT{p.returncode}"), err
     except subprocess.TimeoutExpired:

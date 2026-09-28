@@ -36,9 +36,17 @@ jobs:
         run: ./fastp test
 
       # identical output at 1..48 worker threads in every output mode, no hangs
-      # (#721), and adapter auto-detection finds the planted adapter
+      # (#721), and adapter auto-detection finds the planted adapter. The Linux
+      # build is fully static, so relink the same objects against dynamic glibc
+      # for the check: fake_nprocs.c needs LD_PRELOAD to lift fastp's -w cap.
       - name: correctness checks
-        run: python3 .github/scripts/check_correctness.py ./fastp
+        run: |
+          bin=./fastp
+          if [ "$RUNNER_OS" = Linux ]; then
+            g++ obj/*.o -o fastp-dynamic -L/usr/local/lib -pthread -lisal -ldeflate -lhwy
+            bin=./fastp-dynamic
+          fi
+          python3 .github/scripts/check_correctness.py "$bin"
 
       - name: upload binary
         uses: actions/upload-artifact@v4
