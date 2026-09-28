@@ -16,6 +16,7 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
     mOptions = opt;
     mPackInMemLimit = packInMemLimit(mOptions->thread);
     mPackSize = packSize(mOptions->thread);
+    mQueueDepth.assign(mOptions->thread, 0);
     mReaderFinished = false;
     mFinishedThreads = 0;
     mFilter = new Filter(opt);
@@ -201,6 +202,7 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     string outstr, failedOut;
     outstr.reserve(pack->count * 320);
     int tid = config->getThreadId();
+    size_t seq = pack->seq;
 
     int readPassed = 0;
     for(int p=0;p<pack->count;p++){
@@ -304,10 +306,10 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     }
 
     if(mLeftWriter) {
-        mLeftWriter->input(tid, new string(std::move(outstr)));
+        mLeftWriter->input(tid, seq, new string(std::move(outstr)));
     }
     if(mFailedWriter) {
-        mFailedWriter->input(tid, new string(std::move(failedOut)));
+        mFailedWriter->input(tid, seq, new string(std::move(failedOut)));
     }
 
     if(mOptions->split.byFileLines)
@@ -324,6 +326,26 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
     mBackpressureCV.notify_all();
 
     return true;
+}
+
+// Picks whichever worker queue currently holds the fewest in-flight packs,
+// instead of blind round-robin (see PairEndProcessor::assignQueueForRound
+// for why the PE non-interleaved path needs more care than this: SE has a
+// single reader thread, so there's no cross-thread agreement to coordinate).
+int SingleEndProcessor::pickLeastFullQueue() {
+    std::lock_guard<std::mutex> lock(mQueueAssignMtx);
+    int best = 0;
+    for (int t = 1; t < mOptions->thread; t++) {
+        if (mQueueDepth[t] < mQueueDepth[best])
+            best = t;
+    }
+    mQueueDepth[best]++;
+    return best;
+}
+
+void SingleEndProcessor::releaseQueueSlot(int queueIndex) {
+    std::lock_guard<std::mutex> lock(mQueueAssignMtx);
+    mQueueDepth[queueIndex]--;
 }
 
 void SingleEndProcessor::readerTask()
@@ -349,7 +371,8 @@ void SingleEndProcessor::readerTask()
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-            mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
+            pack->seq = mPackReadCounter;
+            mInputLists[pickLeastFullQueue()]->produce(pack);
             mPackReadCounter++;
             mBackpressureCV.notify_all();
             data = NULL;
@@ -375,7 +398,8 @@ void SingleEndProcessor::readerTask()
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
-            mInputLists[mPackReadCounter % mOptions->thread]->produce(pack);
+            pack->seq = mPackReadCounter;
+            mInputLists[pickLeastFullQueue()]->produce(pack);
             mPackReadCounter++;
             mBackpressureCV.notify_all();
             //re-initialize data for next pack
@@ -442,6 +466,7 @@ void SingleEndProcessor::processorTask(ThreadConfig* config)
         }
         while(input->canBeConsumed()) {
             ReadPack* data = input->consume();
+            releaseQueueSlot(config->getThreadId());
             processSingleEnd(data, config);
         }
         if(input->isProducerFinished()) {

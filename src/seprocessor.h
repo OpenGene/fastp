@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <vector>
 #include "options.h"
 #include "threadconfig.h"
 #include "filter.h"
@@ -37,6 +38,8 @@ private:
     void closeOutput();
     void writerTask(WriterThread* config);
     void recycleToPool(int tid, Read* r);
+    int pickLeastFullQueue();
+    void releaseQueueSlot(int queueIndex);
 
 private:
     Options* mOptions;
@@ -55,6 +58,13 @@ private:
     ReadPool* mReadPool;
     std::mutex mBackpressureMtx;
     std::condition_variable mBackpressureCV;
+
+    // Least-full-queue pack distribution (see #723 follow-up). SE has a
+    // single reader thread producing to all worker queues, so unlike PE's
+    // non-interleaved path there's no cross-thread coordination needed --
+    // just pick the queue with the fewest in-flight packs each round.
+    std::mutex mQueueAssignMtx;
+    std::vector<int> mQueueDepth;
 };
 
 
