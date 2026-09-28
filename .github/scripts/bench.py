@@ -7,9 +7,12 @@ repetition. Each run is split into stages from fastp's stderr timestamps:
 adapter auto-detection (serial, before processing) and processing; plus CPU
 time and peak RSS.
 
+A gated metric (wall, CPU, peak RSS) regresses when its median is worse than
+base by more than --threshold percent AND every head run is worse than every
+base run, so a single noisy run can't trip it.
+
   bench.py prepare DATA_DIR            # synthetic sets + a cached public subset
-  bench.py run --builds base=PATH,head=PATH --data DATA_DIR [--threads 1,4] [--reps 3]
-               [--summary FILE] [--json FILE] [--tsv FILE]
+  bench.py run --builds base=PATH,head=PATH --data DATA_DIR [--threshold 10] [--fail-on-regression] ...
 """
 import argparse, gzip, json, shutil, os, platform, statistics, subprocess, sys, tempfile, threading, time, urllib.request
 
@@ -25,6 +28,13 @@ DATASETS = [
     ("synthetic_se", "SE", "synthetic"),
     ("atac_hiseq_pe", "PE", "atac_hiseq"),
 ]
+METRICS = [("wall", "s", "wall time"), ("cpu", "s", "CPU (user+sys)"), ("rss_mb", "MB", "peak RSS"),
+           ("detect", "s", "adapter detection"), ("process", "s", "processing")]
+GATED = ["wall", "cpu", "rss_mb"]
+MIN_BASE = 0.2  # seconds; shorter timings are too noisy to judge
+NOTABLE_PCT = 5.0  # improvements are reported (never gated) from here
+SIGNOFF_LABEL = "perf-regression-ok"
+MARKER = "<!-- fastp-benchmark -->"  # identifies the sticky PR comment
 
 
 def prepare(data):
@@ -55,6 +65,7 @@ def run_once(fastp, args, timeout):
     p = subprocess.Popen([fastp] + args, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
     timer = threading.Timer(timeout, p.kill)
     timer.start()
+    assert p.stderr is not None
     lines = [(time.time() - t0, l.rstrip("\n")) for l in p.stderr]  # fastp's stderr is unbuffered
     _, status, ru = os.wait4(p.pid, 0)  # this child's own rusage, not the cumulative RUSAGE_CHILDREN
     wall = time.time() - t0
@@ -79,12 +90,19 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("prepare"); p.add_argument("data")
     r = sub.add_parser("run")
-    r.add_argument("--builds", required=True)
+    r.add_argument("--builds", required=True, help="name=PATH,...; the first is the baseline, the last is compared to it")
     r.add_argument("--data", required=True)
     r.add_argument("--threads", default="1,4")
     r.add_argument("--reps", type=int, default=3)
     r.add_argument("--timeout", type=int, default=600)
-    r.add_argument("--summary"); r.add_argument("--json"); r.add_argument("--tsv")
+    r.add_argument("--threshold", type=float, default=10.0, help="regression threshold, percent")
+    r.add_argument("--fail-on-regression", action="store_true")
+    r.add_argument("--signed-off", action="store_true", help=f"regressions accepted (the {SIGNOFF_LABEL} label)")
+    r.add_argument("--summary", help="append the report here (e.g. $GITHUB_STEP_SUMMARY)")
+    r.add_argument("--comment", help="write the report here, for posting as a PR comment")
+    r.add_argument("--compare-json", help="base vs head per cell, with verdicts")
+    r.add_argument("--json", help="head-only values for github-action-benchmark")
+    r.add_argument("--tsv", help="every run")
     a = ap.parse_args()
     if a.cmd == "prepare":
         return prepare(a.data)
@@ -104,39 +122,79 @@ def main():
                         args = ["-i", d(1), "-o", f"{w}/o1.fq.gz"]
                     args += ["-w", str(t), "-j", f"{w}/r.json", "-h", f"{w}/r.html"]
                     rc, wall, lines, cpu, rss = run_once(os.path.abspath(path), args, a.timeout)
+                    shutil.rmtree(w, ignore_errors=True)
                     if rc != 0:
                         failures.append(f"{bname} {name} -w {t}: exit {rc}")
                         continue
                     det, proc = stages(lines, wall)
                     rows.append(dict(build=bname, dataset=name, threads=t, rep=rep, wall=wall,
                                      detect=det, process=proc, cpu=cpu, rss_mb=rss))
-                    shutil.rmtree(w, ignore_errors=True)
-
-    def med(b, ds, t, k):
-        v = [r[k] for r in rows if r["build"] == b and r["dataset"] == ds and r["threads"] == t]
-        return statistics.median(v) if v else float("nan")
 
     names = [b for b, _ in builds]
-    metrics = [("wall", "s", "wall time"), ("detect", "s", "adapter detection"), ("process", "s", "processing"),
-               ("cpu", "s", "CPU time (user+sys)"), ("rss_mb", "MB", "peak RSS")]
-    out = ["## fastp benchmark", "",
-           f"Median of {a.reps} interleaved runs per cell on this runner ({os.cpu_count()} CPUs). "
-           + (f"Delta is `{names[-1]}` vs `{names[0]}`; runner noise is typically a few percent, "
-              "so treat small deltas as noise." if len(names) > 1 else ""), ""]
-    for key, unit, label in metrics:
-        out += [f"**{label}** ({unit})", "",
-                "| dataset | -w | " + " | ".join(names) + (" | delta |" if len(names) > 1 else " |"),
-                "|---|---|" + "---|" * len(names) + ("---|" if len(names) > 1 else "")]
-        for name, _, _ in DATASETS:
+    base, head = names[0], names[-1]
+    compare = len(names) > 1
+
+    def vals(b, ds, t, k):
+        return [r[k] for r in rows if r["build"] == b and r["dataset"] == ds and r["threads"] == t]
+
+    def med(b, ds, t, k):
+        v = vals(b, ds, t, k)
+        return statistics.median(v) if v else float("nan")
+
+    def verdict(ds, t, k):
+        vb, vh = vals(base, ds, t, k), vals(head, ds, t, k)
+        if not vb or not vh or (k != "rss_mb" and statistics.median(vb) < MIN_BASE):
+            return None, "n/a"
+        delta = 100 * (statistics.median(vh) - statistics.median(vb)) / statistics.median(vb)
+        if delta > a.threshold and min(vh) > max(vb):
+            return delta, "regression"
+        if delta < -NOTABLE_PCT and max(vh) < min(vb):
+            return delta, "improvement"
+        return delta, "noise"
+
+    cells = [(n, t, k) for n, _, _ in DATASETS for t in threads for k, _, _ in METRICS]
+    results = {c: verdict(*c) for c in cells} if compare else {}
+    regressions = [c for c in cells if c[2] in GATED and results.get(c, (0, ""))[1] == "regression"]
+    improvements = [c for c in cells if c[2] in GATED and results.get(c, (0, ""))[1] == "improvement"]
+    icon = {"regression": " 🔴", "improvement": " 🟢"}
+
+    def table(keys):
+        out = ["| dataset | -w | " + " | ".join(label for k, _, label in METRICS if k in keys) + " |",
+               "|---|---|" + "---|" * len(keys)]
+        for n, _, _ in DATASETS:
             for t in threads:
-                vals = [med(b, name, t, key) for b in names]
-                cells = " | ".join(f"{v:.2f}" for v in vals)
-                delta = ""
-                if len(names) > 1:
-                    base, head = vals[0], vals[-1]
-                    delta = " | " + (f"{100 * (head - base) / base:+.1f}%" if base > 0.05 else "n/a")
-                out.append(f"| {name} | {t} | {cells}{delta} |")
-        out.append("")
+                row = []
+                for k, unit, _ in METRICS:
+                    if k not in keys:
+                        continue
+                    if not compare:
+                        row.append(f"{med(head, n, t, k):.2f} {unit}")
+                        continue
+                    d, v = results[(n, t, k)]
+                    row.append(f"{med(base, n, t, k):.2f} → {med(head, n, t, k):.2f} {unit}"
+                               + (f" ({d:+.1f}%){icon.get(v, '')}" if d is not None else ""))
+                out.append(f"| {n} | {t} | " + " | ".join(row) + " |")
+        return out
+
+    out = [MARKER, "## fastp benchmark", ""]
+    if compare:
+        if failures:
+            out.append("❌ **Some benchmark runs failed** (listed below).")
+        elif regressions and a.signed_off:
+            out.append(f"🟡 **{len(regressions)} regression(s) over {a.threshold:g}%, accepted** via the `{SIGNOFF_LABEL}` label.")
+        elif regressions:
+            out.append(f"🔴 **{len(regressions)} regression(s) over {a.threshold:g}%.** "
+                       f"If intended, a maintainer can accept them by adding the `{SIGNOFF_LABEL}` label.")
+        elif improvements:
+            out.append(f"🟢 **No regressions; {len(improvements)} improvement(s).**")
+        else:
+            out.append(f"✅ **No regressions** over {a.threshold:g}%.")
+        out += ["", f"`{base}` → `{head}`, median of {a.reps} interleaved runs on one {os.cpu_count()}-CPU runner. "
+                f"🔴 = worse by more than {a.threshold:g}%, 🟢 = better by more than {NOTABLE_PCT:g}%, in both cases "
+                "with no overlap between the base and head runs; unmarked changes are within runner noise. "
+                "Wall time, CPU and peak RSS are gated; stage timings are informational.", ""]
+    out += table(GATED) + ["", "<details><summary>stage timings</summary>", ""] + \
+        table(["detect", "process"]) + ["", "</details>", ""]
     if failures:
         out += ["**Failed runs:**"] + [f"- {f}" for f in failures]
     text = "\n".join(out) + "\n"
@@ -144,18 +202,32 @@ def main():
     if a.summary:
         with open(a.summary, "a") as f:
             f.write(text)
+    if a.comment:
+        with open(a.comment, "w") as f:
+            f.write(text)
     if a.tsv:
+        cols = ("build", "dataset", "threads", "rep", "wall", "detect", "process", "cpu", "rss_mb")
         with open(a.tsv, "w") as f:
-            f.write("build\tdataset\tthreads\trep\twall\tdetect\tprocess\tcpu\trss_mb\n")
-            for r in rows:
-                f.write("\t".join(str(r[k]) for k in ("build", "dataset", "threads", "rep", "wall", "detect", "process", "cpu", "rss_mb")) + "\n")
+            f.write("\t".join(cols) + "\n")
+            for row in rows:
+                f.write("\t".join(str(row[k]) for k in cols) + "\n")
     if a.json:
-        head = names[-1]
-        entries = [{"name": f"{name} -w{t} {label}", "unit": unit, "value": round(med(head, name, t, key), 3)}
-                   for name, _, _ in DATASETS for t in threads for key, unit, label in metrics]
+        entries = [{"name": f"{n} -w{t} {label}", "unit": unit, "value": round(med(head, n, t, k), 3)}
+                   for n, _, _ in DATASETS for t in threads for k, unit, label in METRICS]
         with open(a.json, "w") as f:
             json.dump(entries, f, indent=1)
-    sys.exit(1 if failures else 0)
+    if a.compare_json and compare:
+        with open(a.compare_json, "w") as f:
+            json.dump({"base": base, "head": head, "threshold_pct": a.threshold, "signed_off": a.signed_off,
+                       "failures": failures, "regressions": len(regressions), "improvements": len(improvements),
+                       "cells": [{"dataset": n, "threads": t, "metric": k, "gated": k in GATED,
+                                  "base": med(base, n, t, k), "head": med(head, n, t, k),
+                                  "delta_pct": results[(n, t, k)][0], "verdict": results[(n, t, k)][1]}
+                                 for n, t, k in cells]}, f, indent=1)
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"regressions={len(regressions)}\nimprovements={len(improvements)}\n")
+    sys.exit(1 if failures or (regressions and a.fail_on_regression and not a.signed_off) else 0)
 
 
 if __name__ == "__main__":

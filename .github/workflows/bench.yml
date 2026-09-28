@@ -4,6 +4,8 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+    # labeled/unlabeled: re-evaluate the gate when the sign-off label changes
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
 
 concurrency:
@@ -12,9 +14,17 @@ concurrency:
 
 jobs:
   bench:
+    if: >-
+      github.event.action != 'labeled' && github.event.action != 'unlabeled' ||
+      github.event.label.name == 'perf-regression-ok'
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # push-to-master results go to the gh-pages branch
+      contents: write       # push-to-master results go to the gh-pages branch
+      pull-requests: write  # PR comment (same-repo PRs; fork PRs use bench-comment.yml)
+    env:
+      # override per repo in Settings → Variables
+      THRESHOLD_PCT: ${{ vars.BENCH_THRESHOLD_PCT || '10' }}
+      SIGNED_OFF: ${{ contains(github.event.pull_request.labels.*.name, 'perf-regression-ok') }}
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -48,11 +58,15 @@ jobs:
         run: python3 head/.github/scripts/bench.py prepare bench-data
 
       - name: benchmark
+        id: bench
         run: |
-          builds=head=head/fastp
+          builds=head=head/fastp signoff=
           if [ -d base ]; then builds=base=base/fastp,head=head/fastp; fi
+          if [ "$SIGNED_OFF" = true ]; then signoff=--signed-off; fi
           python3 head/.github/scripts/bench.py run --builds "$builds" --data bench-data \
-            --threads 1,4 --reps 3 --summary "$GITHUB_STEP_SUMMARY" --json bench.json --tsv bench.tsv
+            --threads 1,4 --reps 3 --threshold "$THRESHOLD_PCT" $signoff \
+            --summary "$GITHUB_STEP_SUMMARY" --comment comment.md \
+            --compare-json bench-compare.json --json bench.json --tsv bench.tsv
 
       - name: upload results
         if: always()
@@ -60,8 +74,29 @@ jobs:
         with:
           name: bench-results
           path: |
+            comment.md
+            bench-compare.json
             bench.json
             bench.tsv
+
+      - name: comment on PR
+        if: >-
+          always() && hashFiles('comment.md') != '' && github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: head/.github/scripts/sticky_comment.sh "$GITHUB_REPOSITORY" "$PR" comment.md
+
+      - name: regression gate
+        if: github.event_name == 'pull_request'
+        env:
+          REGRESSIONS: ${{ steps.bench.outputs.regressions }}
+        run: |
+          if [ "${REGRESSIONS:-0}" -gt 0 ] && [ "$SIGNED_OFF" != true ]; then
+            echo "::error::$REGRESSIONS benchmark regression(s) over ${THRESHOLD_PCT}%; add the perf-regression-ok label to accept"
+            exit 1
+          fi
 
       # master history, charted at https://<owner>.github.io/<repo>/dev/bench/
       - name: track on master
