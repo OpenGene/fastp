@@ -1,0 +1,77 @@
+name: fastp benchmark
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # push-to-master results go to the gh-pages branch
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          path: head
+
+      # PRs are measured against their base on the same runner: numbers from
+      # different shared runners differ by more than most real changes.
+      - name: checkout base
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: build dependencies
+        uses: ./head/.github/actions/build-deps
+
+      - name: build
+        run: |
+          make -C head -j$(nproc)
+          if [ -d base ]; then make -C base -j$(nproc); fi
+
+      - name: cache datasets
+        uses: actions/cache@v4
+        with:
+          path: bench-data
+          key: bench-data-${{ hashFiles('head/.github/scripts/bench.py', 'head/.github/scripts/gen_reads.py') }}
+
+      - name: prepare datasets
+        run: python3 head/.github/scripts/bench.py prepare bench-data
+
+      - name: benchmark
+        run: |
+          builds=head=head/fastp
+          if [ -d base ]; then builds=base=base/fastp,head=head/fastp; fi
+          python3 head/.github/scripts/bench.py run --builds "$builds" --data bench-data \
+            --threads 1,4 --reps 3 --summary "$GITHUB_STEP_SUMMARY" --json bench.json --tsv bench.tsv
+
+      - name: upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: |
+            bench.json
+            bench.tsv
+
+      # master history, charted at https://<owner>.github.io/<repo>/dev/bench/
+      - name: track on master
+        if: github.event_name == 'push'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: customSmallerIsBetter
+          output-file-path: bench.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '130%'
+          comment-on-alert: false
+          fail-on-alert: false

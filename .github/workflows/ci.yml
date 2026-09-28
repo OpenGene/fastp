@@ -4,6 +4,7 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -20,46 +21,8 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: install dependencies (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential nasm
-
-      - name: build ISA-L static (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          git clone --depth=1 --branch v2.31.1 https://github.com/intel/isa-l.git /tmp/isa-l
-          cd /tmp/isa-l
-          ./autogen.sh
-          ./configure --prefix=/usr/local --enable-static --disable-shared
-          make -j$(nproc)
-          sudo make install
-
-      - name: build libdeflate static (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          git clone --depth=1 --branch v1.23 https://github.com/ebiggers/libdeflate.git /tmp/libdeflate
-          cd /tmp/libdeflate
-          cmake -B _build -DCMAKE_BUILD_TYPE=Release \
-            -DLIBDEFLATE_BUILD_STATIC_LIB=ON -DLIBDEFLATE_BUILD_SHARED_LIB=OFF \
-            -DLIBDEFLATE_BUILD_GZIP=OFF -DCMAKE_INSTALL_PREFIX=/usr/local
-          cmake --build _build -j$(nproc)
-          sudo cmake --install _build
-
-      - name: install dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: brew install libdeflate isa-l
-
-      - name: build Highway
-        run: |
-          git clone --depth=1 --branch 1.3.0 https://github.com/google/highway.git /tmp/highway
-          cd /tmp/highway
-          cmake -B _build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
-            -DHWY_ENABLE_TESTS=OFF -DHWY_ENABLE_EXAMPLES=OFF \
-            -DCMAKE_INSTALL_PREFIX=/usr/local
-          cmake --build _build -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-          sudo cmake --install _build
+      - name: build dependencies
+        uses: ./.github/actions/build-deps
 
       - name: build fastp
         run: make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
@@ -68,6 +31,14 @@ jobs:
         run: |
           ./fastp --version
           ./fastp -i testdata/R1.fq -o /dev/null
+
+      - name: unit tests
+        run: ./fastp test
+
+      # identical output at 1..48 worker threads in every output mode, no hangs
+      # (#721), and adapter auto-detection finds the planted adapter
+      - name: correctness checks
+        run: python3 .github/scripts/check_correctness.py ./fastp
 
       - name: upload binary
         uses: actions/upload-artifact@v4
