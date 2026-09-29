@@ -199,5 +199,16 @@ bool AdapterTrimmer::test() {
         }
     }
 
+    // A read that only starts like the adapter has no adapter to trim. Comparing the read start
+    // at every position used to match once the compared length got short, and cut the tail.
+    string startsLikeAdapter = truseq.substr(0, 12) + "CTGAGTCGATTCAGGCATCGATCGGACTAGTCAGCCTTGCAAGGCTTACGATCGATTGCACTGAGCTAG";
+    string qual(startsLikeAdapter.length(), 'I');
+    Read lookalike("@lookalike", startsLikeAdapter.c_str(), "+", qual.c_str());
+    AdapterTrimmer::trimBySequence(&lookalike, NULL, truseq);
+    if (*lookalike.mSeq != startsLikeAdapter) {
+        cerr << "read starting like the adapter was trimmed: " << *lookalike.mSeq << endl;
+        return false;
+    }
+
     return true;
 }
