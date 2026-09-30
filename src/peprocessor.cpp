@@ -366,8 +366,8 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
         cerr << "WARNING: different read numbers of the " << mPackProcessedCounter << " pack" << endl;
         cerr << "Read1 pack size: " << leftPack->count << endl;
         cerr << "Read2 pack size: " << rightPack->count << endl;
-        cerr << "Ignore the unmatched reads" << endl << endl;
-        shouldStopReading = true;
+        error_exit("Paired-end input files contain different numbers of reads: "
+            + mOptions->in1 + " and " + mOptions->in2);
     }
     int tid = config->getThreadId();
 
