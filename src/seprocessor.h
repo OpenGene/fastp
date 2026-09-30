@@ -50,6 +50,7 @@ private:
     SingleProducerSingleConsumerList<ReadPack*>** mInputLists;
     size_t mPackReadCounter;
     alignas(128) atomic_long mPackProcessedCounter;
+    long mPackInMemLimit;
     ReadPool* mReadPool;
     std::mutex mBackpressureMtx;
     std::condition_variable mBackpressureCV;
