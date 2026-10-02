@@ -65,7 +65,7 @@ jobs:
           if [ -d _base ]; then builds=base=_base/fastp,head=./fastp; fi
           if [ "$SIGNED_OFF" = true ]; then signoff=--signed-off; fi
           python3 .github/scripts/bench.py run --builds "$builds" --data bench-data \
-            --threads 1,4 --reps 3 --threshold "$THRESHOLD_PCT" $signoff \
+            --threads 4 --reps 3 --threshold "$THRESHOLD_PCT" $signoff \
             --summary "$GITHUB_STEP_SUMMARY" --comment "$out/comment.md" \
             --compare-json "$out/bench-compare.json" --json "$out/bench.json" --tsv "$out/bench.tsv"
 

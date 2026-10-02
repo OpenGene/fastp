@@ -3,7 +3,7 @@
 
 Models the features fastp's trimming and QC code paths react to: TruSeq adapter
 read-through from short inserts, 2-color poly-G tails, N bases, and quality that
-degrades along the read. Same arguments always produce byte-identical files.
+degrades along the read. Same arguments always produce identical decompressed content.
 
 usage: gen_reads.py OUT_PREFIX [--pairs N] [--len L] [--seed S]
 writes OUT_PREFIX_R1.fastq.gz, OUT_PREFIX_R2.fastq.gz, OUT_PREFIX_interleaved.fastq.gz
@@ -25,9 +25,13 @@ def main():
     rng = random.Random(a.seed)
     L = a.len
 
+    # high quality early, degrading and noisier towards the 3' end. Drawing 150 Gaussians per read made the
+    # generator take minutes for a million pairs, so draw each read's qualities from a pool built once.
+    pool = ["".join(chr(33 + max(2, min(41, int(38 - 14 * i / L + rng.gauss(0, 3))))) for i in range(L))
+            for _ in range(4096)]
+
     def qual():
-        # high quality early, degrading and noisier towards the 3' end
-        return "".join(chr(33 + max(2, min(41, int(38 - 14 * i / L + rng.gauss(0, 3))))) for i in range(L))
+        return rng.choice(pool)
 
     def read(insert, adapter):
         s = insert[:L]
