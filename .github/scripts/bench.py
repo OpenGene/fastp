@@ -25,7 +25,7 @@ is worse than every base run, so a single noisy run can't trip it.
   bench.py prepare DATA_DIR            # synthetic sets + a cached public subset
   bench.py run --builds base=PATH,head=PATH --data DATA_DIR [--threshold 10] [--fail-on-regression] ...
 """
-import argparse, gzip, http.client, json, shutil, zlib, os, platform, statistics, subprocess, sys, tempfile, threading, time, urllib.request
+import argparse, gzip, http.client, json, shutil, urllib.error, zlib, os, platform, statistics, subprocess, sys, tempfile, threading, time, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # input sets: name -> public ENA run (first N pairs streamed) or None for gen_reads.py output
@@ -54,7 +54,11 @@ MARKER = "<!-- fastp-benchmark -->"  # identifies the sticky PR comment
 
 
 def prepare(data):
+    """Create or download every input. A public input that can't be fetched is skipped with a warning (the
+    report says so) rather than failing the PR's CI over an outside outage; GITHUB_OUTPUT `complete` tells
+    the workflow whether the full set is present, so it never caches a partial one."""
     os.makedirs(data, exist_ok=True)
+    missing = []
     for src, (acc, n) in SOURCES.items():
         if os.path.exists(os.path.join(data, f"{src}_R2.fastq.gz")):
             continue
@@ -62,9 +66,21 @@ def prepare(data):
             subprocess.run([sys.executable, os.path.join(HERE, "gen_reads.py"), os.path.join(data, src),
                             "--pairs", str(n), "--seed", "7"], check=True)
             continue
-        for mate in (1, 2):
-            url = f"https://ftp.sra.ebi.ac.uk/vol1/fastq/{acc[:6]}/{acc}/{acc}_{mate}.fastq.gz"
-            fetch_head(url, os.path.join(data, f"{src}_R{mate}.fastq.gz"), n)
+        try:
+            for mate in (1, 2):
+                url = f"https://ftp.sra.ebi.ac.uk/vol1/fastq/{acc[:6]}/{acc}/{acc}_{mate}.fastq.gz"
+                fetch_head(url, os.path.join(data, f"{src}_R{mate}.fastq.gz"), n)
+        except SystemExit as e:
+            print(f"::warning::input {src} unavailable, skipping it: {e}", file=sys.stderr)
+            for mate in (1, 2):  # keep a half-fetched pair from looking complete
+                for suffix in ("", ".tmp"):
+                    path = os.path.join(data, f"{src}_R{mate}.fastq.gz{suffix}")
+                    if os.path.exists(path):
+                        os.remove(path)
+            missing.append(src)
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"complete={'false' if missing else 'true'}\n")
 
 
 def fetch_head(url, dest, pairs, attempts=10):
@@ -85,7 +101,8 @@ def fetch_head(url, dest, pairs, attempts=10):
             inflater = zlib.decompressobj(zlib.MAX_WBITS | 16)
         return data
 
-    with gzip.open(dest + ".tmp", "wb", compresslevel=1) as out:
+    out = gzip.open(dest + ".tmp", "wb", compresslevel=1)
+    try:
         for attempt in range(1, attempts + 1):
             try:
                 req = urllib.request.Request(url, headers={"Range": f"bytes={pos}-"} if pos else {})
@@ -110,11 +127,19 @@ def fetch_head(url, dest, pairs, attempts=10):
                             lines += n
             except (OSError, EOFError, http.client.HTTPException, zlib.error) as e:
                 print(f"download attempt {attempt}/{attempts} failed at byte {pos} for {url}: {e!r}", file=sys.stderr)
+                if isinstance(e, urllib.error.HTTPError) and e.code == 416 and pos:
+                    # the server no longer accepts our resume point (seen when several jobs pull the same
+                    # file at once): start over from the top
+                    out.close()
+                    out = gzip.open(dest + ".tmp", "wb", compresslevel=1)
+                    inflater, pos, lines = zlib.decompressobj(zlib.MAX_WBITS | 16), 0, 0
                 time.sleep(min(5 * attempt, 30))
                 continue
             break
         else:
             sys.exit(f"could not download {pairs} records from {url}")
+    finally:
+        out.close()
     os.rename(dest + ".tmp", dest)
 
 
@@ -168,11 +193,13 @@ def main():
     if a.cmd == "prepare":
         return prepare(a.data)
 
+    skipped = [name for name, _, src in DATASETS if not os.path.exists(os.path.join(a.data, f"{src}_R1.fastq.gz"))]
+    datasets = [d for d in DATASETS if d[0] not in skipped]
     builds = [tuple(b.split("=", 1)) for b in a.builds.split(",")]
     threads = [int(t) for t in a.threads.split(",")]
     n1, n2 = sorted(int(x) for x in a.sizes.split(","))
     rows, failures = [], []
-    for name, layout, src in DATASETS:
+    for name, layout, src in datasets:
         d = lambda m: os.path.join(a.data, f"{src}_R{m}.fastq.gz")
         for t in threads:
             for rep in range(a.reps):
@@ -230,7 +257,7 @@ def main():
             return delta, "improvement"
         return delta, "noise"
 
-    cells = [(n, t, k) for n, _, _ in DATASETS for t in threads for k, _, _ in METRICS]
+    cells = [(n, t, k) for n, _, _ in datasets for t in threads for k, _, _ in METRICS]
     results = {c: verdict(*c) for c in cells} if compare else {}
     regressions = [c for c in cells if c[2] in GATED and results.get(c, (0, ""))[1] == "regression"]
     improvements = [c for c in cells if c[2] in GATED and results.get(c, (0, ""))[1] == "improvement"]
@@ -240,7 +267,7 @@ def main():
     def table(keys):
         out = ["| dataset | -w | " + " | ".join(label for k, _, label in METRICS if k in keys) + " |",
                "|---|---|" + "---|" * len(keys)]
-        for n, _, _ in DATASETS:
+        for n, _, _ in datasets:
             for t in threads:
                 row = []
                 for k, unit, _ in METRICS:
@@ -275,6 +302,8 @@ def main():
                 "same input; a line through the two points gives the fixed cost and the cost per pair, and the projection is "
                 "fixed + cost per pair × size. On 3 complete public runs this predicted full-run CPU within 1–2% and wall "
                 "within 2–4% (median). Projected wall, CPU per pair and peak RSS are gated.", ""]
+    if skipped:
+        out += [f"⚠️ **Skipped, input unavailable:** {', '.join(skipped)}. Only the datasets below were measured.", ""]
     out += table(GATED) + ["", "<details><summary>fixed cost and projected CPU</summary>", ""] + table(FIXED) + \
         ["", "</details>", "", f"<details><summary>measured on the {n2:,}-pair subset</summary>", ""] + \
         table(MEASURED) + ["", "</details>", ""]
@@ -297,7 +326,7 @@ def main():
                 f.write("\t".join(str(row[k]) for k in cols) + "\n")
     if a.json:
         entries = [{"name": f"{n} -w{t} {label}", "unit": unit, "value": round(med(head, n, t, k), 3)}
-                   for n, _, _ in DATASETS for t in threads for k, unit, label in METRICS]
+                   for n, _, _ in datasets for t in threads for k, unit, label in METRICS]
         with open(a.json, "w") as f:
             json.dump(entries, f, indent=1)
     if a.compare_json and compare:

@@ -47,14 +47,24 @@ jobs:
           make -j$(nproc)
           if [ -d _base ]; then make -C _base -j$(nproc); fi
 
-      - name: cache datasets
-        uses: actions/cache@v4
+      - name: restore datasets
+        id: data-cache
+        uses: actions/cache/restore@v4
         with:
           path: bench-data
           key: bench-data-${{ hashFiles('.github/scripts/bench.py', '.github/scripts/gen_reads.py') }}
 
       - name: prepare datasets
+        id: prepare
         run: python3 .github/scripts/bench.py prepare bench-data
+
+      # only a complete set is cached: a run that had to skip an unavailable input must try again next time
+      - name: save datasets
+        if: steps.data-cache.outputs.cache-hit != 'true' && steps.prepare.outputs.complete == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: bench-data
+          key: bench-data-${{ hashFiles('.github/scripts/bench.py', '.github/scripts/gen_reads.py') }}
 
       - name: benchmark
         id: bench
