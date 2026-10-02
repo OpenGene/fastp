@@ -25,7 +25,7 @@ is worse than every base run, so a single noisy run can't trip it.
   bench.py prepare DATA_DIR            # synthetic sets + a cached public subset
   bench.py run --builds base=PATH,head=PATH --data DATA_DIR [--threshold 10] [--fail-on-regression] ...
 """
-import argparse, gzip, http.client, json, shutil, os, platform, statistics, subprocess, sys, tempfile, threading, time, urllib.request
+import argparse, gzip, http.client, json, shutil, zlib, os, platform, statistics, subprocess, sys, tempfile, threading, time, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # input sets: name -> public ENA run (first N pairs streamed) or None for gen_reads.py output
@@ -67,27 +67,55 @@ def prepare(data):
             fetch_head(url, os.path.join(data, f"{src}_R{mate}.fastq.gz"), n)
 
 
-def fetch_head(url, dest, pairs, attempts=5):
-    """Stream the first `pairs` records of a remote .fastq.gz into dest, retrying: ENA drops connections
-    mid-stream now and then, which surfaces as a truncated gzip (EOFError) or a short read."""
-    for attempt in range(1, attempts + 1):
-        try:
-            lines = 0
-            with urllib.request.urlopen(url, timeout=120) as resp, gzip.GzipFile(fileobj=resp) as inp, \
-                 gzip.open(dest + ".tmp", "wb", compresslevel=1) as out:
-                for line in inp:
-                    out.write(line)
-                    lines += 1
-                    if lines == pairs * 4:
-                        break
-            if lines < pairs * 4:
-                raise EOFError(f"stream ended after {lines // 4} of {pairs} records")
-            os.rename(dest + ".tmp", dest)
-            return
-        except (OSError, EOFError, http.client.HTTPException) as e:
-            print(f"download attempt {attempt}/{attempts} failed for {url}: {e!r}", file=sys.stderr)
-            time.sleep(5 * attempt)
-    sys.exit(f"could not download {pairs} records from {url}")
+def fetch_head(url, dest, pairs, attempts=10):
+    """Stream the first `pairs` records of a remote .fastq.gz into dest (recompressed at level 1).
+    ENA closes connections mid-transfer, so a failed read reconnects with a Range request at the byte where
+    it stopped and keeps feeding the same gzip decompressor; restarting from the top never finished."""
+    want, pos, lines = pairs * 4, 0, 0
+    inflater = zlib.decompressobj(zlib.MAX_WBITS | 16)
+
+    def inflate(buf):  # also handles files made of several gzip members
+        nonlocal inflater
+        data = b""
+        while buf:
+            data += inflater.decompress(buf)
+            if not inflater.eof:
+                break
+            buf = inflater.unused_data
+            inflater = zlib.decompressobj(zlib.MAX_WBITS | 16)
+        return data
+
+    with gzip.open(dest + ".tmp", "wb", compresslevel=1) as out:
+        for attempt in range(1, attempts + 1):
+            try:
+                req = urllib.request.Request(url, headers={"Range": f"bytes={pos}-"} if pos else {})
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    if pos and resp.status != 206:
+                        raise OSError(f"server ignored Range (HTTP {resp.status})")
+                    while lines < want:
+                        chunk = resp.read(1 << 20)
+                        if not chunk:
+                            raise EOFError(f"stream ended after {lines // 4} of {pairs} records")
+                        pos += len(chunk)
+                        data = inflate(chunk)
+                        n = data.count(b"\n")
+                        if lines + n >= want:
+                            end = -1
+                            for _ in range(want - lines):
+                                end = data.index(b"\n", end + 1)
+                            out.write(data[:end + 1])
+                            lines = want
+                        else:
+                            out.write(data)
+                            lines += n
+            except (OSError, EOFError, http.client.HTTPException, zlib.error) as e:
+                print(f"download attempt {attempt}/{attempts} failed at byte {pos} for {url}: {e!r}", file=sys.stderr)
+                time.sleep(min(5 * attempt, 30))
+                continue
+            break
+        else:
+            sys.exit(f"could not download {pairs} records from {url}")
+    os.rename(dest + ".tmp", dest)
 
 
 def run_once(fastp, args, timeout):
