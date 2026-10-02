@@ -25,7 +25,7 @@ is worse than every base run, so a single noisy run can't trip it.
   bench.py prepare DATA_DIR            # synthetic sets + a cached public subset
   bench.py run --builds base=PATH,head=PATH --data DATA_DIR [--threshold 10] [--fail-on-regression] ...
 """
-import argparse, gzip, json, shutil, os, platform, statistics, subprocess, sys, tempfile, threading, time, urllib.request
+import argparse, gzip, http.client, json, shutil, os, platform, statistics, subprocess, sys, tempfile, threading, time, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # input sets: name -> public ENA run (first N pairs streamed) or None for gen_reads.py output
@@ -64,15 +64,30 @@ def prepare(data):
             continue
         for mate in (1, 2):
             url = f"https://ftp.sra.ebi.ac.uk/vol1/fastq/{acc[:6]}/{acc}/{acc}_{mate}.fastq.gz"
-            dest = os.path.join(data, f"{src}_R{mate}.fastq.gz")
+            fetch_head(url, os.path.join(data, f"{src}_R{mate}.fastq.gz"), n)
+
+
+def fetch_head(url, dest, pairs, attempts=5):
+    """Stream the first `pairs` records of a remote .fastq.gz into dest, retrying: ENA drops connections
+    mid-stream now and then, which surfaces as a truncated gzip (EOFError) or a short read."""
+    for attempt in range(1, attempts + 1):
+        try:
+            lines = 0
             with urllib.request.urlopen(url, timeout=120) as resp, gzip.GzipFile(fileobj=resp) as inp, \
                  gzip.open(dest + ".tmp", "wb", compresslevel=1) as out:
-                for _ in range(n * 4):
-                    line = inp.readline()
-                    if not line:
-                        break
+                for line in inp:
                     out.write(line)
+                    lines += 1
+                    if lines == pairs * 4:
+                        break
+            if lines < pairs * 4:
+                raise EOFError(f"stream ended after {lines // 4} of {pairs} records")
             os.rename(dest + ".tmp", dest)
+            return
+        except (OSError, EOFError, http.client.HTTPException) as e:
+            print(f"download attempt {attempt}/{attempts} failed for {url}: {e!r}", file=sys.stderr)
+            time.sleep(5 * attempt)
+    sys.exit(f"could not download {pairs} records from {url}")
 
 
 def run_once(fastp, args, timeout):
