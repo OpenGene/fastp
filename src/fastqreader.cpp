@@ -347,8 +347,7 @@ Read* FastqReader::read(){
 	if (strand->empty() || (*strand)[0]!='+') {
 		cerr << *name << endl;
 		cerr << "Expected '+', got " << *strand << endl;
-		cerr << "Your FASTQ may be invalid, please check the tail of your FASTQ file" << endl;
-		return NULL;
+		error_exit("Invalid FASTQ separator in: " + mFilename);
 	}
 
 	if(quality->length() != sequence->length()) {
@@ -357,8 +356,7 @@ Read* FastqReader::read(){
 		cerr << *sequence << endl;
 		cerr << *strand << endl;
 		cerr << *quality << endl;
-		cerr << "Your FASTQ may be invalid, please check the tail of your FASTQ file" << endl;
-		return NULL;
+		error_exit("FASTQ sequence/quality length mismatch in: " + mFilename);
 	}
 
 	if(readInPool)
