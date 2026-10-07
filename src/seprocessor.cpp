@@ -276,6 +276,10 @@ bool SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig* config){
         if(isAdapterDimer)
             result = FAIL_ADAPTER_DIMER;
 
+        // a read that would pass but is dropped by --dedup is a duplicate, not a passed read
+        if(dedupOut && result == PASS_FILTER)
+            result = FAIL_DUPLICATE;
+
         config->addFilterResult(result, 1);
 
         if(!dedupOut) {

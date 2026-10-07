@@ -526,6 +526,9 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
             if(ov.overlapped) {
                 merged = OverlapAnalysis::merge(r1, r2, ov);
                 int result = mFilter->passFilter(merged);
+                // --dedup applies to merged pairs too
+                if(dedupOut && result == PASS_FILTER)
+                    result = FAIL_DUPLICATE;
                 config->addFilterResult(result, 2);
                 if(result == PASS_FILTER) {
                     merged->appendToString(&mergedOutput);
@@ -542,6 +545,13 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 if(isAdapterDimer) {
                     result1 = FAIL_ADAPTER_DIMER;
                     result2 = FAIL_ADAPTER_DIMER;
+                }
+
+                if(dedupOut) {
+                    if(result1 == PASS_FILTER)
+                        result1 = FAIL_DUPLICATE;
+                    if(result2 == PASS_FILTER)
+                        result2 = FAIL_DUPLICATE;
                 }
 
                 config->addFilterResult(result1, 1);
@@ -571,7 +581,11 @@ bool PairEndProcessor::processPairEnd(ReadPack* leftPack, ReadPack* rightPack, T
                 result2 = FAIL_ADAPTER_DIMER;
             }
 
-            config->addFilterResult(max(result1, result2), 2);
+            int result = max(result1, result2);
+            // a pair that would pass but is dropped by --dedup is a duplicate, not a passed pair
+            if(dedupOut && result == PASS_FILTER)
+                result = FAIL_DUPLICATE;
+            config->addFilterResult(result, 2);
 
             if(!dedupOut) {
 
