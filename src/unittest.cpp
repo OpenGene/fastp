@@ -10,6 +10,7 @@
 #include "nucleotidetree.h"
 #include "evaluator.h"
 #include "simd.h"
+#include "matcher.h"
 #include <time.h>
 
 UnitTest::UnitTest(){
@@ -24,6 +25,7 @@ void UnitTest::run(){
     passed &= report(FastqReader::test(), "FastqReader::test");
     passed &= report(OverlapAnalysis::test(), "OverlapAnalysis::test");
     passed &= report(Filter::test(), "Filter::test");
+    passed &= report(Matcher::test(), "Matcher::test");
     passed &= report(AdapterTrimmer::test(), "AdapterTrimmer::test");
     passed &= report(BaseCorrector::test(), "BaseCorrector::test");
     passed &= report(PolyX::test(), "PolyX::test");

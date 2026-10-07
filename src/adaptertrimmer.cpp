@@ -107,7 +107,7 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
         for(pos = 0; pos<rlen-matchReq-1; pos++) {
             int cmplen = min(rlen - pos - 1, alen);
             int allowedMismatch = cmplen/allowOneMismatchForEach -1;
-            bool matched = Matcher::matchWithOneInsertion(rdata, adata, cmplen, allowedMismatch);
+            bool matched = Matcher::matchWithOneInsertion(rdata + pos, adata, cmplen, allowedMismatch);
             if(matched) {
                 found = true;
                 hasInsertion = true;
@@ -124,7 +124,7 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, string& adapterse
         for(pos = 0; pos<rlen-matchReq; pos++) {
             int cmplen = min(rlen - pos, alen - 1);
             int allowedMismatch = cmplen/allowOneMismatchForEach -1;
-            bool matched = Matcher::matchWithOneInsertion(adata, rdata, cmplen, allowedMismatch);
+            bool matched = Matcher::matchWithOneInsertion(adata, rdata + pos, cmplen, allowedMismatch);
             if(matched) {
                 found = true;
                 hasDeletion = true;
@@ -178,6 +178,35 @@ bool AdapterTrimmer::test() {
     trimmed = AdapterTrimmer::trimByMultiSequences(&read, NULL, adapterList);
     if (*read.mSeq != "TTTTAACCCCCCCCCCCCCCCCCCCCCCCCCCCCAATTTTAAAATTTTCCCCGGGG") {
         cerr << read.mSeq << endl;
+        return false;
+    }
+
+    // One-gap matching must look for the adapter at every position, not only at the read start.
+    // The adapter starts at position 40 with one base inserted (read has an extra base) or
+    // deleted (read lacks one) in its middle, so the Hamming-distance search cannot match it.
+    string truseq = "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA";
+    string insert = "GTTCAGAGTTCTACAGTCCGACGATCTGTACGTAGTCAAC";  // 40 bases, no adapter in it
+    string withInsertion = insert + truseq.substr(0, 16) + "T" + truseq.substr(16) + "TTGACG";
+    string withDeletion = insert + truseq.substr(0, 16) + truseq.substr(17) + "TTGACGT";
+    string reads[2] = {withInsertion, withDeletion};
+    for (int i = 0; i < 2; i++) {
+        string qual(reads[i].length(), 'I');
+        Read gapped("@gap", reads[i].c_str(), "+", qual.c_str());
+        AdapterTrimmer::trimBySequence(&gapped, NULL, truseq);
+        if (*gapped.mSeq != insert) {
+            cerr << (i == 0 ? "insertion" : "deletion") << " not trimmed at 40: " << *gapped.mSeq << endl;
+            return false;
+        }
+    }
+
+    // A read that only starts like the adapter has no adapter to trim. Comparing the read start
+    // at every position used to match once the compared length got short, and cut the tail.
+    string startsLikeAdapter = truseq.substr(0, 12) + "CTGAGTCGATTCAGGCATCGATCGGACTAGTCAGCCTTGCAAGGCTTACGATCGATTGCACTGAGCTAG";
+    string qual(startsLikeAdapter.length(), 'I');
+    Read lookalike("@lookalike", startsLikeAdapter.c_str(), "+", qual.c_str());
+    AdapterTrimmer::trimBySequence(&lookalike, NULL, truseq);
+    if (*lookalike.mSeq != startsLikeAdapter) {
+        cerr << "read starting like the adapter was trimmed: " << *lookalike.mSeq << endl;
         return false;
     }
 
