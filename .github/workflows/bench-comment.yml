@@ -1,0 +1,42 @@
+name: fastp benchmark comment
+# Fork PRs get a read-only token, so bench.yml can't comment on them. This runs
+# after it in the base repo's context and posts its report. It never checks out
+# or runs PR code: the report is only used as comment text, and the PR is found
+# by the run's head SHA rather than anything in the artifact.
+on:
+  workflow_run:
+    workflows: [fastp benchmark]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  comment:
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name != github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - name: checkout (default branch)
+        uses: actions/checkout@v4
+
+      - name: download report
+        uses: actions/download-artifact@v4
+        with:
+          name: bench-results
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: results
+
+      - name: comment on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --search "$SHA" --json number,headRefOid \
+            --jq "map(select(.headRefOid == \"$SHA\")) | .[0].number // empty")
+          if [ -z "$pr" ]; then echo "no open PR with head $SHA"; exit 0; fi
+          .github/scripts/sticky_comment.sh "$GITHUB_REPOSITORY" "$pr" results/comment.md

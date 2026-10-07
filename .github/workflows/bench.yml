@@ -1,0 +1,122 @@
+name: fastp benchmark
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+    # labeled/unlabeled: re-evaluate the gate when the sign-off label changes
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    if: >-
+      github.event.action != 'labeled' && github.event.action != 'unlabeled' ||
+      github.event.label.name == 'perf-regression-ok'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # push-to-master results go to the gh-pages branch
+      pull-requests: write  # PR comment (same-repo PRs; fork PRs use bench-comment.yml)
+    env:
+      # override per repo in Settings → Variables
+      THRESHOLD_PCT: ${{ vars.BENCH_THRESHOLD_PCT || '10' }}
+      SIGNED_OFF: ${{ contains(github.event.pull_request.labels.*.name, 'perf-regression-ok') }}
+    steps:
+      # head at the workspace root: github-action-benchmark runs git there
+      - name: checkout
+        uses: actions/checkout@v4
+
+      # PRs are measured against their base on the same runner: numbers from
+      # different shared runners differ by more than most real changes.
+      - name: checkout base
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _base
+
+      - name: build dependencies
+        uses: ./.github/actions/build-deps
+
+      - name: build
+        run: |
+          make -j$(nproc)
+          if [ -d _base ]; then make -C _base -j$(nproc); fi
+
+      - name: restore datasets
+        id: data-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: bench-data
+          key: bench-data-${{ hashFiles('.github/scripts/bench.py', '.github/scripts/gen_reads.py') }}
+
+      - name: prepare datasets
+        id: prepare
+        run: python3 .github/scripts/bench.py prepare bench-data
+
+      # only a complete set is cached: a run that had to skip an unavailable input must try again next time
+      - name: save datasets
+        if: steps.data-cache.outputs.cache-hit != 'true' && steps.prepare.outputs.complete == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: bench-data
+          key: bench-data-${{ hashFiles('.github/scripts/bench.py', '.github/scripts/gen_reads.py') }}
+
+      - name: benchmark
+        id: bench
+        run: |
+          # outside the checkout, so the gh-pages switch below can't touch them
+          out=$RUNNER_TEMP/bench; mkdir -p "$out"
+          builds=head=./fastp signoff=
+          if [ -d _base ]; then builds=base=_base/fastp,head=./fastp; fi
+          if [ "$SIGNED_OFF" = true ]; then signoff=--signed-off; fi
+          python3 .github/scripts/bench.py run --builds "$builds" --data bench-data \
+            --threads 4 --reps 3 --threshold "$THRESHOLD_PCT" $signoff \
+            --summary "$GITHUB_STEP_SUMMARY" --comment "$out/comment.md" \
+            --compare-json "$out/bench-compare.json" --json "$out/bench.json" --tsv "$out/bench.tsv"
+
+      - name: upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: ${{ runner.temp }}/bench/
+
+      - name: comment on PR
+        if: >-
+          always() && github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -f "$RUNNER_TEMP/bench/comment.md" ]; then
+            .github/scripts/sticky_comment.sh "$GITHUB_REPOSITORY" "$PR" "$RUNNER_TEMP/bench/comment.md"
+          fi
+
+      - name: regression gate
+        if: github.event_name == 'pull_request'
+        env:
+          REGRESSIONS: ${{ steps.bench.outputs.regressions }}
+        run: |
+          if [ "${REGRESSIONS:-0}" -gt 0 ] && [ "$SIGNED_OFF" != true ]; then
+            echo "::error::$REGRESSIONS benchmark regression(s) over ${THRESHOLD_PCT}%; add the perf-regression-ok label to accept"
+            exit 1
+          fi
+
+      # master history, charted at https://<owner>.github.io/<repo>/dev/bench/
+      - name: track on master
+        if: github.event_name == 'push'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: customSmallerIsBetter
+          output-file-path: ${{ runner.temp }}/bench/bench.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '130%'
+          comment-on-alert: false
+          fail-on-alert: false

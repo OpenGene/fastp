@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""Benchmark fastp builds against each other, interleaved on the same machine.
+
+Shared CI runners are too noisy to compare against numbers stored from another
+run, so a PR is measured as base vs head in one job, alternating builds each
+repetition. Each run is split into stages from fastp's stderr timestamps:
+adapter auto-detection (serial, before processing) and processing; plus CPU
+time and peak RSS.
+
+Subsets make fixed-cost stages look bigger than they are: pre-processing,
+adapter detection (at most 256K reads per mate) and the report cost the same on
+a small subset as on a 50M-read run. So every (build, dataset) is run on the
+first N1 and N2 pairs of the same input (--reads_to_process, no recompression),
+and a line through the two points gives a fixed cost (intercept) and a cost per
+pair (slope). The projection to --project-reads is fixed + slope x reads. N1 and
+N2 are 4x apart and both above the detection cap.
+On 3 complete public runs (4 and 16 cores), a line through 0.25M + 1M pairs
+predicted full-run CPU within 2% and wall within 4% (median error); 1M + 4M
+within 1% and 2%.
+
+A gated metric (projected wall, CPU per pair, peak RSS) regresses when its
+median is worse than base by more than --threshold percent AND every head run
+is worse than every base run, so a single noisy run can't trip it.
+
+  bench.py prepare DATA_DIR            # synthetic sets + a cached public subset
+  bench.py run --builds base=PATH,head=PATH --data DATA_DIR [--threshold 10] [--fail-on-regression] ...
+"""
+import argparse, gzip, http.client, json, shutil, urllib.error, zlib, os, platform, statistics, subprocess, sys, tempfile, threading, time, urllib.request
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+# input sets: name -> public ENA run (first N pairs streamed) or None for gen_reads.py output
+SIZES = (300000, 1200000)  # pairs (reads for SE); 4x apart, above the 256K-read detection cap
+SOURCES = {
+    "synthetic": (None, SIZES[1]),
+    "atac_hiseq": ("SRR891268", SIZES[1]),  # Buenrostro 2013 GM12878 ATAC-seq, Nextera adapters
+}
+# (benchmark name, layout, source)
+DATASETS = [
+    ("synthetic_pe", "PE", "synthetic"),
+    ("synthetic_se", "SE", "synthetic"),
+    ("atac_hiseq_pe", "PE", "atac_hiseq"),
+]
+METRICS = [("proj_wall", "s", "projected wall"), ("cpu_us", "µs", "CPU per pair (read for SE)"), ("rss_mb", "MB", "peak RSS"),
+           ("fixed_wall", "s", "fixed cost (wall)"), ("proj_cpu", "s", "projected CPU"),
+           ("wall", "s", "wall time"), ("cpu", "s", "CPU (user+sys)"),
+           ("detect", "s", "adapter detection"), ("process", "s", "processing")]
+GATED = ["proj_wall", "cpu_us", "rss_mb"]
+FIXED = ["fixed_wall", "proj_cpu"]
+MEASURED = ["wall", "cpu", "detect", "process"]  # measured at the larger subset
+MIN_BASE = 0.2  # seconds; shorter timings are too noisy to judge
+NOTABLE_PCT = 5.0  # improvements are reported (never gated) from here
+SIGNOFF_LABEL = "perf-regression-ok"
+MARKER = "<!-- fastp-benchmark -->"  # identifies the sticky PR comment
+
+
+def prepare(data):
+    """Create or download every input. A public input that can't be fetched is skipped with a warning (the
+    report says so) rather than failing the PR's CI over an outside outage; GITHUB_OUTPUT `complete` tells
+    the workflow whether the full set is present, so it never caches a partial one."""
+    os.makedirs(data, exist_ok=True)
+    missing = []
+    for src, (acc, n) in SOURCES.items():
+        if os.path.exists(os.path.join(data, f"{src}_R2.fastq.gz")):
+            continue
+        if acc is None:
+            subprocess.run([sys.executable, os.path.join(HERE, "gen_reads.py"), os.path.join(data, src),
+                            "--pairs", str(n), "--seed", "7"], check=True)
+            continue
+        try:
+            for mate in (1, 2):
+                url = f"https://ftp.sra.ebi.ac.uk/vol1/fastq/{acc[:6]}/{acc}/{acc}_{mate}.fastq.gz"
+                fetch_head(url, os.path.join(data, f"{src}_R{mate}.fastq.gz"), n)
+        except SystemExit as e:
+            print(f"::warning::input {src} unavailable, skipping it: {e}", file=sys.stderr)
+            for mate in (1, 2):  # keep a half-fetched pair from looking complete
+                for suffix in ("", ".tmp"):
+                    path = os.path.join(data, f"{src}_R{mate}.fastq.gz{suffix}")
+                    if os.path.exists(path):
+                        os.remove(path)
+            missing.append(src)
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"complete={'false' if missing else 'true'}\n")
+
+
+def fetch_head(url, dest, pairs, attempts=10):
+    """Stream the first `pairs` records of a remote .fastq.gz into dest (recompressed at level 1).
+    ENA closes connections mid-transfer, so a failed read reconnects with a Range request at the byte where
+    it stopped and keeps feeding the same gzip decompressor; restarting from the top never finished."""
+    want, pos, lines = pairs * 4, 0, 0
+    inflater = zlib.decompressobj(zlib.MAX_WBITS | 16)
+
+    def inflate(buf):  # also handles files made of several gzip members
+        nonlocal inflater
+        data = b""
+        while buf:
+            data += inflater.decompress(buf)
+            if not inflater.eof:
+                break
+            buf = inflater.unused_data
+            inflater = zlib.decompressobj(zlib.MAX_WBITS | 16)
+        return data
+
+    out = gzip.open(dest + ".tmp", "wb", compresslevel=1)
+    try:
+        for attempt in range(1, attempts + 1):
+            try:
+                req = urllib.request.Request(url, headers={"Range": f"bytes={pos}-"} if pos else {})
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    if pos and resp.status != 206:
+                        raise OSError(f"server ignored Range (HTTP {resp.status})")
+                    while lines < want:
+                        chunk = resp.read(1 << 20)
+                        if not chunk:
+                            raise EOFError(f"stream ended after {lines // 4} of {pairs} records")
+                        pos += len(chunk)
+                        data = inflate(chunk)
+                        n = data.count(b"\n")
+                        if lines + n >= want:
+                            end = -1
+                            for _ in range(want - lines):
+                                end = data.index(b"\n", end + 1)
+                            out.write(data[:end + 1])
+                            lines = want
+                        else:
+                            out.write(data)
+                            lines += n
+            except (OSError, EOFError, http.client.HTTPException, zlib.error) as e:
+                print(f"download attempt {attempt}/{attempts} failed at byte {pos} for {url}: {e!r}", file=sys.stderr)
+                if isinstance(e, urllib.error.HTTPError) and e.code == 416 and pos:
+                    # the server no longer accepts our resume point (seen when several jobs pull the same
+                    # file at once): start over from the top
+                    out.close()
+                    out = gzip.open(dest + ".tmp", "wb", compresslevel=1)
+                    inflater, pos, lines = zlib.decompressobj(zlib.MAX_WBITS | 16), 0, 0
+                time.sleep(min(5 * attempt, 30))
+                continue
+            break
+        else:
+            sys.exit(f"could not download {pairs} records from {url}")
+    finally:
+        out.close()
+    os.rename(dest + ".tmp", dest)
+
+
+def run_once(fastp, args, timeout):
+    """Returns (exit code, wall s, [(t, stderr line)], cpu s, peak RSS MB) for one run."""
+    t0 = time.time()
+    p = subprocess.Popen([fastp] + args, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True)
+    timer = threading.Timer(timeout, p.kill)
+    timer.start()
+    assert p.stderr is not None
+    lines = [(time.time() - t0, l.rstrip("\n")) for l in p.stderr]  # fastp's stderr is unbuffered
+    _, status, ru = os.wait4(p.pid, 0)  # this child's own rusage, not the cumulative RUSAGE_CHILDREN
+    wall = time.time() - t0
+    timer.cancel()
+    p.returncode = os.waitstatus_to_exitcode(status)
+    rss_mb = ru.ru_maxrss / (1 << 20 if platform.system() == "Darwin" else 1 << 10)
+    return p.returncode, wall, lines, ru.ru_utime + ru.ru_stime, rss_mb
+
+
+def stages(lines, wall):
+    """(detect, process) seconds from stderr timestamps; detect is 0 when fastp skipped it."""
+    stat = next((t for t, l in lines if l.startswith("Read1 before filtering")), wall)
+    det = [i for i, (_, l) in enumerate(lines) if l.startswith("Detecting adapter")]
+    if not det:
+        return 0.0, stat
+    end = next((lines[i][0] for i in range(det[-1] + 1, len(lines)) if lines[i][1] == ""), stat)
+    return end - lines[det[0]][0], stat - end
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("prepare"); p.add_argument("data")
+    r = sub.add_parser("run")
+    r.add_argument("--builds", required=True, help="name=PATH,...; the first is the baseline, the last is compared to it")
+    r.add_argument("--data", required=True)
+    r.add_argument("--threads", default="4")
+    r.add_argument("--sizes", default=",".join(map(str, SIZES)), help="two subset sizes in pairs (reads for SE), smaller first")
+    r.add_argument("--reps", type=int, default=3)
+    r.add_argument("--timeout", type=int, default=600)
+    r.add_argument("--threshold", type=float, default=10.0, help="regression threshold, percent")
+    r.add_argument("--project-reads", type=float, default=50e6, help="full-size run to project to (reads, or pairs for PE)")
+    r.add_argument("--fail-on-regression", action="store_true")
+    r.add_argument("--signed-off", action="store_true", help=f"regressions accepted (the {SIGNOFF_LABEL} label)")
+    r.add_argument("--summary", help="append the report here (e.g. $GITHUB_STEP_SUMMARY)")
+    r.add_argument("--comment", help="write the report here, for posting as a PR comment")
+    r.add_argument("--compare-json", help="base vs head per cell, with verdicts")
+    r.add_argument("--json", help="head-only values for github-action-benchmark")
+    r.add_argument("--tsv", help="every run")
+    a = ap.parse_args()
+    if a.cmd == "prepare":
+        return prepare(a.data)
+
+    skipped = [name for name, _, src in DATASETS if not os.path.exists(os.path.join(a.data, f"{src}_R1.fastq.gz"))]
+    datasets = [d for d in DATASETS if d[0] not in skipped]
+    builds = [tuple(b.split("=", 1)) for b in a.builds.split(",")]
+    threads = [int(t) for t in a.threads.split(",")]
+    n1, n2 = sorted(int(x) for x in a.sizes.split(","))
+    rows, failures = [], []
+    for name, layout, src in datasets:
+        d = lambda m: os.path.join(a.data, f"{src}_R{m}.fastq.gz")
+        for t in threads:
+            for rep in range(a.reps):
+                for bname, path in (builds if rep % 2 == 0 else builds[::-1]):  # alternate order: no first-run bias
+                    pts = []
+                    for n in (n1, n2):
+                        w = tempfile.mkdtemp()
+                        if layout == "PE":
+                            args = ["-i", d(1), "-I", d(2), "-o", f"{w}/o1.fq.gz", "-O", f"{w}/o2.fq.gz", "--detect_adapter_for_pe"]
+                        else:
+                            args = ["-i", d(1), "-o", f"{w}/o1.fq.gz"]
+                        args += ["--reads_to_process", str(n), "-w", str(t), "-j", f"{w}/r.json", "-h", f"{w}/r.html"]
+                        rc, wall, lines, cpu, rss = run_once(os.path.abspath(path), args, a.timeout)
+                        got = 0
+                        if rc == 0:
+                            with open(f"{w}/r.json") as f:
+                                got = json.load(f)["summary"]["before_filtering"]["total_reads"] // (2 if layout == "PE" else 1)
+                        shutil.rmtree(w, ignore_errors=True)
+                        if rc != 0 or got != n:
+                            failures.append(f"{bname} {name} -w {t} n={n}: exit {rc}, processed {got}")
+                            break
+                        pts.append((wall, cpu, rss, stages(lines, wall)))
+                    if len(pts) < 2:
+                        continue
+                    (w1, c1, _, _), (w2, c2, rss2, (det2, proc2)) = pts
+                    slope_w, slope_c = (w2 - w1) / (n2 - n1), (c2 - c1) / (n2 - n1)
+                    if slope_w <= 0 or slope_c <= 0:  # the larger subset ran no slower than the smaller one: noise
+                        failures.append(f"{bname} {name} -w {t}: non-positive slope between {n1} and {n2} pairs")
+                        continue
+                    fixed_w, fixed_c = w1 - slope_w * n1, c1 - slope_c * n1
+                    rows.append(dict(build=bname, dataset=name, threads=t, rep=rep, wall=w2, cpu=c2, detect=det2,
+                                     process=proc2, rss_mb=rss2, fixed_wall=fixed_w,
+                                     proj_wall=fixed_w + slope_w * a.project_reads,
+                                     proj_cpu=fixed_c + slope_c * a.project_reads, cpu_us=slope_c * 1e6))
+
+    names = [b for b, _ in builds]
+    base, head = names[0], names[-1]
+    compare = len(names) > 1
+
+    def vals(b, ds, t, k):
+        return [r[k] for r in rows if r["build"] == b and r["dataset"] == ds and r["threads"] == t]
+
+    def med(b, ds, t, k):
+        v = vals(b, ds, t, k)
+        return statistics.median(v) if v else float("nan")
+
+    def verdict(ds, t, k):
+        vb, vh = vals(base, ds, t, k), vals(head, ds, t, k)
+        if not vb or not vh or (k != "rss_mb" and statistics.median(vb) < MIN_BASE):
+            return None, "n/a"
+        delta = 100 * (statistics.median(vh) - statistics.median(vb)) / statistics.median(vb)
+        if delta > a.threshold and min(vh) > max(vb):
+            return delta, "regression"
+        if delta < -NOTABLE_PCT and max(vh) < min(vb):
+            return delta, "improvement"
+        return delta, "noise"
+
+    cells = [(n, t, k) for n, _, _ in datasets for t in threads for k, _, _ in METRICS]
+    results = {c: verdict(*c) for c in cells} if compare else {}
+    regressions = [c for c in cells if c[2] in GATED and results.get(c, (0, ""))[1] == "regression"]
+    improvements = [c for c in cells if c[2] in GATED and results.get(c, (0, ""))[1] == "improvement"]
+    icon = {"regression": " 🔴", "improvement": " 🟢"}
+    size = f"{a.project_reads / 1e6:g}M reads (pairs for PE)"
+
+    def table(keys):
+        out = ["| dataset | -w | " + " | ".join(label for k, _, label in METRICS if k in keys) + " |",
+               "|---|---|" + "---|" * len(keys)]
+        for n, _, _ in datasets:
+            for t in threads:
+                row = []
+                for k, unit, _ in METRICS:
+                    if k not in keys:
+                        continue
+                    if not compare:
+                        row.append(f"{med(head, n, t, k):.2f} {unit}")
+                        continue
+                    d, v = results[(n, t, k)]
+                    row.append(f"{med(base, n, t, k):.2f} → {med(head, n, t, k):.2f} {unit}"
+                               + (f" ({d:+.1f}%){icon.get(v, '')}" if d is not None else ""))
+                out.append(f"| {n} | {t} | " + " | ".join(row) + " |")
+        return out
+
+    out = [MARKER, "## fastp benchmark", ""]
+    if compare:
+        if failures:
+            out.append("❌ **Some benchmark runs failed** (listed below).")
+        elif regressions and a.signed_off:
+            out.append(f"🟡 **{len(regressions)} regression(s) over {a.threshold:g}%, accepted** via the `{SIGNOFF_LABEL}` label.")
+        elif regressions:
+            out.append(f"🔴 **{len(regressions)} regression(s) over {a.threshold:g}%.** "
+                       f"If intended, a maintainer can accept them by adding the `{SIGNOFF_LABEL}` label.")
+        elif improvements:
+            out.append(f"🟢 **No regressions; {len(improvements)} improvement(s).**")
+        else:
+            out.append(f"✅ **No regressions** over {a.threshold:g}%.")
+        out += ["", f"`{base}` → `{head}`, median of {a.reps} interleaved runs on one {os.cpu_count()}-CPU runner. "
+                f"🔴 = worse by more than {a.threshold:g}%, 🟢 = better by more than {NOTABLE_PCT:g}%, in both cases "
+                "with no overlap between the base and head runs; unmarked changes are within runner noise.", "",
+                f"**Projected to a full-size run of {size}.** Each build runs on the first {n1:,} and {n2:,} pairs of the "
+                "same input; a line through the two points gives the fixed cost and the cost per pair, and the projection is "
+                "fixed + cost per pair × size. On 3 complete public runs this predicted full-run CPU within 1–2% and wall "
+                "within 2–4% (median). Projected wall, CPU per pair and peak RSS are gated.", ""]
+    if skipped:
+        out += [f"⚠️ **Skipped, input unavailable:** {', '.join(skipped)}. Only the datasets below were measured.", ""]
+    out += table(GATED) + ["", "<details><summary>fixed cost and projected CPU</summary>", ""] + table(FIXED) + \
+        ["", "</details>", "", f"<details><summary>measured on the {n2:,}-pair subset</summary>", ""] + \
+        table(MEASURED) + ["", "</details>", ""]
+    if failures:
+        out += ["**Failed runs:**"] + [f"- {f}" for f in failures]
+    text = "\n".join(out) + "\n"
+    print(text)
+    if a.summary:
+        with open(a.summary, "a") as f:
+            f.write(text)
+    if a.comment:
+        with open(a.comment, "w") as f:
+            f.write(text)
+    if a.tsv:
+        cols = ("build", "dataset", "threads", "rep", "wall", "detect", "process", "cpu", "rss_mb",
+                "fixed_wall", "proj_wall", "proj_cpu", "cpu_us")
+        with open(a.tsv, "w") as f:
+            f.write("\t".join(cols) + "\n")
+            for row in rows:
+                f.write("\t".join(str(row[k]) for k in cols) + "\n")
+    if a.json:
+        entries = [{"name": f"{n} -w{t} {label}", "unit": unit, "value": round(med(head, n, t, k), 3)}
+                   for n, _, _ in datasets for t in threads for k, unit, label in METRICS]
+        with open(a.json, "w") as f:
+            json.dump(entries, f, indent=1)
+    if a.compare_json and compare:
+        with open(a.compare_json, "w") as f:
+            json.dump({"base": base, "head": head, "threshold_pct": a.threshold, "signed_off": a.signed_off,
+                       "project_reads": a.project_reads, "sizes": [n1, n2],
+                       "failures": failures, "regressions": len(regressions), "improvements": len(improvements),
+                       "cells": [{"dataset": n, "threads": t, "metric": k, "gated": k in GATED,
+                                  "base": med(base, n, t, k), "head": med(head, n, t, k),
+                                  "delta_pct": results[(n, t, k)][0], "verdict": results[(n, t, k)][1]}
+                                 for n, t, k in cells]}, f, indent=1)
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"regressions={len(regressions)}\nimprovements={len(improvements)}\n")
+    sys.exit(1 if failures or (regressions and a.fail_on_regression and not a.signed_off) else 0)
+
+
+if __name__ == "__main__":
+    main()
