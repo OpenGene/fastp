@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <vector>
 #include <isa-l/igzip_lib.h>
+#include "util.h"
 
 static const int BGZF_HEADER_SIZE = 18;
 static const int BGZF_MAX_BLOCK_SIZE = 65536;
@@ -136,14 +137,25 @@ private:
             }
 
             size_t n = fread(header, 1, BGZF_HEADER_SIZE, mFp);
-            if (n < BGZF_HEADER_SIZE) { markDone(s); break; }
+            if (ferror(mFp))
+                error_exit("BGZF input read error while reading block header");
+            if (n == 0) { markDone(s); break; }
+            if (n < BGZF_HEADER_SIZE)
+                error_exit("Truncated BGZF block header");
 
             uint32_t bsize = bgzfBlockSize(header);
-            if (bsize == 0 || bsize > BGZF_MAX_BLOCK_SIZE) { markDone(s); break; }
+            // Reject undersized blocks before subtracting the header length.
+            // A BGZF block includes the header, deflate stream and 8-byte trailer.
+            if (bsize < BGZF_HEADER_SIZE + 8 || bsize > BGZF_MAX_BLOCK_SIZE)
+                error_exit("Invalid BGZF block size or header");
 
             memcpy(s.comp, header, BGZF_HEADER_SIZE);
             size_t rest = bsize - BGZF_HEADER_SIZE;
-            if (fread(s.comp + BGZF_HEADER_SIZE, 1, rest, mFp) < rest) { markDone(s); break; }
+            size_t bodyRead = fread(s.comp + BGZF_HEADER_SIZE, 1, rest, mFp);
+            if (ferror(mFp))
+                error_exit("BGZF input read error while reading block body");
+            if (bodyRead < rest)
+                error_exit("Truncated BGZF block body");
 
             if (bsize == 28) {
                 uint32_t isize = s.comp[24]|(s.comp[25]<<8)|(s.comp[26]<<16)|(s.comp[27]<<24);
