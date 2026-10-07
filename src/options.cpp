@@ -403,6 +403,10 @@ bool Options::validate() {
         correction.enabled = false;
     }
 
+    if(!umi.enabled && !umi.umiTag.empty()) {
+        error_exit("You've specified --umi_tag, but UMI processing is not enabled. Please add --umi to enable UMI preprocessing.");
+    }
+
     if(umi.enabled) {
         if(umi.location == UMI_LOC_READ1 || umi.location == UMI_LOC_READ2 || umi.location == UMI_LOC_PER_READ) {
             if(umi.length<1 || umi.length>100)
@@ -423,6 +427,17 @@ bool Options::validate() {
                 if( !(c>='A' && c<='Z') && !(c>='a' && c<='z') && !(c>='0' && c<='9')) {
                     error_exit("UMI prefix can only have characters and numbers, but the given is: " + umi.prefix);
                 }
+            }
+        }
+        if(!umi.umiTag.empty()) {
+            if(umi.umiTag.length() != 2)
+                error_exit("UMI tag name (--umi_tag) should be exactly 2 characters (e.g. XR, RX), but the given is: " + umi.umiTag);
+            for(int i=0; i<umi.umiTag.length(); i++) {
+                char c = umi.umiTag[i];
+                bool validFirst = (c>='A' && c<='Z') || (c>='a' && c<='z') || (c>='0' && c<='9');
+                bool validSecond = validFirst || c=='.' || c=='[' || c==']';
+                if(!(i==0 ? validFirst : validSecond))
+                    error_exit("UMI tag name (--umi_tag) can only contain letters, digits, '.', '[' or ']' for the second character (SAM tag convention), but the given is: " + umi.umiTag);
             }
         }
         if(!umi.separator.empty()) {

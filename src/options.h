@@ -109,6 +109,7 @@ public:
         length = 0;
         skip = 0;
         delimiter= ":";
+        umiTag = "";
     }
 public:
     bool enabled;
@@ -118,6 +119,7 @@ public:
     string prefix;
     string separator;
     string delimiter;
+    string umiTag;
 };
 
 class CorrectionOptions {

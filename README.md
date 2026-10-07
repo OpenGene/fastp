@@ -332,6 +332,8 @@ If `--umi_loc` is specified with `read1`, `read2` or `per_read`, the length of U
 
 A prefix can be specified with `--umi_prefix`. If prefix is specified, an underline will be used to connect it and UMI. For example, UMI=AATTCCGG, prefix=UMI, then the final string presented in the name will be `UMI_AATTCCGG`.
 
+By default, `fastp` appends the UMI to the read name, e.g. `@READNAME:TCGACC_GCGTAA`. If you prefer a SAM-style tag, specify `--umi_tag=<TAG>` (e.g. `--umi_tag=XR`), then the UMI will be written as a SAM optional tag after the first field of the read name, e.g. `@READNAME/1 XR:Z:TCGACC_GCGTAA`. The tag name can be customized (2 characters, e.g. `XR`, `RX`), and `--umi_prefix` still applies inside the tag value (`XR:Z:UMI_TCGACC_GCGTAA`). Note that `--umi_delim` only affects the default name-append mode.
+
 If the UMI location is read1/read2/per_read, fastp can skip some bases after UMI to trim the UMI separator and A/T tailing. Specify `--umi_skip` to enable the number of bases to skip. By default it is not enabled.
 
 ## UMI example
@@ -345,6 +347,14 @@ AAAAAAAAGCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
 After it's processed with command: `fastp -i R1.fq -o out.R1.fq -U --umi_loc=read1 --umi_len=8`:  
 ```
 @NS500713:64:HFKJJBGXY:1:11101:1675:1101:AAAAAAAA 1:N:0:TATAGCCT+GACCCCCA
+GCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
++
+EEE/E/EA/E/AEA6EE//AEE66/AAE//EEE/E//E/AA/EEE/A/AEE/EEA//EEEEEEEE6EEAA
+```
+
+If `--umi_tag=XR` is used, the same record will instead look like:
+```
+@NS500713:64:HFKJJBGXY:1:11101:1675:1101 XR:Z:AAAAAAAA 1:N:0:TATAGCCT+GACCCCCA
 GCTACTTGGAGTACCAATAATAAAGTGAGCCCACCTTCCTGGTACCCAGACATTTCAGGAGGTCGGGAAA
 +
 EEE/E/EA/E/AEA6EE//AEE66/AAE//EEE/E//E/AA/EEE/A/AEE/EEA//EEEEEEEE6EEAA
@@ -527,6 +537,7 @@ options:
       --umi_len                      if the UMI is in read1/read2, its length should be provided (int [=0])
       --umi_prefix                   if specified, an underline will be used to connect prefix and UMI (i.e. prefix=UMI, UMI=AATTCG, final=UMI_AATTCG). No prefix by default (string [=])
       --umi_skip                       if the UMI is in read1/read2, fastp can skip several bases following UMI, default is 0 (int [=0])
+      --umi_tag                       if specified, the UMI will be written as a SAM-style tag after the read name (e.g. --umi_tag=XR produces 'name XR:Z:UMI'), rather than being appended to the name. Disabled by default (string [=])
 
   # overrepresented sequence analysis
   -p, --overrepresentation_analysis    enable overrepresented sequence analysis.

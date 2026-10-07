@@ -10,6 +10,7 @@
 #include "nucleotidetree.h"
 #include "evaluator.h"
 #include "simd.h"
+#include "umiprocessor.h"
 #include <time.h>
 
 UnitTest::UnitTest(){
@@ -29,6 +30,7 @@ void UnitTest::run(){
     passed &= report(PolyX::test(), "PolyX::test");
     passed &= report(NucleotideTree::test(), "NucleotideTree::test");
     passed &= report(Evaluator::test(), "Evaluator::test");
+    passed &= report(UmiProcessor::test(), "UmiProcessor::test");
     printf("\n==========================\n");
     printf("%s\n\n", passed?"ALL PASSED":"FAILED");
 }
