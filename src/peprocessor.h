@@ -65,6 +65,7 @@ private:
     size_t mRightPackReadCounter;
     alignas(128) atomic_long mPackProcessedCounter;
     long mPackInMemLimit;
+    int mPackSize;
     ReadPool* mLeftReadPool;
     ReadPool* mRightReadPool;
     atomic_bool shouldStopReading;

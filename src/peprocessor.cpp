@@ -16,6 +16,7 @@
 PairEndProcessor::PairEndProcessor(Options* opt){
     mOptions = opt;
     mPackInMemLimit = packInMemLimit(mOptions->thread);
+    mPackSize = packSize(mOptions->thread);
     mLeftReaderFinished = false;
     mRightReaderFinished = false;
     mFinishedThreads = 0;
@@ -735,8 +736,8 @@ void PairEndProcessor::readerTask(bool isLeft)
     int slept = 0;
     long readNum = 0;
     bool splitSizeReEvaluated = false;
-    Read** data = new Read*[PACK_SIZE];
-    memset(data, 0, sizeof(Read*)*PACK_SIZE);
+    Read** data = new Read*[mPackSize];
+    memset(data, 0, sizeof(Read*)*mPackSize);
     // BGZF decompress thread budget per reader:
     // (total CPU cores - worker threads - reader threads - writer threads) / number of gz inputs
     int cpus = std::thread::hardware_concurrency();
@@ -800,7 +801,7 @@ void PairEndProcessor::readerTask(bool isLeft)
             loginfo(msg);
         }
         // a full pack
-        if(count == PACK_SIZE || needToBreak){
+        if(count == mPackSize || needToBreak){
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
@@ -815,8 +816,8 @@ void PairEndProcessor::readerTask(bool isLeft)
             mBackpressureCV.notify_all();
 
             //re-initialize data for next pack
-            data = new Read*[PACK_SIZE];
-            memset(data, 0, sizeof(Read*)*PACK_SIZE);
+            data = new Read*[mPackSize];
+            memset(data, 0, sizeof(Read*)*mPackSize);
             // if the processor is far behind this reader, sleep and wait to limit memory usage
             {
                 std::unique_lock<std::mutex> lk(mBackpressureMtx);
@@ -835,7 +836,7 @@ void PairEndProcessor::readerTask(bool isLeft)
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
             // check this only when necessary
-            if(readNum % (PACK_SIZE * mPackInMemLimit) == 0 && mLeftWriter) {
+            if(readNum % (mPackSize * mPackInMemLimit) == 0 && mLeftWriter) {
                 std::unique_lock<std::mutex> lk(mBackpressureMtx);
                 while( (mLeftWriter && mLeftWriter->bufferLength() > mPackInMemLimit) || (mRightWriter && mRightWriter->bufferLength() > mPackInMemLimit) ){
                     slept++;
@@ -896,10 +897,10 @@ void PairEndProcessor::interleavedReaderTask()
     int slept = 0;
     long readNum = 0;
     bool splitSizeReEvaluated = false;
-    Read** dataLeft = new Read*[PACK_SIZE];
-    Read** dataRight = new Read*[PACK_SIZE];
-    memset(dataLeft, 0, sizeof(Read*)*PACK_SIZE);
-    memset(dataRight, 0, sizeof(Read*)*PACK_SIZE);
+    Read** dataLeft = new Read*[mPackSize];
+    Read** dataRight = new Read*[mPackSize];
+    memset(dataLeft, 0, sizeof(Read*)*mPackSize);
+    memset(dataRight, 0, sizeof(Read*)*mPackSize);
     FastqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64,true);
     int count=0;
     bool needToBreak = false;
@@ -940,7 +941,7 @@ void PairEndProcessor::interleavedReaderTask()
             loginfo(msg);
         }
         // a full pack
-        if(count == PACK_SIZE || needToBreak){
+        if(count == mPackSize || needToBreak){
             ReadPack* packLeft = new ReadPack;
             ReadPack* packRight = new ReadPack;
             packLeft->data = dataLeft;
@@ -956,10 +957,10 @@ void PairEndProcessor::interleavedReaderTask()
             mBackpressureCV.notify_all();
 
             //re-initialize data for next pack
-            dataLeft = new Read*[PACK_SIZE];
-            dataRight = new Read*[PACK_SIZE];
-            memset(dataLeft, 0, sizeof(Read*)*PACK_SIZE);
-            memset(dataRight, 0, sizeof(Read*)*PACK_SIZE);
+            dataLeft = new Read*[mPackSize];
+            dataRight = new Read*[mPackSize];
+            memset(dataLeft, 0, sizeof(Read*)*mPackSize);
+            memset(dataRight, 0, sizeof(Read*)*mPackSize);
             // if the consumer is far behind this producer, sleep and wait to limit memory usage
             {
                 std::unique_lock<std::mutex> lk(mBackpressureMtx);
@@ -971,7 +972,7 @@ void PairEndProcessor::interleavedReaderTask()
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
             // check this only when necessary
-            if(readNum % (PACK_SIZE * mPackInMemLimit) == 0 && mLeftWriter) {
+            if(readNum % (mPackSize * mPackInMemLimit) == 0 && mLeftWriter) {
                 std::unique_lock<std::mutex> lk(mBackpressureMtx);
                 while( (mLeftWriter && mLeftWriter->bufferLength() > mPackInMemLimit) || (mRightWriter && mRightWriter->bufferLength() > mPackInMemLimit) ){
                     slept++;
