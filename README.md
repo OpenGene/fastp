@@ -113,9 +113,9 @@ This binary was compiled on CentOS, and tested on CentOS/Ubuntu
 wget http://opengene.org/fastp/fastp
 chmod a+x ./fastp
 
-# or download specified version, i.e. fastp v1.3.3
-wget http://opengene.org/fastp/fastp.1.3.3
-mv fastp.1.3.3 fastp
+# or download specified version, i.e. fastp v1.4.0
+wget http://opengene.org/fastp/fastp.1.4.0
+mv fastp.1.4.0 fastp
 chmod a+x ./fastp
 ```
 ## or compile from source
