@@ -108,28 +108,31 @@ bool Writer::write(const char* strdata, size_t size) {
 }
 
 bool Writer::writeInternal(const char* strdata, size_t size) {
-	size_t written;
-	bool status;
+	if(size == 0)
+		return true;
+	const string destination = mSTDOUT ? "stdout" : mFilename;
 	
 	if(mZipped){
 		size_t bound = libdeflate_gzip_compress_bound(mCompressor, size);
 		void* out = malloc(bound);
+		if(out == NULL)
+			error_exit("Failed to allocate compression buffer for: " + destination);
 		size_t outsize = libdeflate_gzip_compress(mCompressor, strdata, size, out, bound);
-		if(outsize == 0)
-			status = false;
-		else {
-			size_t ret = fwrite(out, 1, outsize, mFP );
-			status = ret>0;
-			//mOutStream->write((char*)out, outsize);
-			//status = !mOutStream->fail();
+		if(outsize == 0) {
+			free(out);
+			error_exit("Failed to compress output for: " + destination);
 		}
+		size_t ret = fwrite(out, 1, outsize, mFP);
 		free(out);
+		if(ret != outsize || ferror(mFP))
+			error_exit("Failed to write complete output to: " + destination);
 	}
 	else{
 		size_t ret = fwrite(strdata, 1, size, mFP );
-		status = ret>0;
+		if(ret != size || ferror(mFP))
+			error_exit("Failed to write complete output to: " + destination);
 	}
-	return status;
+	return true;
 }
 
 void Writer::close(){
@@ -143,9 +146,13 @@ void Writer::close(){
 		free(mBuffer);
 		mBuffer = NULL;
 	}
-	if(mFP && !mSTDOUT) {
-		fclose(mFP);
+	if(mFP) {
+		// stdio can defer a write error until finalisation. Do not close stdout.
+		const string destination = mSTDOUT ? "stdout" : mFilename;
+		int status = mSTDOUT ? fflush(mFP) : fclose(mFP);
 		mFP = NULL;
+		if(status != 0)
+			error_exit("Failed to finalise output to: " + destination);
 	}
 }
 
