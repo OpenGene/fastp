@@ -1,0 +1,22 @@
+# version	binary_name
+# Selection note: "latest patch per minor release in the last 12 months" would
+# collapse to just v1.1.0, v1.2.0, v1.3.7 -- but the entire correctness/perf
+# story this backfill exists to show (the >32-thread deadlock introduced in
+# v1.3.4 and its perf-cliff sibling at exactly 32 threads) lives inside the
+# v1.3.x patch series. Including every v1.3.x patch is a deliberate deviation
+# from that heuristic so the regression is visible in the backfilled data
+# instead of hidden by it. v1.0.1 is included as a pre-Highway-SIMD anchor
+# (last release before the March 2026 SIMD/pipeline rewrite) even though it's
+# just outside the 12-month window.
+v1.0.1	fastp-1.0.1
+v1.1.0	fastp-1.1.0
+v1.2.0	fastp-1.2.0
+v1.3.0	fastp-1.3.0
+v1.3.1	fastp-1.3.1
+v1.3.2	fastp-1.3.2
+v1.3.3	fastp-1.3.3
+v1.3.4	fastp-1.3.4
+v1.3.5	fastp-1.3.5
+v1.3.6	fastp-1.3.6
+v1.3.7	fastp-1.3.7
+fix-#723	fastp-fix
