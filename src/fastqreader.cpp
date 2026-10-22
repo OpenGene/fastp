@@ -361,9 +361,11 @@ Read* FastqReader::read(){
 		return NULL;
 	}
 
-	if(readInPool)
+	if(readInPool) {
+		if(mPhred64)
+			readInPool->convertPhred64To33();
 		return readInPool;
-	else
+	} else
 		return new Read(name, sequence, strand, quality, mPhred64);
 }
 
