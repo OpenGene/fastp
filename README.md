@@ -427,7 +427,7 @@ See `python parallel.py -h` for details.
 
 # all options
 ```shell
-usage: fastp -i <in1> -o <out1> [-I <in1> -O <out2>] [options...]
+usage: fastp -i <in1> -o <out1> [-I <in2> -O <out2>] [options...]
 options:
   # I/O options
   -i, --in1                          read1 input file name (string)
