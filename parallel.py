@@ -40,7 +40,7 @@ def matchFlag(filename, flag):
     if flag.endswith('.') or flag.endswith('_') or flag.endswith('-'):
         return flag in filename
     else:
-        return (flag+"." in filename) or (flag+"_" in filename) or (flag+"-" in filename)
+        return filename.endswith(flag) or (flag+"." in filename) or (flag+"_" in filename) or (flag+"-" in filename)
     
 def getBaseName(filename):
     fqext = (".fq.gz", ".fastq.gz", ".fq", ".fastq")
