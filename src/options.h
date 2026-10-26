@@ -108,6 +108,7 @@ public:
         location = UMI_LOC_NONE;
         length = 0;
         skip = 0;
+        skipb = 0;
         delimiter= ":";
     }
 public:
@@ -115,6 +116,7 @@ public:
     int location;
     int length;
     int skip;
+    int skipb;
     string prefix;
     string separator;
     string delimiter;
